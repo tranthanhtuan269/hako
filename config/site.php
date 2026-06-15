@@ -29,6 +29,18 @@ return [
         "{$name} is the Top Hub of US Online Coupons — verified promo codes, discount deals, and savings tips for Amazon, Walmart, Target, and top U.S. retailers."
     ),
 
+    'default_author' => [
+        'name' => env('SITE_AUTHOR_NAME', $name.' Team'),
+        'slug' => env('SITE_AUTHOR_SLUG', 'editorial-team'),
+        'title' => env('SITE_AUTHOR_TITLE', 'Editorial Team'),
+        'guest_title' => 'Contributing Writer',
+        'member_title' => 'Savings Writer',
+        'bio' => env('SITE_AUTHOR_BIO') ?: (
+            "The {$name} editorial team researches coupon codes, tests promo links, and publishes savings guides to help U.S. shoppers find verified deals from trusted retailers."
+        ),
+        'avatar' => env('SITE_AUTHOR_AVATAR'),
+    ],
+
     'og_image' => env('SITE_OG_IMAGE') ?: null,
 
     'twitter_handle' => env('SITE_TWITTER', '@'.str_replace('.', '', explode('.', $domain)[0])),

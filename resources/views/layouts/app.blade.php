@@ -75,6 +75,7 @@
                 <a href="{{ route('stores.index') }}">Stores</a>
                 <a href="{{ route('categories.index') }}">Categories</a>
                 <a href="{{ route('blog.index') }}">Blog</a>
+                <a href="{{ route('authors.index') }}">Authors</a>
             </div>
             <div>
                 <h4>Company</h4>

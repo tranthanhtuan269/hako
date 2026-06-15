@@ -13,6 +13,7 @@
     <div class="container">
         <h1>Savings Blog</h1>
         <p class="page-subtitle">Coupon strategies, deal guides, and shopping tips to help you save more online.</p>
+        <p class="page-subtitle"><a href="{{ route('authors.index') }}">Meet our authors →</a></p>
     </div>
 </section>
 

@@ -29,6 +29,7 @@ class PostController extends Controller
         $data = $this->validated($request);
         $data['slug'] = $this->uniqueSlug($data['title']);
         $data['featured_image'] = $this->resolveFeaturedImage($request, $data['featured_image'] ?? null);
+        $data['user_id'] = auth()->id();
 
         Post::create($data);
 
@@ -77,7 +78,9 @@ class PostController extends Controller
         ]);
 
         $data['is_published'] = $request->boolean('is_published');
-        $data['author_name'] = $data['author_name'] ?: config('site.name').' Team';
+        if (blank($data['author_name'] ?? null)) {
+            unset($data['author_name']);
+        }
 
         if ($data['is_published'] && empty($data['published_at'])) {
             $data['published_at'] = now();

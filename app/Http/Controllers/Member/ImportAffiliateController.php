@@ -34,26 +34,57 @@ class ImportAffiliateController extends Controller
     public function preview(
         Request $request,
         AffiliateLinkResolver $resolver,
-        CouponSpeakClient $couponSpeak
+        CouponSpeakClient $couponSpeak,
+        AffiliateImportContentBuilder $contentBuilder
     ): JsonResponse {
         $this->authorize('create', Store::class);
 
         $data = $request->validate([
             'affiliate_url' => ['required', 'url', 'max:500'],
+            'website' => ['nullable', 'url', 'max:500'],
         ]);
 
         $merchant = $resolver->resolve($data['affiliate_url']);
+
+        if (filled($data['website'] ?? null)) {
+            $merchant = $resolver->enrichFromWebsite($merchant, trim($data['website']));
+        }
 
         $storeQuery = $merchant['domain'] ?? $couponSpeak->hostFromUrl($data['affiliate_url']);
         $suggestedOffers = $storeQuery
             ? $couponSpeak->fetchOffersByStore($storeQuery)
             : [];
 
+        $offers = $this->normalizeOffers(
+            collect($suggestedOffers)->map(fn (array $offer) => [
+                'code' => $offer['code'] ?? null,
+                'title' => $offer['title'] ?? 'Featured offer',
+                'description' => $offer['description'] ?? null,
+            ])->whenEmpty(fn ($collection) => $collection->push([
+                'code' => null,
+                'title' => ($merchant['name'] ?? 'Store') . ' promo',
+                'description' => $merchant['meta_description'] ?? null,
+            ]))->all()
+        );
+
+        $previewStore = new Store([
+            'name' => $merchant['name'] ?? 'New Store',
+            'slug' => StoreSlug::make($merchant['name'] ?? 'new-store'),
+            'category_id' => $merchant['category_id'] ?? null,
+        ]);
+
+        if (filled($merchant['category_id'] ?? null)) {
+            $previewStore->setRelation('category', Category::find($merchant['category_id']));
+        }
+
+        $generatedBlog = $contentBuilder->generateBlogPreview($previewStore, $offers, $merchant);
+
         return response()->json([
             'ok' => true,
             'merchant' => $merchant,
             'store_query' => $storeQuery,
             'suggested_offers' => $suggestedOffers,
+            'generated_blog' => $generatedBlog,
         ]);
     }
 
@@ -76,6 +107,7 @@ class ImportAffiliateController extends Controller
             'offers.*.code' => ['nullable', 'string', 'max:100'],
             'offers.*.title' => ['required', 'string', 'max:255'],
             'offers.*.description' => ['nullable', 'string'],
+            'generated_blog' => ['nullable', 'string', 'max:100000'],
             'publish' => ['boolean'],
         ]);
 
@@ -89,6 +121,7 @@ class ImportAffiliateController extends Controller
         $storeName = trim($data['store_name']);
         $logoUrl = filled($data['logo_url'] ?? null) ? trim($data['logo_url']) : ($merchant['logo'] ?? null);
         $offers = $this->normalizeOffers($data['offers']);
+        $preGeneratedBlog = $this->parseGeneratedBlog($data['generated_blog'] ?? null);
         $userId = auth()->id();
         $domain = $merchant['domain'] ?? null;
         if (! $domain && filled($data['website'] ?? null)) {
@@ -107,7 +140,8 @@ class ImportAffiliateController extends Controller
             $storedFeatured,
             $offers,
             $contentBuilder,
-            $logoUrl
+            $logoUrl,
+            $preGeneratedBlog
         ) {
             $store = Store::create([
                 'user_id' => auth()->id(),
@@ -146,7 +180,7 @@ class ImportAffiliateController extends Controller
                 ]);
             }
 
-            $blog = $contentBuilder->blogPost($store->load('category'), $offers, $merchant);
+            $blog = $contentBuilder->blogPost($store->load('category'), $offers, $merchant, $preGeneratedBlog);
             $post = Post::create([
                 'user_id' => auth()->id(),
                 'title' => $blog['title'],
@@ -229,5 +263,35 @@ class ImportAffiliateController extends Controller
         }
 
         return $slug;
+    }
+
+    /**
+     * @return array{title: string, excerpt: string, meta_title: string, meta_description: string, content: string}|null
+     */
+    private function parseGeneratedBlog(?string $json): ?array
+    {
+        if (! filled($json)) {
+            return null;
+        }
+
+        $decoded = json_decode($json, true);
+
+        if (! is_array($decoded)) {
+            return null;
+        }
+
+        foreach (['title', 'excerpt', 'content'] as $required) {
+            if (! filled($decoded[$required] ?? null)) {
+                return null;
+            }
+        }
+
+        return [
+            'title' => trim((string) $decoded['title']),
+            'excerpt' => trim((string) $decoded['excerpt']),
+            'meta_title' => trim((string) ($decoded['meta_title'] ?? $decoded['title'])),
+            'meta_description' => trim((string) ($decoded['meta_description'] ?? $decoded['excerpt'])),
+            'content' => trim((string) $decoded['content']),
+        ];
     }
 }

@@ -6,6 +6,8 @@ use App\Models\Category;
 use App\Models\Coupon;
 use App\Models\Post;
 use App\Models\Store;
+use App\Models\User;
+use App\Support\AuthorProfile;
 use Illuminate\Http\Response;
 
 class SitemapController extends Controller
@@ -20,6 +22,7 @@ class SitemapController extends Controller
             ['loc' => route('stores.index'), 'priority' => '0.8', 'changefreq' => 'weekly'],
             ['loc' => route('categories.index'), 'priority' => '0.8', 'changefreq' => 'weekly'],
             ['loc' => route('blog.index'), 'priority' => '0.9', 'changefreq' => 'daily'],
+            ['loc' => route('authors.index'), 'priority' => '0.6', 'changefreq' => 'monthly'],
             ['loc' => route('pages.about'), 'priority' => '0.5', 'changefreq' => 'monthly'],
             ['loc' => route('pages.contact'), 'priority' => '0.5', 'changefreq' => 'monthly'],
             ['loc' => route('pages.privacy'), 'priority' => '0.3', 'changefreq' => 'yearly'],
@@ -40,6 +43,20 @@ class SitemapController extends Controller
                 'lastmod' => $post->updated_at->toAtomString(),
                 'priority' => '0.8',
                 'changefreq' => 'weekly',
+            ];
+        }
+
+        $urls[] = [
+            'loc' => route('authors.show', AuthorProfile::default()->slug),
+            'priority' => '0.55',
+            'changefreq' => 'monthly',
+        ];
+
+        foreach (User::query()->whereNotNull('author_slug')->whereHas('posts', fn ($q) => $q->published())->get() as $user) {
+            $urls[] = [
+                'loc' => route('authors.show', $user->author_slug),
+                'priority' => '0.55',
+                'changefreq' => 'monthly',
             ];
         }
 

@@ -62,6 +62,7 @@ class PostController extends Controller
             $request->input('featured_image'),
             $post->featured_image
         );
+        $data['author_name'] = auth()->user()->name;
         $post->update($data);
 
         return redirect()->route('member.posts.index')->with('success', 'Blog post updated successfully.');

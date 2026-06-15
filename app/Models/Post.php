@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Support\PublicImage;
+use App\Support\AuthorProfile;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -36,6 +37,22 @@ class Post extends Model
         static::creating(function (Post $post) {
             if (empty($post->slug)) {
                 $post->slug = Str::slug($post->title);
+            }
+        });
+
+        static::saving(function (Post $post) {
+            if ($post->user_id) {
+                $user = $post->relationLoaded('user') ? $post->user : User::query()->find($post->user_id);
+
+                if ($user) {
+                    if (! $post->isDirty('author_name') || blank($post->author_name)) {
+                        $post->author_name = $user->name;
+                    }
+
+                    $user->ensureAuthorSlug();
+                }
+            } elseif (blank($post->author_name)) {
+                $post->author_name = config('site.default_author.name');
             }
         });
     }
@@ -93,5 +110,10 @@ class Post extends Model
     public function incrementViews(): void
     {
         $this->increment('view_count');
+    }
+
+    public function authorProfile(): AuthorProfile
+    {
+        return AuthorProfile::forPost($this);
     }
 }

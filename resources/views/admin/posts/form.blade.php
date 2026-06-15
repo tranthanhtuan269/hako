@@ -42,7 +42,8 @@
     </div>
     <div class="form-group">
         <label>Author name</label>
-        <input type="text" name="author_name" value="{{ old('author_name', $post->author_name ?: config('site.name') . ' Team') }}">
+        <input type="text" name="author_name" value="{{ old('author_name', $post->author_name) }}" placeholder="Leave blank to use your account name automatically">
+        <p class="form-hint">If empty, the post will use your logged-in name and link to your public author profile.</p>
     </div>
     <div class="form-group">
         <label>Publish date</label>

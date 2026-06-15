@@ -46,32 +46,18 @@
 </section>
 @endif
 
-@if($featuredCoupons->isNotEmpty())
-<section class="section {{ $activeTheme === 'savingspro' ? 'sp-section-trending' : '' }}">
+@if($latestPosts->isNotEmpty())
+<section class="section">
     <div class="container">
-        <h2 class="section-title">{{ $activeTheme === 'savingspro' ? 'Trending Coupons' : 'Featured' }} <a href="{{ route('coupons.index') }}">View all →</a></h2>
-        <div class="coupon-grid">
-            @foreach($featuredCoupons as $coupon)
-                @include('partials.coupon-card', ['coupon' => $coupon])
+        <h2 class="section-title">Blogs <a href="{{ route('blog.index') }}">All articles →</a></h2>
+        <div class="blog-grid">
+            @foreach($latestPosts as $post)
+                @include('blog.partials.card', ['post' => $post])
             @endforeach
         </div>
     </div>
 </section>
 @endif
-
-<section class="section">
-    <div class="container">
-        <h2 class="section-title">Categories</h2>
-        <div class="category-grid home-category-grid">
-            @foreach($categories as $category)
-                <a href="{{ route('categories.show', $category->slug) }}" class="category-chip">
-                    <span class="icon">{{ $category->icon ?? '🏷️' }}</span>
-                    <strong>{{ $category->name }}</strong>
-                </a>
-            @endforeach
-        </div>
-    </div>
-</section>
 
 <section class="section">
     <div class="container">
@@ -104,25 +90,15 @@
     </div>
 </section>
 
-@if($latestPosts->isNotEmpty())
 <section class="section">
     <div class="container">
-        <h2 class="section-title">From the Blog <a href="{{ route('blog.index') }}">All articles →</a></h2>
-        <div class="blog-grid">
-            @foreach($latestPosts as $post)
-                @include('blog.partials.card', ['post' => $post])
-            @endforeach
-        </div>
-    </div>
-</section>
-@endif
-
-<section class="section">
-    <div class="container">
-        <h2 class="section-title">Newest</h2>
-        <div class="coupon-grid">
-            @foreach($latestCoupons as $coupon)
-                @include('partials.coupon-card', ['coupon' => $coupon])
+        <h2 class="section-title">Categories</h2>
+        <div class="category-grid home-category-grid">
+            @foreach($categories as $category)
+                <a href="{{ route('categories.show', $category->slug) }}" class="category-chip">
+                    <span class="icon">{{ $category->icon ?? '🏷️' }}</span>
+                    <strong>{{ $category->name }}</strong>
+                </a>
             @endforeach
         </div>
     </div>

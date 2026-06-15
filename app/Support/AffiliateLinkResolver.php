@@ -9,6 +9,11 @@ use Illuminate\Support\Str;
 
 final class AffiliateLinkResolver
 {
+    public function __construct(
+        private readonly MerchantProductExtractor $productExtractor = new MerchantProductExtractor(),
+        private readonly MerchantProductEnricher $productEnricher = new MerchantProductEnricher(),
+    ) {}
+
     public function resolve(string $affiliateUrl): array
     {
         $affiliateUrl = trim($affiliateUrl);
@@ -23,6 +28,7 @@ final class AffiliateLinkResolver
         $category = $this->guessCategory($host, $pageTitle, $metaDescription, $finalUrl);
         $logo = $this->resolveLogo($host, $finalUrl, $html);
         $faqs = $this->extractFaqs($html);
+        $products = $this->discoverProducts($finalUrl, $html);
 
         return [
             'affiliate_url' => $affiliateUrl,
@@ -35,6 +41,7 @@ final class AffiliateLinkResolver
             'category_id' => $category?->id,
             'category_name' => $category?->name,
             'faqs' => $faqs,
+            'products' => $products,
         ];
     }
 
@@ -65,9 +72,52 @@ final class AffiliateLinkResolver
             if ($logo) {
                 $merchant['logo'] = $logo;
             }
+
+            $websiteProducts = $this->discoverProducts($websiteUrl, $html);
+
+            if (count($websiteProducts) >= count($merchant['products'] ?? [])) {
+                $merchant['products'] = $websiteProducts;
+            }
         }
 
         return $merchant;
+    }
+
+    /**
+     * @return array<int, array{name: string, description: ?string, price: ?string, image: ?string, url: ?string}>
+     */
+    private function discoverProducts(string $baseUrl, ?string $html): array
+    {
+        $products = $this->productExtractor->extract($html, $baseUrl);
+
+        if (count($products) >= 2) {
+            return $products;
+        }
+
+        $paths = ['/collections/all', '/shop', '/products', '/catalog', '/store'];
+
+        foreach ($paths as $path) {
+            $shopUrl = rtrim($baseUrl, '/') . $path;
+            $shopHtml = $this->fetchHtml($shopUrl);
+
+            if (! $shopHtml) {
+                continue;
+            }
+
+            $products = $this->productExtractor->uniqueTake(
+                array_merge($products, $this->productExtractor->extract($shopHtml, $shopUrl)),
+                3
+            );
+
+            if (count($products) >= 2) {
+                break;
+            }
+        }
+
+        return $this->productEnricher->enrich(
+            $products,
+            fn (string $url) => $this->fetchHtml($url)
+        );
     }
 
     private function unwrapAffiliateUrl(string $url): string

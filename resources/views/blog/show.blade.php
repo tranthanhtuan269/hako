@@ -13,6 +13,23 @@
     .article-content ul, .article-content ol { margin: 0 0 1rem 1.25rem; color: #374151; }
     .article-content li { margin-bottom: .4rem; }
     .article-content a { color: var(--primary); }
+    .article-content table.comparison-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 1rem 0 1.5rem;
+        font-size: .95rem;
+    }
+    .article-content table.comparison-table th,
+    .article-content table.comparison-table td {
+        border: 1px solid var(--border);
+        padding: .65rem .75rem;
+        text-align: left;
+        vertical-align: top;
+    }
+    .article-content table.comparison-table th {
+        background: #f8fafc;
+        font-weight: 600;
+    }
 </style>
 @endpush
 
@@ -26,8 +43,9 @@
     "datePublished": @json($post->published_at?->toIso8601String()),
     "dateModified": @json($post->updated_at->toIso8601String()),
     "author": {
-        "@type": "Organization",
-        "name": @json($post->author_name)
+        "@type": "Person",
+        "name": @json($post->authorProfile()->name),
+        "url": @json($post->authorProfile()->url())
     },
     "publisher": {
         "@type": "Organization",
@@ -51,7 +69,7 @@
             <a href="{{ route('blog.index') }}" class="blog-back">← Back to Blog</a>
             <h1>{{ $post->title }}</h1>
             <div class="blog-article-meta">
-                <span>By {{ $post->author_name }}</span>
+                @include('blog.partials.author-link', ['post' => $post])
                 <span>·</span>
                 <time datetime="{{ $post->published_at?->toDateString() }}">{{ $post->published_at?->format('F j, Y') }}</time>
                 <span>·</span>
@@ -74,6 +92,7 @@
                 {!! $post->content !!}
             </div>
             <aside class="blog-sidebar">
+                @include('blog.partials.author-box', ['post' => $post])
                 <div class="sidebar-box">
                     <h3>Save More Today</h3>
                     <p>Browse verified coupon codes at {{ config('site.name') }}.</p>

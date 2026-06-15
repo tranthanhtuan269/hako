@@ -7,6 +7,9 @@ use Illuminate\Support\Str;
 
 final class AffiliateImportContentBuilder
 {
+    public function __construct(
+        private readonly GeminiBlogWriter $geminiWriter = new GeminiBlogWriter(),
+    ) {}
     public function storeDescription(string $storeName, ?string $metaDescription, ?string $categoryName): string
     {
         $categoryLine = $categoryName
@@ -28,7 +31,210 @@ final class AffiliateImportContentBuilder
      * @param  array<string, mixed>  $merchant
      * @return array{title: string, excerpt: string, meta_title: string, meta_description: string, content: string}
      */
-    public function blogPost(Store $store, array $offers, array $merchant = []): array
+    public function blogPost(Store $store, array $offers, array $merchant = [], ?array $preGenerated = null): array
+    {
+        if ($preGenerated !== null) {
+            return $this->sanitizeBlogOutput($preGenerated);
+        }
+
+        $aiBlog = $this->geminiWriter->generate($this->blogContext($store, $offers, $merchant));
+
+        if ($aiBlog !== null) {
+            return $this->sanitizeBlogOutput($aiBlog);
+        }
+
+        return $this->blogPostWithoutAi($store, $offers, $merchant);
+    }
+
+    /**
+     * @param  array<int, array{code: ?string, title: string, description: ?string, type: string}>  $offers
+     * @param  array<string, mixed>  $merchant
+     * @return array{
+     *     store_name: string,
+     *     category_name: ?string,
+     *     store_slug: string,
+     *     offers: array<int, array{code: ?string, title: string, description: ?string, type: string}>,
+     *     merchant: array<string, mixed>
+     * }
+     */
+    public function blogContext(Store $store, array $offers, array $merchant = []): array
+    {
+        return [
+            'store_name' => $store->name,
+            'category_name' => $store->category?->name ?? ($merchant['category_name'] ?? null),
+            'store_slug' => $store->slug,
+            'offers' => $offers,
+            'merchant' => $merchant,
+        ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $blog
+     * @return array{title: string, excerpt: string, meta_title: string, meta_description: string, content: string}
+     */
+    public function sanitizeBlogOutput(array $blog): array
+    {
+        return [
+            'title' => Str::limit(trim((string) ($blog['title'] ?? '')), 255, ''),
+            'excerpt' => Str::limit(trim((string) ($blog['excerpt'] ?? '')), 500, ''),
+            'meta_title' => Str::limit(trim((string) ($blog['meta_title'] ?? $blog['title'] ?? '')), 70, ''),
+            'meta_description' => Str::limit(trim((string) ($blog['meta_description'] ?? $blog['excerpt'] ?? '')), 320, ''),
+            'content' => trim((string) ($blog['content'] ?? '')),
+        ];
+    }
+
+    /**
+     * @param  array<int, array{code: ?string, title: string, description: ?string, type: string}>  $offers
+     * @param  array<string, mixed>  $merchant
+     * @return array{title: string, excerpt: string, meta_title: string, meta_description: string, content: string, source?: string}|null
+     */
+    public function generateBlogPreview(Store $store, array $offers, array $merchant = []): ?array
+    {
+        $aiBlog = $this->geminiWriter->generate($this->blogContext($store, $offers, $merchant));
+
+        if ($aiBlog !== null) {
+            return $this->sanitizeBlogOutput($aiBlog) + ['source' => 'gemini'];
+        }
+
+        $fallback = $this->blogPostWithoutAi($store, $offers, $merchant);
+
+        return $this->sanitizeBlogOutput($fallback) + ['source' => 'template'];
+    }
+
+    /**
+     * @param  array<int, array{code: ?string, title: string, description: ?string, type: string}>  $offers
+     * @param  array<string, mixed>  $merchant
+     * @return array{title: string, excerpt: string, meta_title: string, meta_description: string, content: string}
+     */
+    private function blogPostWithoutAi(Store $store, array $offers, array $merchant = []): array
+    {
+        $products = is_array($merchant['products'] ?? null) ? $merchant['products'] : [];
+
+        if (count($products) >= 2) {
+            return $this->comparisonBlogPost($store, $offers, $merchant, $products);
+        }
+
+        if (count($products) === 1) {
+            return $this->spotlightBlogPost($store, $offers, $merchant, $products[0]);
+        }
+
+        return $this->classicBlogPost($store, $offers, $merchant);
+    }
+
+    /**
+     * @param  array<int, array{code: ?string, title: string, description: ?string, type: string}>  $offers
+     * @param  array<string, mixed>  $merchant
+     * @param  array<int, array{name: string, description: ?string, price: ?string, image: ?string, url: ?string}>  $products
+     * @return array{title: string, excerpt: string, meta_title: string, meta_description: string, content: string}
+     */
+    private function comparisonBlogPost(Store $store, array $offers, array $merchant, array $products): array
+    {
+        $monthYear = now()->format('F Y');
+        $category = $store->category?->name ?? ($merchant['category_name'] ?? 'online retail');
+        $metaDescription = $merchant['meta_description'] ?? null;
+        $faqs = is_array($merchant['faqs'] ?? null) ? $merchant['faqs'] : [];
+        $offerCount = count($offers);
+        $name = $store->name;
+        $storeUrl = route('stores.show', $store->slug);
+        $productNames = collect($products)->pluck('name')->take(3)->all();
+        $comparisonTitle = implode(' vs ', $productNames);
+
+        $title = "{$comparisonTitle}: Which Is Best? ({$monthYear})";
+        $excerpt = "Side-by-side comparison of top {$name} products for U.S. shoppers — features, pricing, pros and cons, plus {$offerCount} current coupon codes.";
+        $metaTitle = Str::limit("{$name} Product Comparison {$monthYear} | " . config('site.name'), 70, '');
+        $metaDescriptionSeo = Str::limit(
+            "Compare {$comparisonTitle} from {$name}. See prices, strengths, drawbacks, and the best deals for {$monthYear}.",
+            320,
+            ''
+        );
+
+        $parts = [];
+        $parts[] = '<p>Choosing between multiple products from <strong>' . e($name) . '</strong> can be confusing when every listing promises similar benefits. '
+            . 'This guide compares ' . e($comparisonTitle) . ' using publicly available product information from the brand\'s website, then shows how to lower your total with current offers on '
+            . e(config('site.name')) . '.</p>';
+
+        if ($metaDescription) {
+            $parts[] = '<p>' . e($metaDescription) . '</p>';
+        }
+
+        $parts[] = $this->sectionProductComparisonTable($name, $products, $category);
+        $parts[] = $this->sectionProductDeepDives($name, $products, $storeUrl);
+        $parts[] = $this->sectionWhichProductToChoose($name, $products, $category);
+        $parts[] = $this->sectionComparison($name, $category);
+        $parts[] = $this->sectionCurrentOffers($name, $offers, $storeUrl, $monthYear);
+        $parts[] = $this->sectionHowToSave($name, $storeUrl);
+        $parts[] = $this->sectionFaq($name, $faqs, $storeUrl);
+
+        $parts[] = '<h2>Final Verdict</h2>';
+        $parts[] = '<p>There is no single winner for every shopper — the right pick depends on budget, use case, and which promotion is live this month. '
+            . 'Use the comparison table above to narrow your choice, then apply a verified deal from our '
+            . '<a href="' . e($storeUrl) . '">' . e($name) . ' coupon page</a> before checkout.</p>';
+
+        return [
+            'title' => $title,
+            'excerpt' => $excerpt,
+            'meta_title' => $metaTitle,
+            'meta_description' => $metaDescriptionSeo,
+            'content' => implode("\n\n", array_filter($parts)),
+        ];
+    }
+
+    /**
+     * @param  array{code: ?string, title: string, description: ?string, type: string}  $offer
+     * @param  array<string, mixed>  $merchant
+     * @param  array{name: string, description: ?string, price: ?string, image: ?string, url: ?string}  $product
+     * @return array{title: string, excerpt: string, meta_title: string, meta_description: string, content: string}
+     */
+    private function spotlightBlogPost(Store $store, array $offers, array $merchant, array $product): array
+    {
+        $monthYear = now()->format('F Y');
+        $name = $store->name;
+        $storeUrl = route('stores.show', $store->slug);
+        $faqs = is_array($merchant['faqs'] ?? null) ? $merchant['faqs'] : [];
+        $productName = $product['name'];
+
+        $title = "{$productName} Review: Is It Worth It? ({$monthYear})";
+        $excerpt = "Hands-on style breakdown of {$productName} from {$name} — key features, pros, cons, and the best coupons this month.";
+        $metaTitle = Str::limit("{$productName} Review {$monthYear} | " . config('site.name'), 70, '');
+        $metaDescriptionSeo = Str::limit(
+            "Read our {$productName} review with pricing, pros, cons, and verified {$name} coupon codes for {$monthYear}.",
+            320,
+            ''
+        );
+
+        $parts = [];
+        $parts[] = '<p><strong>' . e($productName) . '</strong> is one of the flagship items shoppers research before buying from '
+            . e($name) . '. Below is a practical overview based on the merchant\'s public product listing, followed by current promo codes on '
+            . e(config('site.name')) . '.</p>';
+
+        if (filled($product['description'])) {
+            $parts[] = '<p>' . e($product['description']) . '</p>';
+        }
+
+        if (filled($product['price'])) {
+            $parts[] = '<p><strong>Listed price:</strong> ' . e($product['price']) . ' (confirm on the merchant site before checkout).</p>';
+        }
+
+        $parts[] = $this->sectionSingleProductProsCons($productName, $product);
+        $parts[] = $this->sectionCurrentOffers($name, $offers, $storeUrl, $monthYear);
+        $parts[] = $this->sectionHowToSave($name, $storeUrl);
+        $parts[] = $this->sectionFaq($name, $faqs, $storeUrl);
+
+        return [
+            'title' => $title,
+            'excerpt' => $excerpt,
+            'meta_title' => $metaTitle,
+            'meta_description' => $metaDescriptionSeo,
+            'content' => implode("\n\n", array_filter($parts)),
+        ];
+    }
+
+    /**
+     * @param  array<int, array{code: ?string, title: string, description: ?string, type: string}>  $offers
+     * @param  array<string, mixed>  $merchant
+     * @return array{title: string, excerpt: string, meta_title: string, meta_description: string, content: string}
+     */
+    private function classicBlogPost(Store $store, array $offers, array $merchant = []): array
     {
         $monthYear = now()->format('F Y');
         $category = $store->category?->name ?? ($merchant['category_name'] ?? 'online retail');
@@ -65,6 +271,115 @@ final class AffiliateImportContentBuilder
             'meta_description' => $metaDescriptionSeo,
             'content' => $content,
         ];
+    }
+
+    /**
+     * @param  array<int, array{name: string, description: ?string, price: ?string, image: ?string, url: ?string}>  $products
+     */
+    private function sectionProductComparisonTable(string $brandName, array $products, string $category): string
+    {
+        $parts = [];
+        $parts[] = '<h2>Quick Comparison: Top ' . e($brandName) . ' Products</h2>';
+        $parts[] = '<p>Use this table to compare headline details before reading the full breakdown below.</p>';
+        $parts[] = '<table class="comparison-table"><thead><tr><th>Product</th><th>Price</th><th>Best for</th></tr></thead><tbody>';
+
+        foreach ($products as $index => $product) {
+            $bestFor = match ($index) {
+                0 => 'Shoppers who want the brand\'s lead ' . strtolower($category) . ' option',
+                1 => 'Buyers balancing features and value',
+                default => 'Niche needs or upgrade buyers comparing alternatives',
+            };
+
+            $parts[] = '<tr><td><strong>' . e($product['name']) . '</strong></td><td>'
+                . e($product['price'] ?? 'See merchant site') . '</td><td>' . e($bestFor) . '</td></tr>';
+        }
+
+        $parts[] = '</tbody></table>';
+
+        return implode("\n", $parts);
+    }
+
+    /**
+     * @param  array<int, array{name: string, description: ?string, price: ?string, image: ?string, url: ?string}>  $products
+     */
+    private function sectionProductDeepDives(string $brandName, array $products, string $storeUrl): string
+    {
+        $parts = [];
+        $parts[] = '<h2>Product-by-Product Breakdown</h2>';
+
+        foreach ($products as $index => $product) {
+            $parts[] = '<h3>' . ($index + 1) . '. ' . e($product['name']) . '</h3>';
+
+            if (filled($product['description'])) {
+                $parts[] = '<p>' . e($product['description']) . '</p>';
+            } else {
+                $parts[] = '<p>' . e($product['name']) . ' is positioned as a core option in the ' . e($brandName)
+                    . ' lineup. Shoppers typically evaluate build quality, feature set, and how often the SKU appears in seasonal promotions.</p>';
+            }
+
+            if (filled($product['price'])) {
+                $parts[] = '<p><strong>Listed price:</strong> ' . e($product['price']) . '</p>';
+            }
+
+            $parts[] = '<p><strong>Pros:</strong> Official ' . e($brandName) . ' inventory, clear product page, eligible for brand promo codes.</p>';
+            $parts[] = '<p><strong>Cons:</strong> Final price may change with sales; compare shipping and return terms on the merchant checkout page.</p>';
+
+            if (filled($product['url'])) {
+                $parts[] = '<p><a href="' . e($product['url']) . '" rel="nofollow sponsored">View ' . e($product['name']) . ' on ' . e($brandName) . ' →</a></p>';
+            }
+        }
+
+        $parts[] = '<p>All featured coupons for this brand are listed on our <a href="' . e($storeUrl) . '">' . e($brandName) . ' deals page</a>.</p>';
+
+        return implode("\n", $parts);
+    }
+
+    /**
+     * @param  array<int, array{name: string, description: ?string, price: ?string, image: ?string, url: ?string}>  $products
+     */
+    private function sectionWhichProductToChoose(string $brandName, array $products, string $category): string
+    {
+        $first = $products[0]['name'] ?? 'the lead product';
+        $second = $products[1]['name'] ?? 'the mid-tier option';
+        $third = $products[2]['name'] ?? null;
+
+        $parts = [];
+        $parts[] = '<h2>Which ' . e($brandName) . ' Product Should You Buy?</h2>';
+        $parts[] = '<ul>';
+        $parts[] = '<li><strong>Choose ' . e($first) . '</strong> if you want the most visible flagship option and are comparing against similar ' . e(strtolower($category)) . ' brands.</li>';
+        $parts[] = '<li><strong>Choose ' . e($second) . '</strong> if you want a balanced pick and plan to stack a percentage-off coupon at checkout.</li>';
+
+        if ($third) {
+            $parts[] = '<li><strong>Choose ' . e($third) . '</strong> if your priority is a specialized variant rather than the brand\'s default bestseller.</li>';
+        }
+
+        $parts[] = '</ul>';
+
+        return implode("\n", $parts);
+    }
+
+    /**
+     * @param  array{name: string, description: ?string, price: ?string, image: ?string, url: ?string}  $product
+     */
+    private function sectionSingleProductProsCons(string $productName, array $product): string
+    {
+        $parts = [];
+        $parts[] = '<h2>Pros &amp; Cons of ' . e($productName) . '</h2>';
+        $parts[] = '<h3>Pros</h3><ul>';
+        $parts[] = '<li>Backed by the official merchant product page and warranty flow.</li>';
+        $parts[] = '<li>Often included in newsletter and seasonal promo events.</li>';
+        $parts[] = '<li>Easier to match with verified coupon codes before checkout.</li>';
+        $parts[] = '</ul>';
+        $parts[] = '<h3>Cons</h3><ul>';
+        $parts[] = '<li>Sticker price can shift during sales — confirm the live total in cart.</li>';
+        $parts[] = '<li>Some bundles may exclude the highest-value promo codes.</li>';
+        $parts[] = '</ul>';
+
+        if (filled($product['url'])) {
+            $parts[] = '<p><a href="' . e($product['url']) . '" rel="nofollow sponsored">Check ' . e($productName) . ' availability →</a></p>';
+        }
+
+        return implode("\n", $parts);
     }
 
     /**

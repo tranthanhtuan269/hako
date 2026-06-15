@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Str;
 use Laravel\Sanctum\HasApiTokens;
 
 class User extends Authenticatable
@@ -23,6 +24,10 @@ class User extends Authenticatable
         'email',
         'password',
         'is_admin',
+        'author_slug',
+        'author_title',
+        'author_bio',
+        'author_avatar',
         'referral_code',
         'referred_by_user_id',
         'affiliate_balance',
@@ -101,5 +106,38 @@ class User extends Authenticatable
     public function affiliatePayoutRequests(): HasMany
     {
         return $this->hasMany(AffiliatePayoutRequest::class);
+    }
+
+    public function ensureAuthorSlug(): void
+    {
+        if (filled($this->author_slug)) {
+            return;
+        }
+
+        $base = Str::slug($this->name) ?: 'author';
+        $slug = $base;
+        $i = 1;
+
+        while (static::query()
+            ->where('author_slug', $slug)
+            ->whereKeyNot($this->id)
+            ->exists()) {
+            $slug = $base . '-' . $i++;
+        }
+
+        $this->forceFill(['author_slug' => $slug])->saveQuietly();
+    }
+
+    public function authorAvatarUrl(): ?string
+    {
+        if (! filled($this->author_avatar)) {
+            return null;
+        }
+
+        if (str_starts_with($this->author_avatar, 'http://') || str_starts_with($this->author_avatar, 'https://')) {
+            return $this->author_avatar;
+        }
+
+        return asset('storage/' . ltrim($this->author_avatar, '/'));
     }
 }

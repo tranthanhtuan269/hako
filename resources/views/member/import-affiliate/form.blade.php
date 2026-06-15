@@ -5,8 +5,7 @@
 @section('content')
 <h1 style="margin-bottom:.5rem;">Import from Affiliate Link</h1>
 <p style="color:var(--muted);margin-bottom:1.5rem;">
-    Paste your affiliate URL and add the offers you want to feature. We detect the store, create coupons/deals,
-    and generate a long-form SEO blog draft (about 1,000–1,500 words) with pros, comparisons, FAQs, and your offers.
+    Paste your affiliate URL and add the offers you want to feature. We detect the store, crawl products, and use AI (Gemini) to write a long-form SEO article during detection — so import is faster.
 </p>
 
 @if(session('import_links'))
@@ -43,7 +42,7 @@
 
         <div id="detect-loading" class="detect-loading" hidden role="status" aria-live="polite">
             <span class="detect-spinner detect-spinner--sm" aria-hidden="true"></span>
-            <span>Detecting store…</span>
+            <span id="detect-loading-text">Detecting store &amp; generating AI article…</span>
         </div>
 
         <div id="merchant-preview" class="merchant-preview" hidden>
@@ -52,6 +51,16 @@
                 <strong id="preview-name"></strong>
                 <p id="preview-domain" class="form-hint" style="margin:.25rem 0 0;"></p>
                 <p id="preview-meta" class="form-hint" style="margin:.35rem 0 0;"></p>
+                <div id="preview-products" class="preview-products" hidden>
+                    <strong>Products for comparison article</strong>
+                    <ul id="preview-products-list"></ul>
+                </div>
+                <div id="preview-blog" class="preview-blog" hidden>
+                    <strong>AI blog preview</strong>
+                    <p id="preview-blog-title" class="preview-blog-title"></p>
+                    <p id="preview-blog-excerpt" class="form-hint" style="margin:.35rem 0 0;"></p>
+                    <p id="preview-blog-source" class="form-hint" style="margin:.25rem 0 0;"></p>
+                </div>
             </div>
         </div>
         <p id="detect-status" class="form-hint detect-status" style="margin-top:.5rem;"></p>
@@ -67,7 +76,7 @@
         <div class="form-group">
             <label for="website">Store website</label>
             <input type="url" id="website" name="website" value="{{ old('website') }}" placeholder="https://example.com">
-            <p class="form-hint">Public store link shown on your store page. Enter the real merchant site — not the affiliate tracking URL. Also used to pull FAQ content for the blog.</p>
+            <p class="form-hint">Public store link shown on your store page. Enter the real merchant site — not the affiliate tracking URL. Also used to pull products, FAQs, and comparison content for the blog.</p>
             @error('website')<p class="form-error">{{ $message }}</p>@enderror
         </div>
         <div class="form-group">
@@ -115,6 +124,8 @@
         </div>
         <p class="form-hint">Leave unchecked to save everything as drafts for review first (recommended).</p>
     </div>
+
+    <input type="hidden" name="generated_blog" id="generated_blog" value="{{ old('generated_blog') }}">
 
     <button type="submit" class="btn btn-primary">Import &amp; Generate Content</button>
     <a href="{{ route('member.dashboard') }}" class="btn btn-outline">Cancel</a>
@@ -218,6 +229,27 @@
     border-radius: 10px;
     background: #fff;
     border: 1px solid var(--border);
+}
+.preview-products {
+    margin-top: .75rem;
+    font-size: .88rem;
+}
+.preview-products ul {
+    margin: .4rem 0 0;
+    padding-left: 1.1rem;
+    color: #334155;
+}
+.preview-products li { margin-bottom: .2rem; }
+.preview-blog {
+    margin-top: .85rem;
+    padding-top: .75rem;
+    border-top: 1px dashed var(--border);
+    font-size: .88rem;
+}
+.preview-blog-title {
+    margin: .35rem 0 0;
+    font-weight: 600;
+    color: #0f172a;
 }
 .offer-block {
     border: 1px solid var(--border);
@@ -376,8 +408,16 @@
 
     document.getElementById('detect-store-btn').addEventListener('click', async () => {
         const affiliateUrl = document.getElementById('affiliate_url').value.trim();
+        const websiteUrl = document.getElementById('website').value.trim();
         const status = document.getElementById('detect-status');
         const preview = document.getElementById('merchant-preview');
+        const previewProducts = document.getElementById('preview-products');
+        const previewProductsList = document.getElementById('preview-products-list');
+        const previewBlog = document.getElementById('preview-blog');
+        const previewBlogTitle = document.getElementById('preview-blog-title');
+        const previewBlogExcerpt = document.getElementById('preview-blog-excerpt');
+        const previewBlogSource = document.getElementById('preview-blog-source');
+        const generatedBlogInput = document.getElementById('generated_blog');
         const detectBtn = document.getElementById('detect-store-btn');
         const affiliateInput = document.getElementById('affiliate_url');
         const loading = document.getElementById('detect-loading');
@@ -397,12 +437,16 @@
 
             if (active) {
                 preview.hidden = true;
+                previewProducts.hidden = true;
+                previewBlog.hidden = true;
+                generatedBlogInput.value = '';
                 status.textContent = '';
                 status.className = 'form-hint detect-status';
             }
         }
 
         setDetectLoading(true);
+        document.getElementById('detect-loading-text').textContent = 'Detecting store, crawling products & writing AI article…';
 
         try {
             const response = await fetch(previewUrl, {
@@ -412,7 +456,10 @@
                     'Accept': 'application/json',
                     'X-CSRF-TOKEN': csrf,
                 },
-                body: JSON.stringify({ affiliate_url: affiliateUrl }),
+                body: JSON.stringify({
+                    affiliate_url: affiliateUrl,
+                    website: websiteUrl || null,
+                }),
             });
 
             const data = await response.json();
@@ -450,6 +497,33 @@
                 ? `Domain: ${merchant.domain}`
                 : '';
             document.getElementById('preview-meta').textContent = merchant.meta_description || merchant.page_title || '';
+
+            if (Array.isArray(merchant.products) && merchant.products.length) {
+                previewProductsList.innerHTML = merchant.products
+                    .map((product) => {
+                        const price = product.price ? ` — ${product.price}` : '';
+                        return `<li>${product.name}${price}</li>`;
+                    })
+                    .join('');
+                previewProducts.hidden = false;
+            } else {
+                previewProductsList.innerHTML = '';
+                previewProducts.hidden = true;
+            }
+
+            if (data.generated_blog && data.generated_blog.title) {
+                generatedBlogInput.value = JSON.stringify(data.generated_blog);
+                previewBlogTitle.textContent = data.generated_blog.title;
+                previewBlogExcerpt.textContent = data.generated_blog.excerpt || '';
+                previewBlogSource.textContent = data.generated_blog.source === 'gemini'
+                    ? 'Written by Gemini AI during detect — will be saved on import without regenerating.'
+                    : 'Template fallback used (AI unavailable). You can still import.';
+                previewBlog.hidden = false;
+            } else {
+                generatedBlogInput.value = '';
+                previewBlog.hidden = true;
+            }
+
             preview.hidden = false;
             let statusMessage = merchant.category_name
                 ? `Detected store. Suggested category: ${merchant.category_name}.`
@@ -459,6 +533,12 @@
                 statusMessage += ` Loaded ${data.suggested_offers.length} offer(s) from coupon database.`;
             } else if (data.store_query) {
                 statusMessage += ` No matching coupons found for ${data.store_query}.`;
+            }
+
+            if (data.generated_blog?.source === 'gemini') {
+                statusMessage += ' AI article ready.';
+            } else if (data.generated_blog?.source === 'template') {
+                statusMessage += ' Blog draft prepared (template fallback).';
             }
 
             status.textContent = statusMessage;

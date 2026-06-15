@@ -11,6 +11,7 @@ class BlogController extends Controller
     public function index(Request $request): View
     {
         $posts = Post::published()
+            ->with('user')
             ->when($request->get('q'), function ($query, $q) {
                 $query->where(function ($sub) use ($q) {
                     $sub->where('title', 'like', "%{$q}%")
@@ -30,10 +31,11 @@ class BlogController extends Controller
 
     public function show(string $slug): View
     {
-        $post = Post::published()->where('slug', $slug)->firstOrFail();
+        $post = Post::published()->with('user')->where('slug', $slug)->firstOrFail();
         $post->incrementViews();
 
         $related = Post::published()
+            ->with('user')
             ->where('id', '!=', $post->id)
             ->orderByDesc('published_at')
             ->take(3)
