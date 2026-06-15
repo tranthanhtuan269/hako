@@ -250,6 +250,11 @@
     margin: .35rem 0 0;
     font-weight: 600;
     color: #0f172a;
+    line-height: 1.35;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+    overflow: hidden;
 }
 .offer-block {
     border: 1px solid var(--border);
@@ -308,11 +313,6 @@
     font-size: 1.15rem;
     align-self: end;
     margin-bottom: .05rem;
-}
-.offers-list {
-    max-height: 360px;
-    overflow-y: auto;
-    padding-right: .25rem;
 }
 @media (max-width: 640px) {
     .offer-row {

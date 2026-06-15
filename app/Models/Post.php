@@ -4,8 +4,10 @@ namespace App\Models;
 
 use App\Support\PublicImage;
 use App\Support\AuthorProfile;
+use App\Support\HtmlCleaner;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
@@ -89,6 +91,27 @@ class Post extends Model
     public function seoTitle(): string
     {
         return $this->meta_title ?: $this->title;
+    }
+
+    public function cardTitle(int $maxLength = 90): string
+    {
+        return static::normalizeTitle($this->title, $maxLength);
+    }
+
+    public static function normalizeTitle(string $title, int $maxLength = 90): string
+    {
+        $title = HtmlCleaner::decodeEntities($title);
+        $title = preg_replace('/\s+/u', ' ', trim(str_replace(["\r\n", "\r", "\n"], ' ', $title)));
+
+        return Str::limit($title, $maxLength, '…');
+    }
+
+    protected function title(): Attribute
+    {
+        return Attribute::make(
+            get: fn (?string $value) => HtmlCleaner::decodeEntities($value ?? ''),
+            set: fn (?string $value) => HtmlCleaner::decodeEntities($value ?? ''),
+        );
     }
 
     public function seoDescription(): string

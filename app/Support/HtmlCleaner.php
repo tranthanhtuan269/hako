@@ -148,4 +148,24 @@ final class HtmlCleaner
 
         return trim(preg_replace('/\s+/', ' ', strip_tags($html)));
     }
+
+    public static function decodeEntities(?string $text): string
+    {
+        if ($text === null || $text === '') {
+            return '';
+        }
+
+        return html_entity_decode($text, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+    }
+
+    public static function textFromHtml(?string $html): string
+    {
+        if (! $html) {
+            return '';
+        }
+
+        $text = strip_tags($html);
+
+        return trim(preg_replace('/\s+/u', ' ', self::decodeEntities($text)));
+    }
 }

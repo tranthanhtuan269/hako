@@ -2,6 +2,7 @@
 
 namespace App\Support;
 
+use App\Models\Post;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
@@ -160,7 +161,7 @@ Article rules:
 
 Return valid JSON with exactly these keys:
 {
-  "title": "string, 50-90 chars",
+  "title": "string, ONE line only, 45-72 characters, short SEO headline that fits in 2-3 lines on a blog card. No line breaks. No long product lists.",
   "excerpt": "string, 140-220 chars",
   "meta_title": "string, max 70 chars",
   "meta_description": "string, max 160 chars",
@@ -194,7 +195,7 @@ PROMPT;
         }
 
         return [
-            'title' => Str::limit($title, 255, ''),
+            'title' => Post::normalizeTitle($title),
             'excerpt' => Str::limit($excerpt, 500, ''),
             'meta_title' => Str::limit($metaTitle, 70, ''),
             'meta_description' => Str::limit($metaDescription, 320, ''),

@@ -2,6 +2,7 @@
 
 namespace App\Support;
 
+use App\Models\Post;
 use App\Models\Store;
 use Illuminate\Support\Str;
 
@@ -75,7 +76,7 @@ final class AffiliateImportContentBuilder
     public function sanitizeBlogOutput(array $blog): array
     {
         return [
-            'title' => Str::limit(trim((string) ($blog['title'] ?? '')), 255, ''),
+            'title' => Post::normalizeTitle(trim((string) ($blog['title'] ?? ''))),
             'excerpt' => Str::limit(trim((string) ($blog['excerpt'] ?? '')), 500, ''),
             'meta_title' => Str::limit(trim((string) ($blog['meta_title'] ?? $blog['title'] ?? '')), 70, ''),
             'meta_description' => Str::limit(trim((string) ($blog['meta_description'] ?? $blog['excerpt'] ?? '')), 320, ''),
@@ -136,10 +137,13 @@ final class AffiliateImportContentBuilder
         $offerCount = count($offers);
         $name = $store->name;
         $storeUrl = route('stores.show', $store->slug);
-        $productNames = collect($products)->pluck('name')->take(3)->all();
+        $productNames = collect($products)->pluck('name')->map(fn (string $name) => Str::limit($name, 35, '…'))->take(2)->all();
         $comparisonTitle = implode(' vs ', $productNames);
+        if (count($products) > 2) {
+            $comparisonTitle .= ' & more';
+        }
 
-        $title = "{$comparisonTitle}: Which Is Best? ({$monthYear})";
+        $title = Post::normalizeTitle("{$comparisonTitle}: Which Is Best? ({$monthYear})");
         $excerpt = "Side-by-side comparison of top {$name} products for U.S. shoppers — features, pricing, pros and cons, plus {$offerCount} current coupon codes.";
         $metaTitle = Str::limit("{$name} Product Comparison {$monthYear} | " . config('site.name'), 70, '');
         $metaDescriptionSeo = Str::limit(
@@ -193,7 +197,7 @@ final class AffiliateImportContentBuilder
         $faqs = is_array($merchant['faqs'] ?? null) ? $merchant['faqs'] : [];
         $productName = $product['name'];
 
-        $title = "{$productName} Review: Is It Worth It? ({$monthYear})";
+        $title = Post::normalizeTitle("{$productName} Review: Is It Worth It? ({$monthYear})");
         $excerpt = "Hands-on style breakdown of {$productName} from {$name} — key features, pros, cons, and the best coupons this month.";
         $metaTitle = Str::limit("{$productName} Review {$monthYear} | " . config('site.name'), 70, '');
         $metaDescriptionSeo = Str::limit(
@@ -242,7 +246,7 @@ final class AffiliateImportContentBuilder
         $faqs = $merchant['faqs'] ?? [];
         $offerCount = count($offers);
 
-        $title = "{$store->name} Review: Products, Pros, Coupons & FAQ ({$monthYear})";
+        $title = Post::normalizeTitle("{$store->name} Review: Products, Pros, Coupons & FAQ ({$monthYear})");
 
         $excerpt = "In-depth {$store->name} guide for U.S. shoppers: brand overview, five key advantages, "
             . "best current deals, category comparisons, shopper insights, and {$offerCount} featured offers on "

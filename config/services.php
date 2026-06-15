@@ -35,6 +35,7 @@ return [
         'url' => env('COUPONSPEAK_API_URL', 'http://scan.test/api/coupons'),
         'site' => env('COUPONSPEAK_API_SITE', 'thuoc360'),
         'limit' => env('COUPONSPEAK_API_LIMIT', 20),
+        'site' => env('COUPONSPEAK_SITE'),
     ],
 
 ];

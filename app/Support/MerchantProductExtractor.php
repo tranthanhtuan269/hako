@@ -47,9 +47,9 @@ final class MerchantProductExtractor
 
             $seen[$key] = true;
             $unique[] = [
-                'name' => Str::limit($name, 120),
+                'name' => Str::limit(HtmlCleaner::decodeEntities($name), 120),
                 'description' => filled($product['description'] ?? null)
-                    ? Str::limit(strip_tags((string) $product['description']), 500)
+                    ? Str::limit(HtmlCleaner::textFromHtml((string) $product['description']), 500)
                     : null,
                 'price' => filled($product['price'] ?? null)
                     ? Str::limit(strip_tags((string) $product['price']), 40)
@@ -112,7 +112,7 @@ final class MerchantProductExtractor
 
         if (preg_match_all('/<li[^>]*>(.*?)<\/li>/is', $html, $matches)) {
             foreach ($matches[1] as $item) {
-                $text = trim(preg_replace('/\s+/', ' ', strip_tags($item)));
+                $text = HtmlCleaner::textFromHtml($item);
 
                 if ($text === '' || strlen($text) < 8 || strlen($text) > 180) {
                     continue;
@@ -260,8 +260,8 @@ final class MerchantProductExtractor
         }
 
         return [
-            'name' => trim($name),
-            'description' => $description,
+            'name' => HtmlCleaner::decodeEntities(trim($name)),
+            'description' => is_string($description) ? HtmlCleaner::decodeEntities($description) : null,
             'price' => $price,
             'image' => $image,
             'url' => $url,
@@ -281,7 +281,7 @@ final class MerchantProductExtractor
 
         foreach ($matches as $match) {
             $href = html_entity_decode($match[1]);
-            $text = trim(preg_replace('/\s+/', ' ', strip_tags($match[2])));
+            $text = HtmlCleaner::textFromHtml($match[2]);
 
             if ($text === '' || strlen($text) < 3 || strlen($text) > 120) {
                 continue;

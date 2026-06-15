@@ -35,7 +35,7 @@ final class CouponSpeakClient
             $response = Http::timeout(12)
                 ->acceptJson()
                 ->get($apiUrl, [
-                    'site' => (string) config('services.couponspeak.site', ''),
+                    'site' => $this->siteSlug(),
                     'store' => $storeQuery,
                     'limit' => (int) config('services.couponspeak.limit', 20),
                 ]);
@@ -54,6 +54,19 @@ final class CouponSpeakClient
         } catch (\Throwable) {
             return [];
         }
+    }
+
+    private function siteSlug(): string
+    {
+        $site = trim((string) config('services.couponspeak.site', ''));
+
+        if ($site !== '') {
+            return $site;
+        }
+
+        $domain = (string) config('site.domain', '');
+
+        return strtolower(explode('.', $domain)[0] ?? $domain);
     }
 
     public function hostFromUrl(string $url): ?string
