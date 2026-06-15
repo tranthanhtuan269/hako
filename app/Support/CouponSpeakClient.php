@@ -35,6 +35,7 @@ final class CouponSpeakClient
             $response = Http::timeout(12)
                 ->acceptJson()
                 ->get($apiUrl, [
+                    'site' => (string) config('services.couponspeak.site', ''),
                     'store' => $storeQuery,
                     'limit' => (int) config('services.couponspeak.limit', 20),
                 ]);
