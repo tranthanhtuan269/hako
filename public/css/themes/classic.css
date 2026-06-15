@@ -1,0 +1,23 @@
+:root {
+    --primary: #e63946;
+    --primary-dark: #c1121f;
+    --secondary: #1d3557;
+    --accent: #f4a261;
+    --bg: #f8f9fc;
+    --card: #fff;
+    --text: #1a1a2e;
+    --muted: #6b7280;
+    --border: #e5e7eb;
+    --radius: 12px;
+    --shadow: 0 4px 20px rgba(0,0,0,.08);
+    --hero-from: #1d3557;
+    --hero-to: #457b9d;
+    --font-body: 'Inter', system-ui, sans-serif;
+    --font-heading: 'Inter', system-ui, sans-serif;
+}
+
+body.theme-classic .hero h1,
+body.theme-classic .page-hero h1,
+body.theme-classic .section-title {
+    font-family: var(--font-heading);
+}

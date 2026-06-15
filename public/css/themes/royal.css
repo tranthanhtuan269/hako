@@ -1,0 +1,97 @@
+:root {
+    --primary: #7c3aed;
+    --primary-dark: #6d28d9;
+    --secondary: #4c1d95;
+    --accent: #c084fc;
+    --bg: #faf5ff;
+    --card: #fff;
+    --text: #1e1b4b;
+    --muted: #7c6a9a;
+    --border: #e9d5ff;
+    --radius: 14px;
+    --shadow: 0 6px 28px rgba(124,58,237,.12);
+    --hero-from: #4c1d95;
+    --hero-to: #7c3aed;
+    --font-body: 'Source Sans 3', system-ui, sans-serif;
+    --font-heading: 'Playfair Display', Georgia, serif;
+}
+
+body.theme-royal {
+    background: linear-gradient(180deg, #faf5ff 0%, #f5f3ff 50%, #ede9fe 100%);
+}
+
+body.theme-royal .site-header {
+    background: var(--card);
+    border-bottom: 2px solid var(--border);
+    box-shadow: 0 4px 24px rgba(124,58,237,.06);
+}
+
+body.theme-royal .site-brand-icon {
+    border-radius: 4px;
+    background: linear-gradient(135deg, var(--secondary), var(--primary));
+}
+
+body.theme-royal .hero,
+body.theme-royal .page-hero {
+    background: linear-gradient(135deg, var(--hero-from) 0%, var(--hero-to) 60%, #a855f7 100%);
+    position: relative;
+}
+
+body.theme-royal .hero::after,
+body.theme-royal .page-hero::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, var(--accent), #fbbf24, var(--accent));
+}
+
+body.theme-royal .hero h1,
+body.theme-royal .page-hero h1,
+body.theme-royal .section-title {
+    font-family: var(--font-heading);
+    letter-spacing: -.02em;
+}
+
+body.theme-royal .coupon-card {
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow);
+    overflow: hidden;
+}
+
+body.theme-royal .coupon-card::before {
+    content: '';
+    display: block;
+    height: 3px;
+    background: linear-gradient(90deg, var(--primary), var(--accent));
+    margin: -1.25rem -1.25rem 1rem;
+}
+
+body.theme-royal .coupon-badge {
+    background: linear-gradient(135deg, var(--primary), var(--accent));
+    border-radius: 4px;
+}
+
+body.theme-royal .btn-primary {
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
+    border-radius: 6px;
+    letter-spacing: .03em;
+}
+
+body.theme-royal .site-footer {
+    background: linear-gradient(180deg, #4c1d95, #2e1065);
+}
+
+body.theme-royal .filter-tabs a.active {
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
+}
+
+body.theme-royal .blog-card {
+    border: 1px solid var(--border);
+}
+
+body.theme-royal .legal-content h2 {
+    font-family: var(--font-heading);
+}

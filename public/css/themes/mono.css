@@ -1,0 +1,194 @@
+:root {
+    --primary: #facc15;
+    --primary-dark: #eab308;
+    --secondary: #000000;
+    --accent: #ffffff;
+    --bg: #ffffff;
+    --card: #ffffff;
+    --text: #000000;
+    --muted: #525252;
+    --border: #000000;
+    --radius: 0;
+    --shadow: 4px 4px 0 #000;
+    --hero-from: #000000;
+    --hero-to: #171717;
+    --font-body: 'Space Grotesk', system-ui, sans-serif;
+    --font-heading: 'Space Grotesk', system-ui, sans-serif;
+}
+
+body.theme-mono {
+    background: var(--bg);
+}
+
+body.theme-mono .site-header {
+    background: var(--primary);
+    border-bottom: 4px solid var(--secondary);
+    box-shadow: none;
+}
+
+body.theme-mono .site-brand {
+    color: var(--secondary);
+}
+
+body.theme-mono .site-brand-icon {
+    background: var(--secondary);
+    color: var(--primary);
+    border-radius: 0;
+    border: 2px solid var(--secondary);
+}
+
+body.theme-mono .main-nav a {
+    color: var(--secondary);
+    font-weight: 700;
+    text-transform: uppercase;
+    font-size: .8rem;
+    letter-spacing: .05em;
+}
+
+body.theme-mono .search-form input {
+    border: 3px solid var(--secondary);
+    border-radius: 0;
+    background: #fff;
+}
+
+body.theme-mono .search-form button {
+    background: var(--secondary);
+    color: var(--primary);
+    border-radius: 0;
+    border: 3px solid var(--secondary);
+    text-transform: uppercase;
+    font-size: .8rem;
+    letter-spacing: .05em;
+}
+
+body.theme-mono .hero {
+    background: var(--secondary);
+    color: var(--primary);
+    border-bottom: 6px solid var(--primary);
+}
+
+body.theme-mono .hero p,
+body.theme-mono .hero .hero-subtitle {
+    color: #fff;
+    opacity: 1;
+}
+
+body.theme-mono .hero-stats div {
+    background: var(--primary);
+    color: var(--secondary);
+    border: 3px solid var(--secondary);
+    border-radius: 0;
+    box-shadow: var(--shadow);
+}
+
+body.theme-mono .hero-stats strong {
+    font-size: 2rem;
+}
+
+body.theme-mono .section-title {
+    font-family: var(--font-heading);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    border-bottom: 4px solid var(--secondary);
+    padding-bottom: .5rem;
+}
+
+body.theme-mono .coupon-card {
+    border: 3px solid var(--secondary);
+    border-radius: 0;
+    box-shadow: var(--shadow);
+}
+
+body.theme-mono .coupon-card:hover {
+    transform: translate(-2px, -2px);
+    box-shadow: 6px 6px 0 var(--secondary);
+}
+
+body.theme-mono .coupon-badge {
+    background: var(--secondary);
+    color: var(--primary);
+    border-radius: 0;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+}
+
+body.theme-mono .btn {
+    border-radius: 0;
+    border: 3px solid var(--secondary);
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    font-size: .8rem;
+}
+
+body.theme-mono .btn-primary {
+    background: var(--primary);
+    color: var(--secondary);
+    box-shadow: var(--shadow);
+}
+
+body.theme-mono .btn-primary:hover {
+    background: var(--primary-dark);
+}
+
+body.theme-mono .btn-outline {
+    box-shadow: var(--shadow);
+}
+
+body.theme-mono .store-chip,
+body.theme-mono .category-chip {
+    border: 3px solid var(--secondary);
+    border-radius: 0;
+    box-shadow: var(--shadow);
+}
+
+body.theme-mono .store-chip:hover,
+body.theme-mono .category-chip:hover {
+    background: var(--primary);
+}
+
+body.theme-mono .site-footer {
+    background: var(--secondary);
+    color: var(--primary);
+    border-top: 6px solid var(--primary);
+}
+
+body.theme-mono .footer-grid a {
+    color: var(--primary);
+    font-weight: 600;
+}
+
+body.theme-mono .filter-tabs a {
+    border-radius: 0;
+    border: 2px solid var(--secondary);
+    font-weight: 700;
+    text-transform: uppercase;
+    font-size: .75rem;
+}
+
+body.theme-mono .filter-tabs a.active {
+    background: var(--secondary);
+    color: var(--primary);
+}
+
+body.theme-mono .blog-card {
+    border: 3px solid var(--secondary);
+    border-radius: 0;
+    box-shadow: var(--shadow);
+}
+
+body.theme-mono .page-hero {
+    background: var(--secondary);
+    color: var(--primary);
+    border-bottom: 6px solid var(--primary);
+}
+
+body.theme-mono .page-hero .page-subtitle {
+    color: #fff;
+}
+
+body.theme-mono .legal-content {
+    border: 3px solid var(--secondary);
+    border-radius: 0;
+    box-shadow: var(--shadow);
+}

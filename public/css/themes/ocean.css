@@ -1,0 +1,78 @@
+:root {
+    --primary: #0891b2;
+    --primary-dark: #0e7490;
+    --secondary: #164e63;
+    --accent: #22d3ee;
+    --bg: #ecfeff;
+    --card: #fff;
+    --text: #0f172a;
+    --muted: #64748b;
+    --border: #a5f3fc;
+    --radius: 20px;
+    --shadow: 0 8px 32px rgba(8,145,178,.12);
+    --hero-from: #0c4a6e;
+    --hero-to: #0891b2;
+    --font-body: 'Poppins', system-ui, sans-serif;
+    --font-heading: 'Poppins', system-ui, sans-serif;
+}
+
+body.theme-ocean {
+    background: linear-gradient(180deg, #ecfeff 0%, #f0fdfa 100%);
+}
+
+body.theme-ocean .site-header {
+    background: rgba(255,255,255,.85);
+    backdrop-filter: blur(12px);
+    border-bottom: none;
+    box-shadow: 0 2px 16px rgba(8,145,178,.08);
+}
+
+body.theme-ocean .site-brand-icon {
+    border-radius: 50%;
+}
+
+body.theme-ocean .search-form input,
+body.theme-ocean .search-form button {
+    border-radius: 20px;
+}
+
+body.theme-ocean .hero {
+    border-radius: 0 0 40px 40px;
+    padding: 4rem 1rem;
+}
+
+body.theme-ocean .hero-stats div {
+    border-radius: 999px;
+    background: rgba(255,255,255,.2);
+    backdrop-filter: blur(4px);
+}
+
+body.theme-ocean .coupon-card {
+    border: none;
+    border-top: 4px solid var(--accent);
+}
+
+body.theme-ocean .coupon-card:hover {
+    box-shadow: 0 12px 40px rgba(8,145,178,.18);
+}
+
+body.theme-ocean .btn {
+    border-radius: 999px;
+}
+
+body.theme-ocean .site-footer {
+    background: linear-gradient(135deg, #164e63, #0e7490);
+    border-radius: 40px 40px 0 0;
+    margin-top: 4rem;
+}
+
+body.theme-ocean .section-title,
+body.theme-ocean .hero h1,
+body.theme-ocean .page-hero h1 {
+    font-family: var(--font-heading);
+    font-weight: 700;
+}
+
+body.theme-ocean .filter-tabs a {
+    border-radius: 20px;
+}

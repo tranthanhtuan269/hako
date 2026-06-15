@@ -1,0 +1,58 @@
+THUOC360 SEO IMPLEMENTATION PLAN
+Started: 2026-06-02
+Completed: 2026-06-02
+============================================
+
+[x] 1. SEO config & helper (config/site.php, App\Support\Seo)
+    - default_description, og_image, twitter_handle, locale
+    - Seo::title(), description(), canonical(), ogImage(), absoluteUrl()
+
+[x] 2. Global meta partial (OG, Twitter, robots, canonical)
+    - resources/views/partials/seo-head.blade.php
+    - Integrated into layouts/app.blade.php
+
+[x] 3. JSON-LD: Organization + WebSite (layout/home)
+    - partials/site-schema.blade.php (Organization on all pages)
+    - home.blade.php WebSite + SearchAction schema
+
+[x] 4. Per-page titles & meta descriptions (all public views)
+    - home, coupons, stores, categories, blog, search
+    - static pages: about, contact, privacy, terms, cookies, disclaimer
+
+[x] 5. Structured data: Coupon, Store, Category, BreadcrumbList
+    - Offer + BreadcrumbList on coupon detail
+    - CollectionPage on store/coupon listings
+    - BlogPosting (existing) + breadcrumbs on blog
+    - BreadcrumbList on category/store/coupon pages
+
+[x] 6. noindex: search, login, admin, reveal/go routes
+    - PreventSearchIndexing middleware on routes
+    - meta robots on login & search views
+
+[x] 7. robots.txt (Disallow admin/login/reveal/go)
+    - public/robots.txt updated
+
+[x] 8. Sitemap (complete static pages, lastmod)
+    - Added cookie-policy, disclaimer, coupon type filters
+
+[x] 9. Pagination rel=prev/next on listing pages
+    - partials/pagination-seo.blade.php on paginated views
+
+[x] 10. Default OG image + deploy to production
+    - public/images/og-default.svg
+    - Deployed to /var/www/thuoc360, config/view cache rebuilt
+
+============================================
+LIVE URLS TO VERIFY
+- https://thuoc360.com/ (meta, OG, WebSite schema)
+- https://thuoc360.com/robots.txt
+- https://thuoc360.com/sitemap.xml
+- View source on any coupon/store page for Offer/Breadcrumb schema
+
+OPTIONAL NEXT STEPS (not in scope)
+- Google Search Console verification
+- Submit sitemap in GSC
+- Core Web Vitals / image WebP optimization
+- hreflang if multi-region
+
+============================================

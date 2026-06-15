@@ -1,0 +1,43 @@
+<article class="sp-coupon-card coupon-card {{ $coupon->is_featured ? 'featured sp-coupon-card--featured' : '' }}">
+    <div class="sp-coupon-card-head">
+        @include('partials.store-logo', ['store' => $coupon->store, 'size' => 'md', 'showVerified' => false])
+        <span class="sp-verified-badge">Verified</span>
+    </div>
+    <div class="sp-coupon-discount">{{ $coupon->discountLabel() }}</div>
+    <h3 class="coupon-title sp-coupon-title">
+        <a href="{{ route('coupons.show', $coupon->slug) }}">
+            @if($showDescription ?? false)
+                {{ \Illuminate\Support\Str::limit(strip_tags($coupon->description ?: $coupon->title), 120) }}
+            @else
+                {{ $coupon->title }}
+            @endif
+        </a>
+    </h3>
+    @if($coupon->store)
+        <p class="sp-coupon-store-name">{{ $coupon->store->name }}</p>
+    @endif
+    @if($coupon->expires_at)
+        <p class="coupon-expire sp-coupon-expire">{{ $coupon->expiresLabel() }}</p>
+    @endif
+    <div class="coupon-actions sp-coupon-actions">
+        @if($coupon->code)
+            <div class="sp-code-split">
+                <span class="sp-code-text">{{ $coupon->code }}</span>
+                <button type="button"
+                    class="sp-code-copy"
+                    data-code="{{ $coupon->code }}"
+                    data-reveal-url="{{ route('coupons.reveal', $coupon->slug) }}"
+                    data-coupon-title="{{ $coupon->title }}"
+                    data-coupon-discount="{{ $coupon->discountLabel() }}"
+                    data-coupon-store="{{ $coupon->store?->name }}"
+                    data-coupon-expires="{{ $coupon->expiresLabel() }}"
+                    data-shop-url="{{ route('coupons.go', $coupon->slug) }}"
+                    aria-label="Copy promo code">
+                    COPY
+                </button>
+            </div>
+        @else
+            <a href="{{ route('coupons.go', $coupon->slug) }}" class="btn btn-primary sp-get-deal-btn" target="_blank" rel="noopener sponsored">Get Deal</a>
+        @endif
+    </div>
+</article>
