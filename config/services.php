@@ -32,10 +32,10 @@ return [
     ],
 
     'couponspeak' => [
-        'url' => env('COUPONSPEAK_API_URL', 'http://scan.test/api/coupons'),
-        'site' => env('COUPONSPEAK_API_SITE', 'thuoc360'),
+        'url' => env('COUPONSPEAK_API_URL', 'https://scan.test/api/coupons'),
+        'sync_url' => env('COUPONSPEAK_SYNC_URL'),
+        'site' => env('COUPONSPEAK_SITE', env('COUPONSPEAK_API_SITE')),
         'limit' => env('COUPONSPEAK_API_LIMIT', 20),
-        'site' => env('COUPONSPEAK_SITE'),
     ],
 
 ];

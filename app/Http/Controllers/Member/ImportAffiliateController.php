@@ -91,7 +91,8 @@ class ImportAffiliateController extends Controller
     public function store(
         Request $request,
         AffiliateLinkResolver $resolver,
-        AffiliateImportContentBuilder $contentBuilder
+        AffiliateImportContentBuilder $contentBuilder,
+        CouponSpeakClient $couponSpeak,
     ): RedirectResponse {
         $this->authorize('create', Store::class);
         $this->authorize('create', Coupon::class);
@@ -198,13 +199,25 @@ class ImportAffiliateController extends Controller
             return compact('store', 'createdCoupons', 'post');
         });
 
+        $syncResult = $couponSpeak->syncImportedStore(
+            $result['store'],
+            $result['createdCoupons'],
+            $data['affiliate_url'],
+        );
+
         $status = $publish ? 'published' : 'saved as drafts';
         $couponCount = count($result['createdCoupons']);
         $isAdmin = auth()->user()->isAdmin();
+        $successMessage = "Import complete ({$status}): {$storeName} — {$couponCount} offer(s) and 1 blog post created.";
+
+        if ($syncResult !== null) {
+            $syncedCount = (int) data_get($syncResult, 'stats.active_coupons', $couponCount);
+            $successMessage .= " Synced {$syncedCount} offer(s) to Coupons Peak.";
+        }
 
         return redirect()
             ->route('member.import-affiliate.create')
-            ->with('success', "Import complete ({$status}): {$storeName} — {$couponCount} offer(s) and 1 blog post created.")
+            ->with('success', $successMessage)
             ->with('import_links', [
                 'store' => $isAdmin
                     ? route('admin.stores.edit', $result['store'])
