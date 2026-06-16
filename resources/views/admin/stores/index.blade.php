@@ -14,6 +14,7 @@
             <th>Name</th>
             <th>Slug</th>
             <th>Coupons</th>
+            <th>Created</th>
             <th class="table-actions-col">Actions</th>
         </tr>
     </thead>
@@ -30,6 +31,7 @@
                 <td>{{ $store->name }}</td>
                 <td><code>{{ $store->slug }}</code></td>
                 <td>{{ $store->coupons_count }}</td>
+                <td>{{ $store->created_at?->format('M j, Y') }}</td>
                 <td>
                     @include('partials.store-table-actions', [
                         'store' => $store,
@@ -40,7 +42,7 @@
             </tr>
         @empty
             <tr>
-                <td colspan="5">No stores yet. <a href="{{ route('admin.stores.create') }}">Add a store</a>.</td>
+                <td colspan="6">No stores yet. <a href="{{ route('admin.stores.create') }}">Add a store</a>.</td>
             </tr>
         @endforelse
     </tbody>

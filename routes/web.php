@@ -24,6 +24,7 @@ use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\PostController as AdminPostController;
 use App\Http\Controllers\Admin\StoreController as AdminStoreController;
 use App\Http\Controllers\Admin\ThemeController;
+use App\Http\Controllers\Admin\TrackingController;
 use App\Http\Controllers\Admin\AffiliateOrderController as AdminAffiliateOrderController;
 use App\Http\Controllers\Admin\AffiliatePayoutController as AdminAffiliatePayoutController;
 use App\Http\Controllers\ReferralController;
@@ -98,6 +99,8 @@ Route::middleware(['auth', 'admin', 'noindex'])->prefix('admin')->name('admin.')
     Route::resource('posts', AdminPostController::class)->except(['show']);
     Route::get('themes', [ThemeController::class, 'index'])->name('themes.index');
     Route::put('themes', [ThemeController::class, 'update'])->name('themes.update');
+    Route::get('tracking', [TrackingController::class, 'index'])->name('tracking.index');
+    Route::put('tracking', [TrackingController::class, 'update'])->name('tracking.update');
 
     Route::middleware('affiliate.enabled')->group(function () {
         Route::get('affiliate/orders', [AdminAffiliateOrderController::class, 'index'])->name('affiliate.orders.index');

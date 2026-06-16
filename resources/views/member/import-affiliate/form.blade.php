@@ -10,14 +10,26 @@
 
 @if(session('import_links'))
     <div class="alert alert-success">
-        Quick links:
-        <div style="margin-top:.75rem;display:flex;flex-wrap:wrap;gap:.75rem;">
+        <strong>Quick links</strong>
+        <div style="margin-top:.75rem;display:flex;flex-wrap:wrap;gap:.75rem;align-items:center;">
+            <a href="{{ session('import_links.store_public') }}" class="btn btn-primary" target="_blank" rel="noopener">View Store Page</a>
+            <button
+                type="button"
+                class="btn btn-outline js-copy-link"
+                data-copy-url="{{ session('import_links.store_public') }}"
+                data-copy-title="Copy store link"
+            >Copy Store Link</button>
             <a href="{{ session('import_links.store') }}" class="btn btn-outline">Edit Store</a>
             <a href="{{ session('import_links.post') }}" class="btn btn-outline">Edit Blog Post</a>
             <a href="{{ session('import_links.coupons') }}" class="btn btn-outline">View Coupons</a>
         </div>
+        <p class="form-hint" style="margin:.65rem 0 0;">
+            Store URL: <a href="{{ session('import_links.store_public') }}" target="_blank" rel="noopener">{{ session('import_links.store_public') }}</a>
+        </p>
     </div>
 @endif
+
+@include('partials.table-actions-assets')
 
 <form method="POST" action="{{ route('member.import-affiliate.store') }}" id="import-form">
     @csrf

@@ -7,6 +7,10 @@
 <p style="color:var(--muted);margin-bottom:1rem;">Statistics for content you created only.</p>
 <p style="margin-bottom:1.5rem;display:flex;flex-wrap:wrap;gap:.75rem;">
     <a href="{{ route('member.import-affiliate.create') }}" class="btn btn-primary">Import from Affiliate Link</a>
+    @if(auth()->user()->isAdmin())
+        <a href="{{ route('admin.tracking.index') }}" class="btn btn-outline">Tracking Scripts</a>
+        <a href="{{ route('admin.themes.index') }}" class="btn btn-outline">Frontend Theme</a>
+    @endif
     @if(config('affiliate.enabled'))
     <a href="{{ route('member.affiliate.index') }}" class="btn btn-outline">Referral Program</a>
     @endif

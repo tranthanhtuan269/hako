@@ -17,7 +17,9 @@ class StoreController extends Controller
 
     public function index(): View
     {
-        $stores = Store::withCount('coupons')->orderBy('sort_order')->paginate(20);
+        $stores = Store::withCount('coupons')
+            ->latest()
+            ->paginate(20);
 
         return view('admin.stores.index', compact('stores'));
     }

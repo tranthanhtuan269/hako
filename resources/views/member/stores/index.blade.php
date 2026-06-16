@@ -15,6 +15,7 @@
             <th>Category</th>
             <th>Coupons</th>
             <th>Page views</th>
+            <th>Created</th>
             <th class="table-actions-col">Actions</th>
         </tr>
     </thead>
@@ -38,13 +39,14 @@
                 </td>
                 <td>{{ $store->coupons_count }}</td>
                 <td><strong>{{ number_format($store->view_count) }}</strong></td>
+                <td>{{ $store->created_at?->format('M j, Y') }}</td>
                 <td>
                     @include('partials.store-table-actions', ['store' => $store])
                 </td>
             </tr>
         @empty
             <tr>
-                <td colspan="6">No stores yet. <a href="{{ route('member.stores.create') }}">Add your first store</a>.</td>
+                <td colspan="7">No stores yet. <a href="{{ route('member.stores.create') }}">Add your first store</a>.</td>
             </tr>
         @endforelse
     </tbody>

@@ -22,7 +22,7 @@ class StoreController extends Controller
         $stores = Store::ownedBy(auth()->id())
             ->with('category')
             ->withCount('coupons')
-            ->orderBy('sort_order')
+            ->latest()
             ->paginate(20);
 
         return view('member.stores.index', compact('stores'));

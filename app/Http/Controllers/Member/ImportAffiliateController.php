@@ -219,6 +219,7 @@ class ImportAffiliateController extends Controller
             ->route('member.import-affiliate.create')
             ->with('success', $successMessage)
             ->with('import_links', [
+                'store_public' => route('stores.show', $result['store']->slug),
                 'store' => $isAdmin
                     ? route('admin.stores.edit', $result['store'])
                     : route('member.stores.edit', $result['store']),

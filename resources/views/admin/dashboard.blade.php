@@ -8,6 +8,8 @@
     <a href="{{ route('member.import-affiliate.create') }}" class="btn btn-primary">Import from Affiliate Link</a>
     <a href="{{ route('admin.categories.index') }}" class="btn btn-outline">Manage Categories</a>
     <a href="{{ route('admin.stores.index') }}" class="btn btn-outline">Manage Stores</a>
+    <a href="{{ route('admin.themes.index') }}" class="btn btn-outline">Frontend Theme</a>
+    <a href="{{ route('admin.tracking.index') }}" class="btn btn-outline">Tracking Scripts</a>
     @if(config('affiliate.enabled') && $stats['pending_affiliate_payouts'] > 0)
         <a href="{{ route('admin.affiliate.payouts.index') }}" class="btn btn-primary">Affiliate Payouts ({{ $stats['pending_affiliate_payouts'] }} pending)</a>
     @endif
