@@ -6,7 +6,8 @@ APP_DIR="${1:-/var/www/thuoc360}"
 
 cd "$APP_DIR"
 
-# Never copy a broken absolute storage symlink from another machine.
+mkdir -p storage/framework/{cache/data,sessions,views,testing} storage/logs storage/app/public
+
 rm -f public/storage
 ln -sfn "$APP_DIR/storage/app/public" "$APP_DIR/public/storage"
 

@@ -14,7 +14,8 @@ return new class extends Migration
         });
 
         DB::table('users')
-            ->where('email', 'admin@thuoc360.com')
+            ->where('email', 'admin@viktorreview.com')
+            ->orWhere('email', 'admin@thuoc360.com')
             ->update(['is_admin' => true]);
     }
 

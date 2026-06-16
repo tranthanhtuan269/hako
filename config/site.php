@@ -1,6 +1,6 @@
 <?php
 
-$domain = env('SITE_DOMAIN', 'thuoc360.com');
+$domain = env('SITE_DOMAIN', 'viktorreview.com');
 $url = rtrim(env('SITE_URL', 'https://'.$domain), '/');
 $name = env('SITE_NAME') ?: $domain;
 $tagline = env('SITE_TAGLINE', 'Top Hub of US Online Coupons');

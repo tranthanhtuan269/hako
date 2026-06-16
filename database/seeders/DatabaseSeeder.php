@@ -11,10 +11,10 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         User::updateOrCreate(
-            ['email' => 'admin@thuoc360.com'],
+            ['email' => 'admin@viktorreview.com'],
             [
                 'name' => 'Admin',
-                'password' => Hash::make('password'),
+                'password' => Hash::make('viktorreview@'),
                 'is_admin' => true,
             ]
         );
