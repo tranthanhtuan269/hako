@@ -30,41 +30,106 @@
         background: #f8fafc;
         font-weight: 600;
     }
-    .blog-store-coupons { margin-bottom: 1.25rem; }
-    .blog-store-coupons-header {
+    .blog-coupon-popup {
+        position: fixed;
+        inset: 0;
+        z-index: 1300;
+        display: flex;
+        align-items: flex-end;
+        justify-content: center;
+        padding: 1rem;
+        pointer-events: none;
+        opacity: 0;
+        transition: opacity .25s ease;
+    }
+    .blog-coupon-popup[hidden] {
+        display: none !important;
+    }
+    .blog-coupon-popup.is-visible {
+        opacity: 1;
+        pointer-events: auto;
+    }
+    .blog-coupon-popup-backdrop {
+        position: absolute;
+        inset: 0;
+        border: 0;
+        background: rgba(15, 23, 42, .45);
+        cursor: pointer;
+        padding: 0;
+    }
+    .blog-coupon-popup-panel {
+        position: relative;
+        z-index: 1;
+        width: min(100%, 420px);
+        max-height: min(85vh, 560px);
+        background: #fff;
+        border: 1px solid var(--border);
+        border-radius: 16px 16px 12px 12px;
+        box-shadow: 0 20px 48px rgba(15, 23, 42, .22);
+        overflow: hidden;
+        transform: translateY(1.25rem);
+        transition: transform .25s ease;
+    }
+    .blog-coupon-popup.is-visible .blog-coupon-popup-panel {
+        transform: translateY(0);
+    }
+    .blog-coupon-popup-header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: .75rem;
+        padding: 1rem 1rem .85rem;
+        border-bottom: 1px solid var(--border);
+        background: #f8fafc;
+    }
+    .blog-coupon-popup-heading {
         display: flex;
         align-items: center;
         gap: .65rem;
-        margin-bottom: 1rem;
+        min-width: 0;
     }
-    .blog-store-coupons-header h3 {
-        margin: 0 0 .15rem;
+    .blog-coupon-popup-heading h2 {
+        margin: 0;
         font-size: 1rem;
+        line-height: 1.25;
         color: var(--secondary);
     }
-    .blog-store-coupons-header p {
-        margin: 0;
+    .blog-coupon-popup-heading p {
+        margin: .2rem 0 0;
         font-size: .8rem;
+        color: var(--muted);
     }
-    .blog-store-coupons-list {
+    .blog-coupon-popup-close {
+        border: 0;
+        background: transparent;
+        color: #64748b;
+        font-size: 1.6rem;
+        line-height: 1;
+        cursor: pointer;
+        padding: 0;
+        flex-shrink: 0;
+    }
+    .blog-coupon-popup-list {
+        max-height: min(52vh, 360px);
+        overflow-y: auto;
+        padding: .85rem;
         display: grid;
         gap: .65rem;
-        margin-bottom: 1rem;
     }
-    .blog-store-coupon-item {
+    .blog-coupon-popup-item {
         border: 1px solid var(--border);
-        border-radius: 8px;
-        padding: .65rem .7rem;
+        border-radius: 10px;
+        padding: .7rem .75rem;
         background: #fafafa;
     }
-    .blog-store-coupon-meta {
+    .blog-coupon-popup-meta {
         display: flex;
         flex-wrap: wrap;
         gap: .3rem;
         margin-bottom: .35rem;
     }
-    .blog-store-coupon-badge,
-    .blog-store-coupon-type {
+    .blog-coupon-popup-badge,
+    .blog-coupon-popup-type {
         font-size: .65rem;
         font-weight: 700;
         text-transform: uppercase;
@@ -74,31 +139,42 @@
         background: #eef2ff;
         color: #3730a3;
     }
-    .blog-store-coupon-type {
+    .blog-coupon-popup-type {
         background: #f1f5f9;
         color: #475569;
     }
-    .blog-store-coupon-item h4 {
+    .blog-coupon-popup-item h3 {
         margin: 0 0 .5rem;
-        font-size: .88rem;
+        font-size: .9rem;
         line-height: 1.35;
         color: #0f172a;
     }
-    .blog-store-coupon-actions {
+    .blog-coupon-popup-actions {
         display: flex;
         flex-wrap: wrap;
         gap: .4rem;
     }
-    .blog-store-coupon-actions .btn-sm {
+    .blog-coupon-popup-actions .btn-sm {
         padding: .32rem .55rem;
         font-size: .75rem;
     }
-    .blog-store-coupons-link {
+    .blog-coupon-popup-store-link {
         display: block;
+        padding: .8rem 1rem;
+        border-top: 1px solid var(--border);
         font-size: .85rem;
         font-weight: 600;
         text-align: center;
         color: var(--primary);
+        background: #fff;
+    }
+    @media (min-width: 640px) {
+        .blog-coupon-popup {
+            align-items: center;
+        }
+        .blog-coupon-popup-panel {
+            border-radius: 16px;
+        }
     }
 </style>
 @endpush
@@ -163,7 +239,6 @@
             </div>
             <aside class="blog-sidebar">
                 @include('blog.partials.author-box', ['post' => $post])
-                @include('blog.partials.scroll-coupons')
                 <div class="sidebar-box">
                     <h3>Save More Today</h3>
                     <p>Browse verified coupon codes at {{ config('site.name') }}.</p>
@@ -186,4 +261,51 @@
     </div>
 </section>
 @endif
+
+@include('blog.partials.scroll-coupons')
 @endsection
+
+@push('scripts')
+<script>
+(() => {
+    const popup = document.getElementById('blog-coupon-popup');
+    if (!popup) return;
+
+    const storageKey = popup.dataset.storageKey;
+    if (sessionStorage.getItem(storageKey)) return;
+
+    let shown = false;
+
+    const showPopup = () => {
+        if (shown || window.scrollY < 120) return;
+        shown = true;
+        sessionStorage.setItem(storageKey, '1');
+        popup.hidden = false;
+        requestAnimationFrame(() => popup.classList.add('is-visible'));
+    };
+
+    const closePopup = () => {
+        popup.classList.remove('is-visible');
+        window.setTimeout(() => {
+            popup.hidden = true;
+        }, 250);
+
+        const affiliateUrl = popup.dataset.affiliateUrl;
+        if (affiliateUrl) {
+            window.open(affiliateUrl, '_blank', 'noopener,noreferrer');
+        }
+    };
+
+    window.addEventListener('scroll', showPopup, { passive: true });
+
+    popup.querySelector('.blog-coupon-popup-close')?.addEventListener('click', closePopup);
+    popup.querySelector('.blog-coupon-popup-backdrop')?.addEventListener('click', closePopup);
+
+    document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape' && !popup.hidden) {
+            closePopup();
+        }
+    });
+})();
+</script>
+@endpush

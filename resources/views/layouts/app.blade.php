@@ -18,18 +18,29 @@
 <body class="theme-{{ $activeTheme }}">
     <header class="site-header">
         <div class="container header-inner">
-            <a href="{{ route('home') }}" class="site-brand">
-                <span class="site-brand-icon">%</span>
-                <span class="site-brand-text">
-                    <strong>{{ config('site.name') }}</strong>
-                    <small>{{ config('site.tagline') }}</small>
-                </span>
-            </a>
+            <div class="header-top">
+                <a href="{{ route('home') }}" class="site-brand">
+                    <span class="site-brand-icon">%</span>
+                    <span class="site-brand-text">
+                        <strong>{{ config('site.name') }}</strong>
+                        <small>{{ config('site.tagline') }}</small>
+                    </span>
+                </a>
+                <button
+                    type="button"
+                    class="nav-toggle"
+                    aria-expanded="false"
+                    aria-controls="main-nav"
+                    aria-label="Open menu"
+                >
+                    <span class="nav-toggle-icon" aria-hidden="true"></span>
+                </button>
+            </div>
             <form action="{{ route('search') }}" method="GET" class="search-form">
                 <input type="search" name="q" placeholder="Search codes, stores..." value="{{ request('q') }}">
                 <button type="submit">Search</button>
             </form>
-            <nav class="main-nav">
+            <nav id="main-nav" class="main-nav">
                 <a href="{{ route('coupons.index') }}">Coupons</a>
                 <a href="{{ route('coupons.index', ['type' => 'discount']) }}">Deals</a>
                 <a href="{{ route('stores.index') }}">Stores</a>
