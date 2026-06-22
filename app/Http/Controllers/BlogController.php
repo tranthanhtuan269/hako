@@ -31,7 +31,7 @@ class BlogController extends Controller
 
     public function show(string $slug): View
     {
-        $post = Post::published()->with('user')->where('slug', $slug)->firstOrFail();
+        $post = Post::published()->with(['user', 'store'])->where('slug', $slug)->firstOrFail();
         $post->incrementViews();
 
         $related = Post::published()
@@ -41,6 +41,16 @@ class BlogController extends Controller
             ->take(3)
             ->get();
 
-        return view('blog.show', compact('post', 'related'));
+        $store = $post->relatedStore();
+        $storeCoupons = $store
+            ? $store->coupons()
+                ->with('store.category')
+                ->valid()
+                ->orderByDesc('is_featured')
+                ->orderByDesc('created_at')
+                ->get()
+            : collect();
+
+        return view('blog.show', compact('post', 'related', 'store', 'storeCoupons'));
     }
 }

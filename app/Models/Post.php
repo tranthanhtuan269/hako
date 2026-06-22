@@ -16,6 +16,7 @@ class Post extends Model
 {
     protected $fillable = [
         'user_id',
+        'store_id',
         'title',
         'slug',
         'excerpt',
@@ -62,6 +63,43 @@ class Post extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function store(): BelongsTo
+    {
+        return $this->belongsTo(Store::class);
+    }
+
+    public function relatedStore(): ?Store
+    {
+        if ($this->relationLoaded('store') && $this->store) {
+            return $this->store->is_active ? $this->store : null;
+        }
+
+        if ($this->store_id) {
+            return Store::query()->active()->find($this->store_id);
+        }
+
+        $slug = $this->extractStoreSlugFromContent();
+
+        if (! $slug) {
+            return null;
+        }
+
+        return Store::query()->active()->where('slug', $slug)->first();
+    }
+
+    private function extractStoreSlugFromContent(): ?string
+    {
+        if (! filled($this->content)) {
+            return null;
+        }
+
+        if (preg_match('#/stores/([a-z0-9-]+)#i', $this->content, $matches)) {
+            return strtolower($matches[1]);
+        }
+
+        return null;
     }
 
     public function scopeOwnedBy(Builder $query, int $userId): Builder

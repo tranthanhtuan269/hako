@@ -110,6 +110,7 @@ class ImportAffiliateController extends Controller
             'offers.*.description' => ['nullable', 'string'],
             'generated_blog' => ['nullable', 'string', 'max:100000'],
             'publish' => ['boolean'],
+            'blog_use_affiliate_links' => ['boolean'],
         ]);
 
         $merchant = $resolver->resolve($data['affiliate_url']);
@@ -119,6 +120,7 @@ class ImportAffiliateController extends Controller
         }
 
         $publish = $request->boolean('publish');
+        $blogUseAffiliateLinks = $request->boolean('blog_use_affiliate_links');
         $storeName = trim($data['store_name']);
         $logoUrl = filled($data['logo_url'] ?? null) ? trim($data['logo_url']) : ($merchant['logo'] ?? null);
         $offers = $this->normalizeOffers($data['offers']);
@@ -136,6 +138,7 @@ class ImportAffiliateController extends Controller
             $data,
             $merchant,
             $publish,
+            $blogUseAffiliateLinks,
             $storeName,
             $storedLogo,
             $storedFeatured,
@@ -182,8 +185,21 @@ class ImportAffiliateController extends Controller
             }
 
             $blog = $contentBuilder->blogPost($store->load('category'), $offers, $merchant, $preGeneratedBlog);
+
+            if ($blogUseAffiliateLinks) {
+                $affiliateContent = HtmlCleaner::replaceAnchorHrefs(
+                    $blog['content'],
+                    trim($data['affiliate_url'])
+                );
+
+                if ($affiliateContent !== null) {
+                    $blog['content'] = $affiliateContent;
+                }
+            }
+
             $post = Post::create([
                 'user_id' => auth()->id(),
+                'store_id' => $store->id,
                 'title' => $blog['title'],
                 'slug' => $this->uniquePostSlug($blog['title']),
                 'excerpt' => $blog['excerpt'],

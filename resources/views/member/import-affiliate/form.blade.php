@@ -130,11 +130,17 @@
     </div>
 
     <div class="import-card">
-        <div class="form-check">
-            <input type="checkbox" name="publish" value="1" id="publish" @checked(old('publish'))>
-            <label for="publish">Publish store, offers, and blog post immediately</label>
+        <div class="import-publish-options">
+            <div class="form-check">
+                <input type="checkbox" name="publish" value="1" id="publish" @checked(old('publish'))>
+                <label for="publish">Publish store, offers, and blog post immediately</label>
+            </div>
+            <div class="form-check">
+                <input type="checkbox" name="blog_use_affiliate_links" value="1" id="blog_use_affiliate_links" @checked(old('blog_use_affiliate_links'))>
+                <label for="blog_use_affiliate_links">Point all blog links to the affiliate URL</label>
+            </div>
         </div>
-        <p class="form-hint">Leave unchecked to save everything as drafts for review first (recommended).</p>
+        <p class="form-hint">Leave publish unchecked to save everything as drafts for review first (recommended). When affiliate links is checked, every link in the blog article uses your affiliate URL above.</p>
     </div>
 
     <input type="hidden" name="generated_blog" id="generated_blog" value="{{ old('generated_blog') }}">
@@ -344,6 +350,17 @@
     .offer-field-desc {
         margin-left: 0;
     }
+}
+.import-publish-options {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem 1.5rem;
+}
+.import-publish-options .form-check {
+    flex: 1 1 280px;
+    margin-bottom: 0;
 }
 .form-error { color: #dc2626; font-size: .875rem; margin-top: .35rem; }
 </style>

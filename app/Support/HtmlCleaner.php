@@ -140,6 +140,70 @@ final class HtmlCleaner
         return (bool) preg_match('#^https?://#i', $url);
     }
 
+    public static function replaceAnchorHrefs(?string $html, string $href): ?string
+    {
+        if ($html === null || trim($html) === '') {
+            return $html;
+        }
+
+        if (! self::isSafeUrl($href)) {
+            return $html;
+        }
+
+        $document = new DOMDocument('1.0', 'UTF-8');
+        $previous = libxml_use_internal_errors(true);
+
+        $wrapped = '<?xml encoding="utf-8" ?><div id="root">'.$html.'</div>';
+        $document->loadHTML($wrapped, LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD);
+        libxml_clear_errors();
+        libxml_use_internal_errors($previous);
+
+        $root = $document->getElementById('root');
+        if (! $root) {
+            return $html;
+        }
+
+        $anchors = $root->getElementsByTagName('a');
+        for ($i = $anchors->length - 1; $i >= 0; $i--) {
+            /** @var DOMElement $anchor */
+            $anchor = $anchors->item($i);
+            $currentHref = $anchor->getAttribute('href');
+
+            if (! self::isReplaceableLink($currentHref)) {
+                continue;
+            }
+
+            $anchor->setAttribute('href', $href);
+            $anchor->setAttribute('rel', 'nofollow sponsored');
+        }
+
+        $output = '';
+        foreach ($root->childNodes as $child) {
+            $output .= $document->saveHTML($child);
+        }
+
+        $output = trim($output);
+
+        return $output !== '' ? $output : $html;
+    }
+
+    private static function isReplaceableLink(?string $url): bool
+    {
+        if (! $url || trim($url) === '') {
+            return false;
+        }
+
+        if (str_starts_with(trim($url), '#')) {
+            return false;
+        }
+
+        if (preg_match('#^(mailto|tel|javascript):#i', trim($url))) {
+            return false;
+        }
+
+        return self::isSafeUrl($url);
+    }
+
     public static function plainText(?string $html): string
     {
         if (! $html) {
