@@ -276,8 +276,14 @@
 
     let shown = false;
 
+    const scrollThreshold = () => (
+        window.matchMedia('(max-width: 768px)').matches
+            ? Math.max(560, Math.round(window.innerHeight * 0.62))
+            : 220
+    );
+
     const showPopup = () => {
-        if (shown || window.scrollY < 120) return;
+        if (shown || window.scrollY < scrollThreshold()) return;
         shown = true;
         sessionStorage.setItem(storageKey, '1');
         popup.hidden = false;
