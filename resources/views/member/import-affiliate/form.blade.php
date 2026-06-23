@@ -31,6 +31,24 @@
 
 @include('partials.table-actions-assets')
 
+@if(session('existing_store'))
+    @php($existing = session('existing_store'))
+    <div class="alert alert-warning import-duplicate-alert" role="alert">
+        <strong>Store already exists</strong>
+        <p style="margin:.5rem 0 0;">Domain <strong>{{ $existing['domain'] ?? 'n/a' }}</strong> is already used by <strong>{{ $existing['name'] }}</strong>.</p>
+        <div style="margin-top:.75rem;display:flex;flex-wrap:wrap;gap:.65rem;">
+            <a href="{{ $existing['public_url'] }}" class="btn btn-outline" target="_blank" rel="noopener">View Store</a>
+            <a href="{{ $existing['edit_url'] }}" class="btn btn-primary">Edit Store</a>
+        </div>
+    </div>
+@endif
+
+<div id="duplicate-store-alert" class="alert alert-warning import-duplicate-alert" hidden role="alert">
+    <strong>Store already exists</strong>
+    <p id="duplicate-store-message" style="margin:.5rem 0 0;"></p>
+    <div id="duplicate-store-actions" style="margin-top:.75rem;display:flex;flex-wrap:wrap;gap:.65rem;"></div>
+</div>
+
 <form method="POST" action="{{ route('member.import-affiliate.store') }}" id="import-form">
     @csrf
 
@@ -132,15 +150,15 @@
     <div class="import-card">
         <div class="import-publish-options">
             <div class="form-check">
-                <input type="checkbox" name="publish" value="1" id="publish" @checked(old('publish'))>
+                <input type="checkbox" name="publish" value="1" id="publish" @checked(old('publish', true))>
                 <label for="publish">Publish store, offers, and blog post immediately</label>
             </div>
             <div class="form-check">
-                <input type="checkbox" name="blog_use_affiliate_links" value="1" id="blog_use_affiliate_links" @checked(old('blog_use_affiliate_links'))>
+                <input type="checkbox" name="blog_use_affiliate_links" value="1" id="blog_use_affiliate_links" @checked(old('blog_use_affiliate_links', true))>
                 <label for="blog_use_affiliate_links">Point all blog links to the affiliate URL</label>
             </div>
         </div>
-        <p class="form-hint">Leave publish unchecked to save everything as drafts for review first (recommended). When affiliate links is checked, every link in the blog article uses your affiliate URL above.</p>
+        <p class="form-hint">Uncheck publish to save as drafts. When affiliate links is checked, every link in the blog article uses your affiliate URL above.</p>
     </div>
 
     <input type="hidden" name="generated_blog" id="generated_blog" value="{{ old('generated_blog') }}">
@@ -362,6 +380,8 @@
     flex: 1 1 280px;
     margin-bottom: 0;
 }
+.alert-warning { background: #fffbeb; border: 1px solid #fcd34d; color: #92400e; padding: .85rem 1rem; border-radius: var(--radius); margin-bottom: 1rem; }
+.import-duplicate-alert[hidden] { display: none !important; }
 .form-error { color: #dc2626; font-size: .875rem; margin-top: .35rem; }
 </style>
 @endpush
@@ -370,8 +390,51 @@
 <script>
 (() => {
     const previewUrl = @json(route('member.import-affiliate.preview'));
-    const csrf = document.querySelector('meta[name="csrf-token"]').content;
+    const csrfRefreshUrl = @json(route('member.csrf-token'));
     const offersList = document.getElementById('offers-list');
+
+    function getCookie(name) {
+        const match = document.cookie.match(new RegExp('(^|;\\s*)' + name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '=([^;]*)'));
+        return match ? decodeURIComponent(match[2]) : null;
+    }
+
+    async function currentCsrfToken() {
+        const meta = document.querySelector('meta[name="csrf-token"]');
+        const formToken = document.querySelector('#import-form input[name="_token"]');
+
+        try {
+            const res = await fetch(csrfRefreshUrl, {
+                credentials: 'same-origin',
+                headers: {
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+            });
+
+            if (res.ok) {
+                const data = await res.json();
+                if (meta && data.token) meta.content = data.token;
+                if (formToken && data.token) formToken.value = data.token;
+                return data.token || meta?.content || '';
+            }
+        } catch (e) {
+            // fall through to meta/cookie
+        }
+
+        return meta?.content || '';
+    }
+
+    function csrfHeaders(token) {
+        const headers = {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'X-CSRF-TOKEN': token,
+            'X-Requested-With': 'XMLHttpRequest',
+        };
+        const xsrf = getCookie('XSRF-TOKEN');
+        if (xsrf) headers['X-XSRF-TOKEN'] = xsrf;
+        return headers;
+    }
     const template = document.getElementById('offer-block-template');
     let offerIndex = offersList.querySelectorAll('.offer-block').length;
 
@@ -435,6 +498,34 @@
         previewLogo.src = value;
     });
 
+    const duplicateAlert = document.getElementById('duplicate-store-alert');
+    const duplicateMessage = document.getElementById('duplicate-store-message');
+    const duplicateActions = document.getElementById('duplicate-store-actions');
+
+    function showDuplicateStore(existingStore, message) {
+        if (!duplicateAlert || !duplicateMessage || !duplicateActions) {
+            return;
+        }
+
+        duplicateMessage.textContent = message;
+        duplicateActions.innerHTML = `
+            <a href="${existingStore.public_url}" class="btn btn-outline" target="_blank" rel="noopener">View Store</a>
+            <a href="${existingStore.edit_url}" class="btn btn-primary">Edit Store</a>
+        `;
+        duplicateAlert.hidden = false;
+        duplicateAlert.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    function hideDuplicateStore() {
+        if (!duplicateAlert || !duplicateMessage || !duplicateActions) {
+            return;
+        }
+
+        duplicateAlert.hidden = true;
+        duplicateMessage.textContent = '';
+        duplicateActions.innerHTML = '';
+    }
+
     document.getElementById('detect-store-btn').addEventListener('click', async () => {
         const affiliateUrl = document.getElementById('affiliate_url').value.trim();
         const websiteUrl = document.getElementById('website').value.trim();
@@ -478,27 +569,46 @@
         document.getElementById('detect-loading-text').textContent = 'Detecting store, crawling products & writing AI article…';
 
         try {
+            const token = await currentCsrfToken();
             const response = await fetch(previewUrl, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json',
-                    'X-CSRF-TOKEN': csrf,
-                },
+                credentials: 'same-origin',
+                headers: csrfHeaders(token),
                 body: JSON.stringify({
                     affiliate_url: affiliateUrl,
                     website: websiteUrl || null,
                 }),
             });
 
-            const data = await response.json();
+            let data = {};
+            const raw = await response.text();
+
+            try {
+                data = raw ? JSON.parse(raw) : {};
+            } catch (parseError) {
+                throw new Error(raw?.includes('CSRF') || response.status === 419
+                    ? 'Session expired. Please refresh the page and try again.'
+                    : `Unexpected server response (HTTP ${response.status}).`);
+            }
 
             if (!response.ok) {
-                const message = data.message || data.errors?.affiliate_url?.[0] || 'Could not detect store.';
+                let message = data.message || data.errors?.affiliate_url?.[0] || 'Could not detect store.';
+                if (response.status === 419) {
+                    message = 'Session expired. Please refresh the page (F5) and try Detect Store again.';
+                }
                 status.textContent = message;
                 status.className = 'form-hint detect-status is-error';
+
+                if (data.existing_store) {
+                    showDuplicateStore(data.existing_store, message);
+                } else {
+                    hideDuplicateStore();
+                }
+
                 return;
             }
+
+            hideDuplicateStore();
 
             const merchant = data.merchant;
             document.getElementById('store_name').value = merchant.name || '';
@@ -573,7 +683,10 @@
             status.textContent = statusMessage;
             status.className = 'form-hint detect-status is-success';
         } catch (error) {
-            status.textContent = 'Network error while detecting store. You can still fill the form manually.';
+            console.error('Detect store failed:', error);
+            status.textContent = error?.message?.includes('JSON')
+                ? 'Server returned an invalid response. Refresh the page and try again (session may have expired).'
+                : 'Network error while detecting store. You can still fill the form manually.';
             status.className = 'form-hint detect-status is-error';
         } finally {
             setDetectLoading(false);

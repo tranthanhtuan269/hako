@@ -30,7 +30,7 @@
         <p class="form-hint">If you enter a code, this becomes a Coupon. If left blank, it becomes a Discount.</p>
     </div>
     <div class="form-check">
-        <input type="checkbox" name="is_featured" value="1" id="featured" @checked(old('is_featured', $coupon->is_featured))>
+        <input type="checkbox" name="is_featured" value="1" id="featured" @checked(old('is_featured', $coupon->is_featured ?? true))>
         <label for="featured">Featured</label>
     </div>
     <div class="form-check">

@@ -73,6 +73,7 @@ Route::middleware(['auth', 'noindex'])->post('/editor/upload-image', [EditorImag
 
 Route::middleware(['auth', 'noindex'])->prefix('dashboard')->name('member.')->group(function () {
     Route::get('/', [MemberDashboardController::class, 'index'])->name('dashboard');
+    Route::get('csrf-token', fn () => response()->json(['token' => csrf_token()]))->name('csrf-token');
     Route::get('import-affiliate', [ImportAffiliateController::class, 'create'])->name('import-affiliate.create');
     Route::post('import-affiliate/preview', [ImportAffiliateController::class, 'preview'])->name('import-affiliate.preview');
     Route::post('import-affiliate', [ImportAffiliateController::class, 'store'])->name('import-affiliate.store');

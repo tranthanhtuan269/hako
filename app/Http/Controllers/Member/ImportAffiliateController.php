@@ -12,6 +12,7 @@ use App\Support\AffiliateLinkResolver;
 use App\Support\CouponSpeakClient;
 use App\Support\HtmlCleaner;
 use App\Support\PublicImage;
+use App\Support\StoreDomainMatcher;
 use App\Support\StoreSlug;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -35,7 +36,8 @@ class ImportAffiliateController extends Controller
         Request $request,
         AffiliateLinkResolver $resolver,
         CouponSpeakClient $couponSpeak,
-        AffiliateImportContentBuilder $contentBuilder
+        AffiliateImportContentBuilder $contentBuilder,
+        StoreDomainMatcher $domainMatcher
     ): JsonResponse {
         $this->authorize('create', Store::class);
 
@@ -48,6 +50,23 @@ class ImportAffiliateController extends Controller
 
         if (filled($data['website'] ?? null)) {
             $merchant = $resolver->enrichFromWebsite($merchant, trim($data['website']));
+        }
+
+        $existingStore = $domainMatcher->findExistingStore([
+            $merchant['domain'] ?? null,
+            $domainMatcher->hostFromUrl($data['affiliate_url']),
+            $domainMatcher->hostFromUrl($data['website'] ?? null),
+        ]);
+
+        if ($existingStore) {
+            $payload = $domainMatcher->existingStorePayload($existingStore);
+            $domain = $payload['domain'] ?? 'this domain';
+
+            return response()->json([
+                'ok' => false,
+                'message' => "Store for {$domain} already exists ({$existingStore->name}). Use the existing store instead of importing again.",
+                'existing_store' => $payload,
+            ], 422);
         }
 
         $storeQuery = $merchant['domain'] ?? $couponSpeak->hostFromUrl($data['affiliate_url']);
@@ -93,6 +112,7 @@ class ImportAffiliateController extends Controller
         AffiliateLinkResolver $resolver,
         AffiliateImportContentBuilder $contentBuilder,
         CouponSpeakClient $couponSpeak,
+        StoreDomainMatcher $domainMatcher,
     ): RedirectResponse {
         $this->authorize('create', Store::class);
         $this->authorize('create', Coupon::class);
@@ -117,6 +137,22 @@ class ImportAffiliateController extends Controller
 
         if (filled($data['website'] ?? null)) {
             $merchant = $resolver->enrichFromWebsite($merchant, trim($data['website']));
+        }
+
+        $existingStore = $domainMatcher->findExistingStore([
+            $merchant['domain'] ?? null,
+            $domainMatcher->hostFromUrl($data['affiliate_url']),
+            $domainMatcher->hostFromUrl($data['website'] ?? null),
+        ]);
+
+        if ($existingStore) {
+            $payload = $domainMatcher->existingStorePayload($existingStore);
+            $domain = $payload['domain'] ?? 'this domain';
+
+            return back()
+                ->withInput()
+                ->with('error', "Store for {$domain} already exists: {$existingStore->name}.")
+                ->with('existing_store', $payload);
         }
 
         $publish = $request->boolean('publish');

@@ -42,11 +42,8 @@
     </div>
     <div class="form-group">
         <label>Publish date</label>
-        <input type="datetime-local" name="published_at" value="{{ old('published_at', $post->published_at?->format('Y-m-d\TH:i')) }}">
-    </div>
-    <div class="form-check">
-        <input type="checkbox" name="is_published" value="1" id="published" @checked(old('is_published', $post->is_published))>
-        <label for="published">Published</label>
+        <input type="datetime-local" name="published_at" value="{{ old('published_at', $post->published_at?->format('Y-m-d\TH:i') ?? now()->format('Y-m-d\TH:i')) }}">
+        <p class="form-hint">Posts are published when saved. Set a future date to schedule.</p>
     </div>
     @if($post->exists)
         <p class="form-hint" style="margin-top:1rem;">Article views: <strong>{{ number_format($post->view_count) }}</strong></p>

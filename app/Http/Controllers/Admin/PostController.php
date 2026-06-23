@@ -74,15 +74,15 @@ class PostController extends Controller
             'featured_image_file' => ['nullable', 'image', 'max:5120'],
             'author_name' => ['nullable', 'string', 'max:100'],
             'published_at' => ['nullable', 'date'],
-            'is_published' => ['boolean'],
         ]);
 
-        $data['is_published'] = $request->boolean('is_published');
         if (blank($data['author_name'] ?? null)) {
             unset($data['author_name']);
         }
 
-        if ($data['is_published'] && empty($data['published_at'])) {
+        $data['is_published'] = true;
+
+        if (empty($data['published_at'])) {
             $data['published_at'] = now();
         }
 
