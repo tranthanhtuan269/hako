@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Category;
+use App\Support\ScrollCouponPopup;
 use App\Support\ThemeManager;
 use App\Models\Store;
 use Illuminate\View\View;
@@ -41,12 +42,14 @@ class StoreController extends Controller
 
         $topCategories = Category::active()->orderBy('sort_order')->take(8)->get();
 
+        $scrollPopup = ScrollCouponPopup::forStore($store);
+
         $viewName = 'stores.show';
         $themeView = 'themes.'.ThemeManager::current().'.store-show';
         if (view()->exists($themeView)) {
             $viewName = $themeView;
         }
 
-        return view($viewName, compact('store', 'coupons', 'similarStores', 'topCategories'));
+        return view($viewName, compact('store', 'coupons', 'similarStores', 'topCategories', 'scrollPopup'));
     }
 }

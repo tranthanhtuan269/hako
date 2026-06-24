@@ -55,4 +55,6 @@
     </div>
     <div class="pagination">{{ $coupons->links() }}</div>
 </div>
+
+@include('partials.scroll-coupon-popup')
 @endsection

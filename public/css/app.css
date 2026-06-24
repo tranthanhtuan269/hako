@@ -441,14 +441,17 @@ a:hover { text-decoration: underline; }
     align-items: center;
     justify-content: center;
     background: #fff;
-    border: 1px solid var(--border);
-    border-radius: 10px;
+    /* border: 1px solid var(--border); */
+    /* border-radius: 10px; */
     overflow: hidden;
-    box-shadow: 0 1px 4px rgba(0,0,0,.06);
+    /* box-shadow: 0 1px 4px rgba(0, 0, 0, .06); */
     text-decoration: none !important;
 }
 
-.store-logo-wrap--md .store-logo { width: 52px; height: 52px; }
+.store-logo-wrap--md .store-logo {
+    width: 100px;
+    height: 100px;
+}
 .store-logo-wrap--lg .store-logo { width: 64px; height: 64px; }
 .store-logo-wrap--xl .store-logo { width: 88px; height: 88px; border-radius: 14px; }
 
@@ -1459,4 +1462,188 @@ div.pagination > nav.paginator-nav .pagination {
     background: #f1f5f9;
     padding: .1rem .35rem;
     border-radius: 4px;
+}
+
+/* Scroll-triggered coupon popup */
+body.scroll-coupon-popup-open {
+    overflow: hidden;
+}
+
+.scroll-coupon-popup[hidden] {
+    display: none !important;
+}
+
+.scroll-coupon-popup:not([hidden]) {
+    position: fixed;
+    inset: 0;
+    z-index: 10050;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+}
+
+.scroll-coupon-popup-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(15, 23, 42, .55);
+}
+
+.scroll-coupon-popup-dialog {
+    position: relative;
+    width: min(100%, 520px);
+    max-height: min(88vh, 720px);
+    overflow: auto;
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: 0 24px 60px rgba(15, 23, 42, .25);
+    padding: 1.25rem 1.25rem 1.5rem;
+}
+
+.scroll-coupon-popup-close {
+    position: absolute;
+    top: .75rem;
+    right: .75rem;
+    width: 2rem;
+    height: 2rem;
+    border: 0;
+    border-radius: 999px;
+    background: #f1f5f9;
+    color: #334155;
+    font-size: 1.35rem;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.scroll-coupon-popup-header {
+    display: flex;
+    gap: .85rem;
+    align-items: center;
+    margin-bottom: 1rem;
+    padding-right: 2rem;
+}
+
+.scroll-coupon-popup-logo {
+    width: 56px;
+    height: 56px;
+    object-fit: contain;
+    border-radius: 12px;
+    background: #fff;
+    flex-shrink: 0;
+}
+
+.scroll-coupon-popup-badge {
+    display: inline-block;
+    margin-bottom: .35rem;
+    padding: .2rem .55rem;
+    border-radius: 999px;
+    background: #ecfdf5;
+    color: #047857;
+    font-size: .72rem;
+    font-weight: 700;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+}
+
+.scroll-coupon-popup-title {
+    margin: 0;
+    font-size: 1.2rem;
+    color: var(--secondary, #0f172a);
+}
+
+.scroll-coupon-popup-subtitle {
+    margin: .25rem 0 0;
+    color: #64748b;
+    font-size: .9rem;
+}
+
+.scroll-coupon-popup-list {
+    list-style: none;
+    margin: 0 0 1rem;
+    padding: 0;
+    display: grid;
+    gap: .75rem;
+}
+
+.scroll-coupon-popup-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: .75rem;
+    padding: .85rem;
+    border: 1px solid var(--border, #e2e8f0);
+    border-radius: 12px;
+    background: #f8fafc;
+}
+
+.scroll-coupon-popup-item-main {
+    display: flex;
+    align-items: flex-start;
+    gap: .65rem;
+    min-width: 0;
+}
+
+.scroll-coupon-popup-discount {
+    flex-shrink: 0;
+    min-width: 3.25rem;
+    padding: .35rem .45rem;
+    border-radius: 8px;
+    background: var(--primary, #2563eb);
+    color: #fff;
+    font-size: .78rem;
+    font-weight: 700;
+    text-align: center;
+}
+
+.scroll-coupon-popup-item-title {
+    display: block;
+    color: #0f172a;
+    font-size: .92rem;
+    line-height: 1.35;
+}
+
+.scroll-coupon-popup-expires {
+    display: block;
+    margin-top: .2rem;
+    color: #64748b;
+    font-size: .78rem;
+}
+
+.scroll-coupon-popup-item-action {
+    flex-shrink: 0;
+}
+
+.scroll-coupon-popup-copy {
+    border: 0;
+    border-radius: 8px;
+    padding: .55rem .8rem;
+    background: var(--primary, #2563eb);
+    color: #fff;
+    font-size: .78rem;
+    font-weight: 700;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.scroll-coupon-popup-copy.is-copied {
+    background: #059669;
+}
+
+.scroll-coupon-popup-deal,
+.scroll-coupon-popup-shop {
+    width: 100%;
+    text-align: center;
+}
+
+@media (max-width: 560px) {
+    .scroll-coupon-popup-item {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .scroll-coupon-popup-item-action,
+    .scroll-coupon-popup-copy,
+    .scroll-coupon-popup-deal {
+        width: 100%;
+    }
 }

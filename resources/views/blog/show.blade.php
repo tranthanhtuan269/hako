@@ -115,4 +115,6 @@
     </div>
 </section>
 @endif
+
+@include('partials.scroll-coupon-popup')
 @endsection

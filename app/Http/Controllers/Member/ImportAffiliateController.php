@@ -184,6 +184,7 @@ class ImportAffiliateController extends Controller
             $blog = $contentBuilder->blogPost($store->load('category'), $offers, $merchant, $preGeneratedBlog);
             $post = Post::create([
                 'user_id' => auth()->id(),
+                'store_id' => $store->id,
                 'title' => $blog['title'],
                 'slug' => $this->uniquePostSlug($blog['title']),
                 'excerpt' => $blog['excerpt'],

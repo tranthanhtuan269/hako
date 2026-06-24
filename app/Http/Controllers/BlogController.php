@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Post;
+use App\Support\ScrollCouponPopup;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
@@ -31,7 +32,7 @@ class BlogController extends Controller
 
     public function show(string $slug): View
     {
-        $post = Post::published()->with('user')->where('slug', $slug)->firstOrFail();
+        $post = Post::published()->with(['user', 'store'])->where('slug', $slug)->firstOrFail();
         $post->incrementViews();
 
         $related = Post::published()
@@ -41,6 +42,8 @@ class BlogController extends Controller
             ->take(3)
             ->get();
 
-        return view('blog.show', compact('post', 'related'));
+        $scrollPopup = ScrollCouponPopup::forStore($post->resolveStore());
+
+        return view('blog.show', compact('post', 'related', 'scrollPopup'));
     }
 }
