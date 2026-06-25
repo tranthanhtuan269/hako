@@ -93,7 +93,13 @@ Route::middleware(['auth', 'noindex'])->prefix('dashboard')->name('member.')->gr
 
 Route::middleware(['auth', 'admin', 'noindex'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('coupons/catalog-display', [AdminCouponController::class, 'catalogDisplay'])->name('coupons.catalog-display');
+    Route::put('coupons/catalog-display', [AdminCouponController::class, 'updateCatalogDisplay'])->name('coupons.catalog-display.update');
+    Route::put('coupons/sort-order', [AdminCouponController::class, 'updateSortOrder'])->name('coupons.sort-order');
     Route::resource('coupons', AdminCouponController::class)->except(['show']);
+    Route::get('stores/catalog-display', [AdminStoreController::class, 'catalogDisplay'])->name('stores.catalog-display');
+    Route::put('stores/catalog-display', [AdminStoreController::class, 'updateCatalogDisplay'])->name('stores.catalog-display.update');
+    Route::put('stores/sort-order', [AdminStoreController::class, 'updateSortOrder'])->name('stores.sort-order');
     Route::resource('stores', AdminStoreController::class)->except(['show']);
     Route::resource('categories', AdminCategoryController::class)->except(['show']);
     Route::resource('posts', AdminPostController::class)->except(['show']);

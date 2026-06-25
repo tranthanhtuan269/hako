@@ -19,7 +19,10 @@
 @section('content')
 <div class="container">
     <div class="page-header">
-        <h1>{{ $category->icon }} {{ $category->name }}</h1>
+        <h1 class="category-page-title">
+            @include('partials.category-icon', ['category' => $category, 'size' => 'lg'])
+            <span>{{ $category->name }}</span>
+        </h1>
         @if($category->description)<p>{{ $category->description }}</p>@endif
     </div>
     <div class="coupon-grid">

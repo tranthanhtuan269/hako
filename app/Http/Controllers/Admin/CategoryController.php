@@ -5,10 +5,12 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Category;
 use App\Support\CategoryIcons;
+use App\Support\PublicImage;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 class CategoryController extends Controller
@@ -75,6 +77,10 @@ class CategoryController extends Controller
                 ->with('error', 'Cannot delete this category while stores are still assigned to it. Edit those stores first.');
         }
 
+        if (PublicImage::isStored($category->icon)) {
+            PublicImage::delete($category->icon);
+        }
+
         $category->delete();
 
         return redirect()
@@ -96,7 +102,8 @@ class CategoryController extends Controller
                 'regex:/^[a-z0-9]+(?:-[a-z0-9]+)*$/',
                 Rule::unique('categories', 'slug')->ignore($category?->id),
             ],
-            'icon' => ['nullable', 'string', Rule::in(CategoryIcons::values())],
+            'icon' => ['nullable', 'string', 'max:255'],
+            'icon_file' => ['nullable', 'file', 'max:512', 'mimes:png,jpg,jpeg,webp,gif,svg,ico'],
             'description' => ['nullable', 'string', 'max:5000'],
             'sort_order' => ['nullable', 'integer', 'min:0'],
             'is_active' => ['boolean'],
@@ -107,9 +114,46 @@ class CategoryController extends Controller
         $data['is_active'] = $request->boolean('is_active', true);
         $data['sort_order'] = $data['sort_order'] ?? 0;
         $data['slug'] = filled($data['slug'] ?? null) ? Str::slug($data['slug']) : null;
-        $data['icon'] = filled($data['icon'] ?? null) ? $data['icon'] : null;
+        $data['icon'] = $this->resolveIcon($request, $category, $data['icon'] ?? null);
+        unset($data['icon_file']);
 
         return $data;
+    }
+
+    private function resolveIcon(Request $request, ?Category $category, ?string $icon): ?string
+    {
+        if ($request->hasFile('icon_file')) {
+            $this->deleteStoredIcon($category?->icon);
+
+            return PublicImage::store($request->file('icon_file'), 'categories/icons');
+        }
+
+        if (! filled($icon)) {
+            $this->deleteStoredIcon($category?->icon);
+
+            return null;
+        }
+
+        if (CategoryIcons::isUploadedIcon($icon)) {
+            return $icon;
+        }
+
+        if (CategoryIcons::isEmoji($icon)) {
+            $this->deleteStoredIcon($category?->icon);
+
+            return $icon;
+        }
+
+        throw ValidationException::withMessages([
+            'icon' => 'Choose a preset icon or upload a valid image file.',
+        ]);
+    }
+
+    private function deleteStoredIcon(?string $icon): void
+    {
+        if (PublicImage::isStored($icon)) {
+            PublicImage::delete($icon);
+        }
     }
 
     private function uniqueSlug(string $nameOrSlug, ?int $ignoreId = null): string

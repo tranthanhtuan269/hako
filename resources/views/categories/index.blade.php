@@ -10,7 +10,7 @@
     <div class="category-grid" style="grid-template-columns:repeat(auto-fill,minmax(180px,1fr));">
         @foreach($categories as $category)
             <a href="{{ route('categories.show', $category->slug) }}" class="category-chip">
-                <span class="icon">{{ $category->icon ?? '🏷️' }}</span>
+                <span class="icon">@include('partials.category-icon', ['category' => $category, 'size' => 'md'])</span>
                 <strong>{{ $category->name }}</strong>
                 <small>{{ $category->coupons_count }} {{ Str::plural('offer', $category->coupons_count) }}</small>
             </a>

@@ -54,6 +54,19 @@ class HomeController extends Controller
             ->paginate(16)
             ->withQueryString();
 
-        return view('search', compact('coupons', 'q'));
+        $posts = $q
+            ? Post::published()
+                ->with('user')
+                ->where(function ($query) use ($q) {
+                    $query->where('title', 'like', "%{$q}%")
+                        ->orWhere('excerpt', 'like', "%{$q}%")
+                        ->orWhere('content', 'like', "%{$q}%");
+                })
+                ->orderByDesc('published_at')
+                ->take(12)
+                ->get()
+            : collect();
+
+        return view('search', compact('coupons', 'posts', 'q'));
     }
 }

@@ -25,10 +25,23 @@
     <div class="stat-card"><strong>{{ $stats['pending_affiliate_payouts'] }}</strong> Pending Payouts</div>
     @endif
 </div>
-<h2 style="margin-bottom:1rem;">Latest Coupons</h2>
+<h2 style="margin-bottom:1rem;">
+    @if(($sort ?? 'clicks') === 'latest')
+        Latest Coupons
+    @elseif(($sort ?? 'clicks') === 'title')
+        Coupons by Title
+    @else
+        Top Coupons by Clicks
+    @endif
+</h2>
 <table class="admin-table">
     <thead>
-        <tr><th>Title</th><th>Store</th><th>Type</th><th>Clicks</th></tr>
+        <tr>
+            @include('partials.table-sort-th', ['column' => 'title', 'label' => 'Title', 'currentSort' => $sort ?? 'clicks', 'currentDir' => $dir ?? 'desc'])
+            <th>Store</th>
+            <th>Type</th>
+            @include('partials.table-sort-th', ['column' => 'clicks', 'label' => 'Clicks', 'currentSort' => $sort ?? 'clicks', 'currentDir' => $dir ?? 'desc'])
+        </tr>
     </thead>
     <tbody>
         @foreach($recentCoupons as $c)
@@ -36,7 +49,7 @@
             <td><a href="{{ route('admin.coupons.edit', $c) }}">{{ $c->title }}</a></td>
             <td>{{ $c->store?->name }}</td>
             <td>{{ $c->typeLabel() }}</td>
-            <td>{{ $c->click_count }}</td>
+            <td>{{ number_format($c->click_count) }}</td>
         </tr>
         @endforeach
     </tbody>

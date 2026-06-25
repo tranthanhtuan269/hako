@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Member;
 
 use App\Http\Controllers\Concerns\ValidatesStoreInput;
+use App\Http\Controllers\Concerns\SyncsStoreCouponDisplay;
 use App\Http\Controllers\Controller;
 use App\Models\Category;
 use App\Models\Store;
@@ -14,6 +15,7 @@ use Illuminate\View\View;
 class StoreController extends Controller
 {
     use ValidatesStoreInput;
+    use SyncsStoreCouponDisplay;
 
     public function index(): View
     {
@@ -43,7 +45,7 @@ class StoreController extends Controller
         $this->authorize('create', Store::class);
 
         $data = $this->validatedStore($request);
-        unset($data['sort_order']);
+        unset($data['sort_order'], $data['show_on_stores'], $data['stores_list_sort_order']);
         $data['logo'] = $this->resolveLogo($request, $data['logo'] ?? null, null, auth()->id());
         $data['user_id'] = auth()->id();
 
@@ -60,6 +62,7 @@ class StoreController extends Controller
         return view('member.stores.form', [
             'store' => $store,
             'categories' => Category::active()->orderBy('name')->get(),
+            'storeCoupons' => $this->storeCouponsForDisplayForm($store),
         ]);
     }
 
@@ -68,11 +71,12 @@ class StoreController extends Controller
         $this->authorize('update', $store);
 
         $data = $this->validatedStore($request, $store);
-        unset($data['sort_order']);
+        unset($data['sort_order'], $data['show_on_stores'], $data['stores_list_sort_order']);
         $data['logo'] = $this->resolveLogo($request, $request->input('logo'), $store->logo, $store->user_id ?? auth()->id());
 
         $store->update($data);
         $store->ensureLogoStored($request->input('logo'));
+        $this->syncStoreCouponDisplay($store, $request);
 
         return redirect()->route('member.stores.index')->with('success', 'Store updated successfully.');
     }

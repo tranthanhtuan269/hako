@@ -24,13 +24,21 @@ document.addEventListener('DOMContentLoaded', function () {
         return (scrollTop / scrollHeight) * 100;
     }
 
-    function openAffiliateTab() {
-        if (affiliateOpened || !config.affiliateUrl) {
+    function openAffiliateTab(url, allowRepeat) {
+        const targetUrl = url || config.affiliateUrl;
+        if (!targetUrl) {
             return;
         }
 
-        affiliateOpened = true;
-        window.open(config.affiliateUrl, '_blank', 'noopener');
+        if (!allowRepeat && affiliateOpened) {
+            return;
+        }
+
+        if (!allowRepeat) {
+            affiliateOpened = true;
+        }
+
+        window.open(targetUrl, '_blank', 'noopener,noreferrer');
     }
 
     function showPopup() {
@@ -71,9 +79,8 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     async function resolveCode(button) {
-        const code = button.dataset.code;
-        if (code) {
-            return code;
+        if (typeof window.resolveCouponCode === 'function') {
+            return window.resolveCouponCode(button);
         }
 
         const revealUrl = button.dataset.revealUrl;
@@ -102,6 +109,17 @@ document.addEventListener('DOMContentLoaded', function () {
                 window.open(goUrl, '_blank', 'noopener');
             }
             return;
+        }
+
+        if (config.openAffiliateOnCopy) {
+            const affiliateUrl = button.dataset.affiliateUrl || config.affiliateUrl;
+            if (affiliateUrl) {
+                openAffiliateTab(affiliateUrl, true);
+            }
+        }
+
+        if (typeof window.revealCouponCode === 'function') {
+            window.revealCouponCode(button, code);
         }
 
         try {

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\PublicImage;
 use App\Support\Seo;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -58,5 +59,20 @@ class Category extends Model
             ?: "Shop {$this->name} coupon codes and online deals for U.S. stores. Curated offers on " . config('site.name') . '.';
 
         return Seo::description($base);
+    }
+
+    public function isImageIcon(): bool
+    {
+        return PublicImage::isStored($this->icon) && PublicImage::exists($this->icon);
+    }
+
+    public function iconUrl(): ?string
+    {
+        return $this->isImageIcon() ? PublicImage::url($this->icon) : null;
+    }
+
+    public function iconEmoji(): ?string
+    {
+        return filled($this->icon) && ! $this->isImageIcon() ? $this->icon : null;
     }
 }

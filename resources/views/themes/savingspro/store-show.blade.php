@@ -44,20 +44,19 @@
                 @if($store->publicWebsiteLabel() && $store->shopUrl())
                     <a href="{{ $store->shopUrl() }}" class="btn btn-outline sp-store-visit" target="_blank" rel="noopener sponsored">Visit {{ $store->name }}</a>
                 @endif
+                @include('partials.social-share', [
+                    'url' => route('stores.show', $store->slug),
+                    'title' => $store->seoTitle(),
+                    'label' => 'Share this store',
+                    'compact' => true,
+                ])
             </div>
         </div>
 
+        @include('partials.site-affiliate-notice')
+
         <div class="sp-store-layout">
             <aside class="sp-store-sidebar">
-                @if($store->description)
-                    <div class="sp-sidebar-box">
-                        <h3>About {{ $store->name }}</h3>
-                        <div class="sp-sidebar-about">{!! \Illuminate\Support\Str::limit(strip_tags($store->description), 300) !!}</div>
-                        @if(strlen(strip_tags($store->description)) > 300)
-                            <a href="#store-full-desc" class="sp-read-more">Read More</a>
-                        @endif
-                    </div>
-                @endif
                 @if($similarStores->isNotEmpty())
                     <div class="sp-sidebar-box">
                         <h3>Similar Stores</h3>
@@ -86,16 +85,15 @@
             </aside>
 
             <div class="sp-store-main">
-                <div class="sp-store-offers-head">
-                    <h2>Active {{ $store->name }} Offers ({{ $coupons->total() }})</h2>
-                </div>
-                @include('partials.site-affiliate-notice')
                 @if($store->description)
                     <div class="store-description-content" id="store-full-desc">{!! $store->description !!}</div>
                 @endif
+                <div class="sp-store-offers-head">
+                    <h2>Active {{ $store->name }} Offers ({{ $coupons->total() }})</h2>
+                </div>
                 <div class="sp-coupon-list">
                     @forelse($coupons as $coupon)
-                        @include('themes.savingspro.coupon-row', ['coupon' => $coupon])
+                        @include('themes.savingspro.coupon-row', ['coupon' => $coupon, 'openAffiliateOnCopy' => true])
                     @empty
                         <p class="sp-empty">No coupons available for this store yet.</p>
                     @endforelse

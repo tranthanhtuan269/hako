@@ -60,6 +60,7 @@ class ImportAffiliateController extends Controller
                 'code' => $offer['code'] ?? null,
                 'title' => $offer['title'] ?? 'Featured offer',
                 'description' => $offer['description'] ?? null,
+                'expires_at' => $offer['expires_at'] ?? null,
             ])->whenEmpty(fn ($collection) => $collection->push([
                 'code' => null,
                 'title' => ($merchant['name'] ?? 'Store') . ' promo',
@@ -108,6 +109,7 @@ class ImportAffiliateController extends Controller
             'offers.*.code' => ['nullable', 'string', 'max:100'],
             'offers.*.title' => ['required', 'string', 'max:255'],
             'offers.*.description' => ['nullable', 'string'],
+            'offers.*.expires_at' => ['nullable', 'date'],
             'generated_blog' => ['nullable', 'string', 'max:100000'],
             'publish' => ['boolean'],
         ]);
@@ -177,6 +179,7 @@ class ImportAffiliateController extends Controller
                     'description' => HtmlCleaner::clean($offer['description']),
                     'code' => $offer['code'],
                     'type' => $offer['type'],
+                    'expires_at' => $offer['expires_at'],
                     'is_active' => $publish,
                 ]);
             }
@@ -234,8 +237,8 @@ class ImportAffiliateController extends Controller
     }
 
     /**
-     * @param  array<int, array{code?: ?string, title: string, description?: ?string}>  $offers
-     * @return array<int, array{code: ?string, title: string, description: ?string, type: string}>
+     * @param  array<int, array{code?: ?string, title: string, description?: ?string, expires_at?: ?string}>  $offers
+     * @return array<int, array{code: ?string, title: string, description: ?string, type: string, expires_at: ?string}>
      */
     private function normalizeOffers(array $offers): array
     {
@@ -248,6 +251,7 @@ class ImportAffiliateController extends Controller
                     'title' => trim($offer['title']),
                     'description' => filled($offer['description'] ?? null) ? trim((string) $offer['description']) : null,
                     'type' => filled($code) ? 'coupon' : 'discount',
+                    'expires_at' => filled($offer['expires_at'] ?? null) ? $offer['expires_at'] : null,
                 ];
             })
             ->values()

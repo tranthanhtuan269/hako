@@ -259,6 +259,18 @@ body.theme-savingspro .sp-coupon-title a:hover {
     color: var(--primary);
 }
 
+body.theme-savingspro .sp-coupon-description {
+    font-size: .82rem;
+    color: var(--muted);
+    line-height: 1.45;
+    margin: 0 0 .5rem;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
+    min-height: 2.9em;
+}
+
 body.theme-savingspro .sp-coupon-store-name {
     font-size: .82rem;
     color: var(--muted);
@@ -299,8 +311,13 @@ body.theme-savingspro .sp-code-text {
     align-items: center;
     min-width: 0;
     overflow: hidden;
+}
+
+body.theme-savingspro .sp-code-text .coupon-code-masked {
+    overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    max-width: 100%;
 }
 
 body.theme-savingspro .sp-code-copy {
@@ -554,7 +571,13 @@ body.theme-savingspro .sp-coupon-row-title a:hover {
 body.theme-savingspro .sp-coupon-row-desc {
     font-size: .88rem;
     color: var(--muted);
+    line-height: 1.45;
     margin: 0 0 .35rem;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
+    min-height: 2.9em;
 }
 
 body.theme-savingspro .sp-coupon-row-expire {

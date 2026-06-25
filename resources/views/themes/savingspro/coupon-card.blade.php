@@ -1,18 +1,26 @@
-<article class="sp-coupon-card coupon-card {{ $coupon->is_featured ? 'featured sp-coupon-card--featured' : '' }}">
+<article class="sp-coupon-card coupon-card {{ $coupon->is_featured ? 'featured sp-coupon-card--featured' : '' }}{{ ($linkCardToDetail ?? false) ? ' coupon-card--clickable' : '' }}">
+    @if($linkCardToDetail ?? false)
+        <a href="{{ route('coupons.show', $coupon->slug) }}" class="coupon-card-overlay" aria-label="View {{ $coupon->title }}"></a>
+    @endif
     <div class="sp-coupon-card-head">
         @include('partials.store-logo', ['store' => $coupon->store, 'size' => 'md', 'showVerified' => false])
         <span class="sp-verified-badge">Verified</span>
     </div>
     <div class="sp-coupon-discount">{{ $coupon->discountLabel() }}</div>
     <h3 class="coupon-title sp-coupon-title">
-        <a href="{{ route('coupons.show', $coupon->slug) }}">
-            @if($showDescription ?? false)
-                {{ \Illuminate\Support\Str::limit(strip_tags($coupon->description ?: $coupon->title), 120) }}
-            @else
-                {{ $coupon->title }}
-            @endif
-        </a>
+        @if($linkCardToDetail ?? false)
+            {{ $coupon->title }}
+        @else
+            <a href="{{ route('coupons.show', $coupon->slug) }}">{{ $coupon->title }}</a>
+        @endif
     </h3>
+    @if($showDescription ?? false)
+        <p class="coupon-description sp-coupon-description">
+            @if(filled($coupon->description))
+                {{ \Illuminate\Support\Str::limit(strip_tags($coupon->description), 120) }}
+            @endif
+        </p>
+    @endif
     @if($coupon->store)
         <p class="sp-coupon-store-name">{{ $coupon->store->name }}</p>
     @endif
@@ -21,11 +29,12 @@
     @endif
     <div class="coupon-actions sp-coupon-actions">
         @if($coupon->code)
-            <div class="sp-code-split">
-                <span class="sp-code-text">{{ $coupon->code }}</span>
+            <div class="sp-code-split" data-code-reveal>
+                <span class="sp-code-text">
+                    @include('partials.coupon-code-masked', ['coupon' => $coupon])
+                </span>
                 <button type="button"
                     class="sp-code-copy"
-                    data-code="{{ $coupon->code }}"
                     data-reveal-url="{{ route('coupons.reveal', $coupon->slug) }}"
                     data-coupon-title="{{ $coupon->title }}"
                     data-coupon-discount="{{ $coupon->discountLabel() }}"

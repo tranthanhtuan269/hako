@@ -32,7 +32,7 @@
     </div>
     <div class="coupon-grid">
         @forelse($coupons as $coupon)
-            @include('partials.coupon-card', ['coupon' => $coupon])
+            @include('partials.coupon-card', ['coupon' => $coupon, 'showDescription' => true, 'linkCardToDetail' => true])
         @empty
             <p>No offers available yet.</p>
         @endforelse

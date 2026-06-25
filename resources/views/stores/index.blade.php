@@ -11,15 +11,31 @@
 @section('content')
 <div class="container">
     <div class="page-header"><h1>Stores</h1></div>
-    <div class="store-grid store-grid--logos">
-        @foreach($stores as $store)
-            <a href="{{ route('stores.show', $store->slug) }}" class="store-chip store-chip--logo">
-                @include('partials.store-logo', ['store' => $store, 'size' => 'lg', 'showVerified' => false, 'linked' => false])
-                <strong>{{ $store->name }}</strong>
-                <small>{{ $store->coupons_count }} {{ Str::plural('offer', $store->coupons_count) }}</small>
-                <span class="store-chip-verified">Coupons listed on {{ config('site.name') }}</span>
+    <div class="store-grid store-grid--cards">
+        @forelse($stores as $store)
+            <a href="{{ route('stores.show', $store->slug) }}" class="store-card">
+                <div class="store-card-logo">
+                    @include('partials.store-logo', ['store' => $store, 'size' => 'xxl', 'showVerified' => false, 'linked' => false])
+                </div>
+                <div class="store-card-body">
+                    <strong class="store-card-name">{{ $store->name }}</strong>
+                    <p class="store-card-description">
+                        @if($store->listingDescription())
+                            {{ \Illuminate\Support\Str::limit($store->listingDescription(), 160) }}
+                        @endif
+                    </p>
+                    <div class="store-card-meta">
+                        <span>{{ $store->coupons_count }} {{ Str::plural('offer', $store->coupons_count) }}</span>
+                        @if($store->category)
+                            <span class="category-inline">@include('partials.category-icon', ['category' => $store->category, 'size' => 'sm']) {{ $store->category->name }}</span>
+                        @endif
+                    </div>
+                    <span class="store-chip-verified">Coupons listed on {{ config('site.name') }}</span>
+                </div>
             </a>
-        @endforeach
+        @empty
+            <p>No stores available yet.</p>
+        @endforelse
     </div>
     <div class="pagination">{{ $stores->links() }}</div>
 </div>

@@ -6,11 +6,13 @@ use App\Http\Controllers\Controller;
 use App\Models\Coupon;
 use App\Models\Post;
 use App\Models\Store;
+use App\Support\CouponQuerySort;
+use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class DashboardController extends Controller
 {
-    public function index(): View
+    public function index(Request $request): View
     {
         $userId = auth()->id();
 
@@ -23,12 +25,14 @@ class DashboardController extends Controller
             'store_views' => (int) Store::ownedBy($userId)->sum('view_count'),
         ];
 
-        $recentCoupons = Coupon::with('store')
-            ->ownedBy($userId)
-            ->latest()
-            ->take(10)
-            ->get();
+        $sorted = CouponQuerySort::apply(
+            Coupon::with('store')->ownedBy($userId),
+            $request
+        );
+        $recentCoupons = $sorted['query']->take(10)->get();
+        $sort = $sorted['sort'];
+        $dir = $sorted['dir'];
 
-        return view('member.dashboard', compact('stats', 'recentCoupons'));
+        return view('member.dashboard', compact('stats', 'recentCoupons', 'sort', 'dir'));
     }
 }

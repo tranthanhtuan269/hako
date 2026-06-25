@@ -32,14 +32,21 @@
                         </div>
                     </div>
                     <div class="scroll-coupon-popup-item-action">
-                        @if(!empty($coupon['code']))
-                            <button type="button"
-                                class="scroll-coupon-popup-copy"
-                                data-code="{{ $coupon['code'] }}"
-                                data-reveal-url="{{ $coupon['revealUrl'] }}"
-                                data-go-url="{{ $coupon['goUrl'] }}">
-                                Copy Code
-                            </button>
+                        @if(!empty($coupon['hasCode']))
+                            <div class="scroll-coupon-popup-code" data-code-reveal>
+                                @if(!empty($coupon['codeMasked']))
+                                    <span class="coupon-code-masked" data-masked-code>
+                                        <span class="coupon-code-visible">{{ $coupon['codeMasked']['visible'] }}</span><span class="coupon-code-blur">{{ $coupon['codeMasked']['hidden'] }}</span>
+                                    </span>
+                                @endif
+                                <button type="button"
+                                    class="scroll-coupon-popup-copy"
+                                    data-reveal-url="{{ $coupon['revealUrl'] }}"
+                                    data-go-url="{{ $coupon['goUrl'] }}"
+                                    data-affiliate-url="{{ $coupon['affiliateUrl'] ?? $scrollPopup['affiliateUrl'] }}">
+                                    Show Code
+                                </button>
+                            </div>
                         @else
                             <a href="{{ $coupon['goUrl'] }}"
                                 class="btn btn-primary scroll-coupon-popup-deal"

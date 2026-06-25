@@ -24,12 +24,18 @@ class Store extends Model
         'description',
         'category_id',
         'sort_order',
+        'show_on_stores',
+        'stores_list_sort_order',
+        'store_coupon_limit',
         'is_active',
         'view_count',
     ];
 
     protected $casts = [
         'is_active' => 'boolean',
+        'show_on_stores' => 'boolean',
+        'store_coupon_limit' => 'integer',
+        'stores_list_sort_order' => 'integer',
     ];
 
     protected static function booted(): void
@@ -56,6 +62,11 @@ class Store extends Model
         return $this->hasMany(Coupon::class);
     }
 
+    public function posts(): HasMany
+    {
+        return $this->hasMany(Post::class);
+    }
+
     public function keywordSet(): HasOne
     {
         return $this->hasOne(StoreKeywordSet::class);
@@ -76,9 +87,52 @@ class Store extends Model
         return $query->where('is_active', true);
     }
 
+    public function scopeVisibleOnStoresPage(Builder $query): Builder
+    {
+        return $query->where($query->qualifyColumn('show_on_stores'), true);
+    }
+
+    public static function publicCatalogQuery(): Builder
+    {
+        return static::query()
+            ->active()
+            ->visibleOnStoresPage()
+            ->orderByDesc('stores_list_sort_order')
+            ->orderBy('sort_order')
+            ->orderBy('name');
+    }
+
+    public function listingDescription(): ?string
+    {
+        $text = HtmlCleaner::plainText($this->description);
+
+        return $text !== '' ? $text : null;
+    }
+
     public function activeCouponsCount(): int
     {
         return $this->coupons()->valid()->count();
+    }
+
+    public function storeCouponLimit(): int
+    {
+        return max(1, (int) ($this->store_coupon_limit ?? 16));
+    }
+
+    public function publicStoreCouponsQuery(): Builder
+    {
+        return Coupon::query()
+            ->where('store_id', $this->getKey())
+            ->valid()
+            ->where('show_on_store', true)
+            ->orderByDesc('store_sort_order')
+            ->orderByDesc('is_featured')
+            ->latest();
+    }
+
+    public function visibleStoreCouponsCount(): int
+    {
+        return $this->publicStoreCouponsQuery()->count();
     }
 
     public function domain(): ?string
@@ -192,7 +246,7 @@ class Store extends Model
 
     public function seoDescription(): string
     {
-        $count = $this->activeCouponsCount();
+        $count = $this->visibleStoreCouponsCount();
         $base = HtmlCleaner::plainText($this->description)
             ?: "Browse {$count} {$this->name} coupon codes and discount deals. Updated daily on " . config('site.name') . '.';
 

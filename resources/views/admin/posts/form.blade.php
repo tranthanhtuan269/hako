@@ -16,10 +16,12 @@
         <label>Excerpt (summary for listings &amp; SEO)</label>
         <textarea name="excerpt" rows="2" maxlength="500">{{ old('excerpt', $post->excerpt) }}</textarea>
     </div>
-    <div class="form-group">
-        <label>Content * (HTML allowed: &lt;h2&gt;, &lt;p&gt;, &lt;ul&gt;, &lt;a&gt;)</label>
-        <textarea name="content" rows="18" required style="max-width:100%;font-family:monospace;">{{ old('content', $post->content) }}</textarea>
-    </div>
+    @include('partials.ckeditor-editor', [
+        'editorId' => 'admin-post-content',
+        'fieldName' => 'content',
+        'value' => $post->content,
+        'label' => 'Content *',
+    ])
     <h3 style="margin:1.5rem 0 .75rem;">SEO</h3>
     <div class="form-group">
         <label>Meta title (max 70 chars)</label>

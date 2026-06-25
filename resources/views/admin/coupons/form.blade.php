@@ -29,6 +29,12 @@
         <input type="text" name="code" value="{{ old('code', $coupon->code) }}" placeholder="Leave blank for discount deals">
         <p class="form-hint">If you enter a code, this becomes a Coupon. If left blank, it becomes a Discount.</p>
     </div>
+    <div class="form-group">
+        <label for="expires_at">Expiration date (optional)</label>
+        <input type="datetime-local" id="expires_at" name="expires_at" value="{{ old('expires_at', $coupon->expires_at?->format('Y-m-d\TH:i')) }}">
+        <p class="form-hint">Leave blank if this offer does not expire.</p>
+        @error('expires_at')<p class="form-error">{{ $message }}</p>@enderror
+    </div>
     <div class="form-check">
         <input type="checkbox" name="is_featured" value="1" id="featured" @checked(old('is_featured', $coupon->is_featured))>
         <label for="featured">Featured</label>
@@ -36,6 +42,15 @@
     <div class="form-check">
         <input type="checkbox" name="is_active" value="1" id="active" @checked(old('is_active', $coupon->is_active ?? true))>
         <label for="active">Active</label>
+    </div>
+    <div class="form-check">
+        <input type="checkbox" name="show_on_coupons" value="1" id="show_on_coupons" @checked(old('show_on_coupons', $coupon->show_on_coupons ?? true))>
+        <label for="show_on_coupons">Show on public Coupons page (/coupons)</label>
+    </div>
+    <div class="form-group">
+        <label for="coupons_sort_order">Order on Coupons page</label>
+        <input type="number" id="coupons_sort_order" name="coupons_sort_order" min="0" max="9999" value="{{ old('coupons_sort_order', $coupon->coupons_sort_order ?? 0) }}" style="max-width:8rem;">
+        <p class="form-hint">Higher numbers appear first on the coupons listing page.</p>
     </div>
     <button type="submit" class="btn btn-primary" style="margin-top:1rem;">Save</button>
     <a href="{{ route('admin.coupons.index') }}" class="btn btn-outline">Cancel</a>

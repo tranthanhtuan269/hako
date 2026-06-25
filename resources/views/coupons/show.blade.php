@@ -45,7 +45,7 @@
         <h1>{{ $coupon->title }}</h1>
         <p class="coupon-detail-meta">
             @if($coupon->store?->category)
-                <span>{{ $coupon->store->category->icon }} {{ $coupon->store->category->name }}</span>
+                <span class="category-inline">@include('partials.category-icon', ['category' => $coupon->store->category, 'size' => 'sm']) {{ $coupon->store->category->name }}</span>
             @endif
         </p>
         @if($coupon->description)
@@ -56,9 +56,13 @@
         @endif
 
         @if($coupon->code)
-            <div class="code-box" id="coupon-code">{{ $coupon->code }}</div>
-            <button type="button" class="btn btn-copy btn-primary" data-code="{{ $coupon->code }}" data-reveal-url="{{ route('coupons.reveal', $coupon->slug) }}" style="width:100%;margin-bottom:.5rem;">
-                Copy Code
+            <div class="code-box-wrap" data-code-reveal>
+                <div class="code-box" id="coupon-code">
+                    @include('partials.coupon-code-masked', ['coupon' => $coupon])
+                </div>
+            </div>
+            <button type="button" class="btn btn-copy btn-primary" data-reveal-url="{{ route('coupons.reveal', $coupon->slug) }}" style="width:100%;margin-bottom:.5rem;">
+                Show &amp; Copy Code
             </button>
         @endif
 

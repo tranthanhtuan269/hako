@@ -33,7 +33,7 @@
         <tbody>
             @foreach($categories as $category)
                 <tr>
-                    <td><span style="font-size:1.35rem;">{{ $category->icon ?: '—' }}</span></td>
+                    <td>@include('partials.category-icon', ['category' => $category, 'size' => 'md'])</td>
                     <td><strong>{{ $category->name }}</strong></td>
                     <td><code>{{ $category->slug }}</code></td>
                     <td>{{ $category->stores_count }}</td>

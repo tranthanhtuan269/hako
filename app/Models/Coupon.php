@@ -26,6 +26,10 @@ class Coupon extends Model
         'expires_at',
         'is_featured',
         'is_active',
+        'show_on_store',
+        'store_sort_order',
+        'show_on_coupons',
+        'coupons_sort_order',
         'click_count',
     ];
 
@@ -35,6 +39,10 @@ class Coupon extends Model
         'expires_at' => 'datetime',
         'is_featured' => 'boolean',
         'is_active' => 'boolean',
+        'show_on_store' => 'boolean',
+        'store_sort_order' => 'integer',
+        'show_on_coupons' => 'boolean',
+        'coupons_sort_order' => 'integer',
     ];
 
     protected static function booted(): void
@@ -81,6 +89,21 @@ class Coupon extends Model
             });
     }
 
+    public function scopeVisibleOnCouponsPage(Builder $query): Builder
+    {
+        return $query->where($query->qualifyColumn('show_on_coupons'), true);
+    }
+
+    public static function publicCatalogQuery(): Builder
+    {
+        return static::query()
+            ->valid()
+            ->visibleOnCouponsPage()
+            ->orderByDesc('coupons_sort_order')
+            ->orderByDesc('is_featured')
+            ->latest();
+    }
+
     public function scopeFeatured(Builder $query): Builder
     {
         return $query->where($query->qualifyColumn('is_featured'), true);
@@ -125,6 +148,26 @@ class Coupon extends Model
         return $this->expires_at && $this->expires_at->isPast();
     }
 
+    /**
+     * @return array{visible: string, hidden: string}
+     */
+    public function maskedCodeParts(int $visibleChars = 2): array
+    {
+        $code = (string) ($this->code ?? '');
+        $length = mb_strlen($code);
+
+        if ($length === 0) {
+            return ['visible' => '', 'hidden' => ''];
+        }
+
+        $visible = min(max(1, $visibleChars), max(1, $length - 1));
+
+        return [
+            'visible' => mb_substr($code, 0, $visible),
+            'hidden' => str_repeat('•', $length - $visible),
+        ];
+    }
+
     public function discountLabel(): string
     {
         return match ($this->discount_type) {
@@ -161,5 +204,14 @@ class Coupon extends Model
     public function ogImageUrl(): ?string
     {
         return $this->store?->logoUrl();
+    }
+
+    public function affiliateClickUrl(): ?string
+    {
+        if (filled($this->affiliate_url)) {
+            return $this->affiliate_url;
+        }
+
+        return $this->store?->shopUrl();
     }
 }

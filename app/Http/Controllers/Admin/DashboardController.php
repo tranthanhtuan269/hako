@@ -8,11 +8,13 @@ use App\Models\Category;
 use App\Models\Coupon;
 use App\Models\Post;
 use App\Models\Store;
+use App\Support\CouponQuerySort;
+use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class DashboardController extends Controller
 {
-    public function index(): View
+    public function index(Request $request): View
     {
         $stats = [
             'coupons' => Coupon::count(),
@@ -27,8 +29,11 @@ class DashboardController extends Controller
                 : 0,
         ];
 
-        $recentCoupons = Coupon::with('store')->latest()->take(10)->get();
+        $sorted = CouponQuerySort::apply(Coupon::with('store'), $request);
+        $recentCoupons = $sorted['query']->take(10)->get();
+        $sort = $sorted['sort'];
+        $dir = $sorted['dir'];
 
-        return view('admin.dashboard', compact('stats', 'recentCoupons'));
+        return view('admin.dashboard', compact('stats', 'recentCoupons', 'sort', 'dir'));
     }
 }

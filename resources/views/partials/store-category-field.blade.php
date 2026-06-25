@@ -4,7 +4,7 @@
         <option value="">— None —</option>
         @foreach($categories as $category)
             <option value="{{ $category->id }}" @selected(old('category_id', $store->category_id) == $category->id)>
-                {{ $category->icon ? $category->icon . ' ' : '' }}{{ $category->name }}
+                {{ $category->iconEmoji() ? $category->iconEmoji().' ' : '' }}{{ $category->name }}{{ $category->isImageIcon() ? ' 🖼' : '' }}
             </option>
         @endforeach
     </select>

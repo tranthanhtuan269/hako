@@ -23,13 +23,26 @@
     <div class="stat-card"><strong>{{ number_format($stats['clicks']) }}</strong> Coupon Clicks</div>
     <div class="stat-card"><strong>{{ number_format($stats['store_views']) }}</strong> Store Page Views</div>
 </div>
-<h2 style="margin:1.5rem 0 1rem;">Latest Coupons</h2>
+<h2 style="margin:1.5rem 0 1rem;">
+    @if(($sort ?? 'clicks') === 'latest')
+        Latest Coupons
+    @elseif(($sort ?? 'clicks') === 'title')
+        Coupons by Title
+    @else
+        Top Coupons by Clicks
+    @endif
+</h2>
 @if($recentCoupons->isEmpty())
     <p>No coupons yet. <a href="{{ route('member.coupons.create') }}">Create your first coupon</a>.</p>
 @else
 <table class="admin-table">
     <thead>
-        <tr><th>Title</th><th>Store</th><th>Type</th><th>Clicks</th></tr>
+        <tr>
+            @include('partials.table-sort-th', ['column' => 'title', 'label' => 'Title', 'currentSort' => $sort ?? 'clicks', 'currentDir' => $dir ?? 'desc'])
+            <th>Store</th>
+            <th>Type</th>
+            @include('partials.table-sort-th', ['column' => 'clicks', 'label' => 'Clicks', 'currentSort' => $sort ?? 'clicks', 'currentDir' => $dir ?? 'desc'])
+        </tr>
     </thead>
     <tbody>
         @foreach($recentCoupons as $c)

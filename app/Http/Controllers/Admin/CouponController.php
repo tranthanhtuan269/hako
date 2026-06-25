@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Concerns\SyncsCouponsCatalogDisplay;
 use App\Http\Controllers\Controller;
 use App\Models\Coupon;
 use App\Models\Store;
@@ -12,11 +13,51 @@ use Illuminate\View\View;
 
 class CouponController extends Controller
 {
+    use SyncsCouponsCatalogDisplay;
+
     public function index(): View
     {
-        $coupons = Coupon::with(['store.category'])->latest()->paginate(20);
+        $coupons = Coupon::with(['store.category'])
+            ->orderByDesc('coupons_sort_order')
+            ->orderByDesc('created_at')
+            ->get();
 
         return view('admin.coupons.index', compact('coupons'));
+    }
+
+    public function updateSortOrder(Request $request)
+    {
+        $data = $request->validate([
+            'order' => ['required', 'array', 'min:1'],
+            'order.*' => ['integer', 'exists:coupons,id'],
+        ]);
+
+        $this->applyCouponsCatalogSortOrder($data['order']);
+
+        if ($request->expectsJson()) {
+            return response()->json(['ok' => true]);
+        }
+
+        return redirect()
+            ->route('admin.coupons.index')
+            ->with('success', 'Coupons page display order saved.');
+    }
+
+    public function catalogDisplay(): View
+    {
+        return view('admin.coupons.catalog-display', [
+            'coupons' => $this->couponsForCatalogDisplayForm(),
+            'couponsPageLimit' => $this->couponsPageLimit(),
+        ]);
+    }
+
+    public function updateCatalogDisplay(Request $request): RedirectResponse
+    {
+        $this->syncCouponsCatalogDisplay($request);
+
+        return redirect()
+            ->route('admin.coupons.catalog-display')
+            ->with('success', 'Coupons page display settings saved.');
     }
 
     public function create(): View
@@ -70,12 +111,18 @@ class CouponController extends Controller
             'code' => ['nullable', 'string', 'max:100'],
             'is_featured' => ['boolean'],
             'is_active' => ['boolean'],
+            'show_on_coupons' => ['boolean'],
+            'coupons_sort_order' => ['nullable', 'integer', 'min:0', 'max:9999'],
+            'expires_at' => ['nullable', 'date'],
         ]);
 
         $data['code'] = filled($data['code'] ?? null) ? trim($data['code']) : null;
         $data['type'] = filled($data['code']) ? 'coupon' : 'discount';
         $data['is_featured'] = $request->boolean('is_featured');
         $data['is_active'] = $request->boolean('is_active', true);
+        $data['show_on_coupons'] = $request->boolean('show_on_coupons', true);
+        $data['coupons_sort_order'] = (int) ($data['coupons_sort_order'] ?? 0);
+        $data['expires_at'] = filled($data['expires_at'] ?? null) ? $data['expires_at'] : null;
 
         return $data;
     }

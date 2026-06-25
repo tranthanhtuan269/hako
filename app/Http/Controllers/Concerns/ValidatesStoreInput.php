@@ -20,6 +20,8 @@ trait ValidatesStoreInput
             'description' => ['nullable', 'string'],
             'category_id' => ['nullable', 'exists:categories,id'],
             'sort_order' => ['nullable', 'integer', 'min:0'],
+            'show_on_stores' => ['boolean'],
+            'stores_list_sort_order' => ['nullable', 'integer', 'min:0', 'max:9999'],
             'is_active' => ['boolean'],
         ], [
             'slug.regex' => 'Slug may only contain lowercase letters, numbers, and hyphens.',
@@ -29,6 +31,8 @@ trait ValidatesStoreInput
         $data['is_active'] = $request->boolean('is_active', true);
         $data['category_id'] = filled($data['category_id'] ?? null) ? $data['category_id'] : null;
         $data['sort_order'] = $data['sort_order'] ?? 0;
+        $data['show_on_stores'] = $request->boolean('show_on_stores', true);
+        $data['stores_list_sort_order'] = (int) ($data['stores_list_sort_order'] ?? 0);
         $data['description'] = HtmlCleaner::clean($data['description'] ?? null);
 
         unset($data['logo_file']);

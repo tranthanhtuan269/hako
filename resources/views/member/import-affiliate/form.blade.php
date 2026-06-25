@@ -120,13 +120,14 @@
         <p class="form-hint" style="margin-bottom:.75rem;">Each row becomes one coupon or discount on your site.</p>
 
         <div id="offers-list" class="offers-list">
-            @php($oldOffers = old('offers', [['code' => '', 'title' => '', 'description' => '']]))
+            @php($oldOffers = old('offers', [['code' => '', 'title' => '', 'description' => '', 'expires_at' => '']]))
             @foreach($oldOffers as $index => $offer)
                 @include('member.import-affiliate.partials.offer-block', ['index' => $index, 'offer' => $offer])
             @endforeach
         </div>
         @error('offers')<p class="form-error">{{ $message }}</p>@enderror
         @error('offers.*.title')<p class="form-error">{{ $message }}</p>@enderror
+        @error('offers.*.expires_at')<p class="form-error">{{ $message }}</p>@enderror
     </div>
 
     <div class="import-card">
@@ -144,7 +145,7 @@
 </form>
 
 <template id="offer-block-template">
-    @include('member.import-affiliate.partials.offer-block', ['index' => '__INDEX__', 'offer' => ['code' => '', 'title' => '', 'description' => '']])
+    @include('member.import-affiliate.partials.offer-block', ['index' => '__INDEX__', 'offer' => ['code' => '', 'title' => '', 'description' => '', 'expires_at' => '']])
 </template>
 @endsection
 
@@ -310,6 +311,13 @@
     margin-top: .45rem;
     margin-left: 2.5rem;
 }
+.offer-meta-row {
+    margin-top: .45rem;
+    margin-left: 2.5rem;
+}
+.offer-field-expires input {
+    max-width: 16rem;
+}
 .offer-field-desc textarea {
     resize: vertical;
     min-height: 2.5rem;
@@ -342,6 +350,9 @@
         grid-row: 1;
     }
     .offer-field-desc {
+        margin-left: 0;
+    }
+    .offer-meta-row {
         margin-left: 0;
     }
 }
@@ -398,6 +409,10 @@
             block.querySelector('[name*="[code]"]').value = offer.code || '';
             block.querySelector('[name*="[title]"]').value = offer.title || '';
             block.querySelector('[name*="[description]"]').value = offer.description || '';
+            const expiresInput = block.querySelector('[name*="[expires_at]"]');
+            if (expiresInput) {
+                expiresInput.value = offer.expires_at || '';
+            }
         });
 
         renumberOffers();

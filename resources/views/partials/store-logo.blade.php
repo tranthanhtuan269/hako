@@ -4,6 +4,12 @@
     $showVerified = $showVerified ?? false;
     $showName = $showName ?? false;
     $linked = $linked ?? true;
+    $logoPixels = match ($size) {
+        'xxl' => 112,
+        'xl' => 88,
+        'lg' => 64,
+        default => 52,
+    };
 @endphp
 
 @if($store)
@@ -19,8 +25,8 @@
                 alt=""
                 class="store-logo-img"
                 loading="lazy"
-                width="64"
-                height="64"
+                width="{{ $logoPixels }}"
+                height="{{ $logoPixels }}"
                 onerror="this.style.display='none';this.nextElementSibling?.classList.add('is-visible');"
             >
         @endif

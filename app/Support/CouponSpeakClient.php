@@ -4,6 +4,7 @@ namespace App\Support;
 
 use App\Models\Coupon;
 use App\Models\Store;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
@@ -11,7 +12,7 @@ use Illuminate\Support\Str;
 final class CouponSpeakClient
 {
     /**
-     * @return list<array{code: ?string, title: string, description: ?string, coupon_type: ?string, discount_label: ?string}>
+     * @return list<array{code: ?string, title: string, description: ?string, coupon_type: ?string, discount_label: ?string, expires_at: ?string}>
      */
     public function fetchOffersForAffiliateUrl(string $affiliateUrl): array
     {
@@ -25,7 +26,7 @@ final class CouponSpeakClient
     }
 
     /**
-     * @return list<array{code: ?string, title: string, description: ?string, coupon_type: ?string, discount_label: ?string}>
+     * @return list<array{code: ?string, title: string, description: ?string, coupon_type: ?string, discount_label: ?string, expires_at: ?string}>
      */
     public function fetchOffersByStore(string $storeQuery): array
     {
@@ -231,6 +232,10 @@ final class CouponSpeakClient
             $payload['is_verified'] = true;
         }
 
+        if ($coupon->expires_at) {
+            $payload['expires_at'] = $coupon->expires_at->format('Y-m-d H:i:s');
+        }
+
         return $payload;
     }
 
@@ -247,7 +252,7 @@ final class CouponSpeakClient
 
     /**
      * @param  list<array<string, mixed>>  $coupons
-     * @return list<array{code: ?string, title: string, description: ?string, coupon_type: ?string, discount_label: ?string}>
+     * @return list<array{code: ?string, title: string, description: ?string, coupon_type: ?string, discount_label: ?string, expires_at: ?string}>
      */
     private function mapCouponsToOffers(array $coupons): array
     {
@@ -273,9 +278,23 @@ final class CouponSpeakClient
                 'description' => $title !== '' ? $title : null,
                 'coupon_type' => $type,
                 'discount_label' => $discount !== '' ? $discount : null,
+                'expires_at' => $this->formatExpiresForImportForm($coupon['expires_at'] ?? null),
             ];
         }
 
         return $offers;
+    }
+
+    private function formatExpiresForImportForm(mixed $value): ?string
+    {
+        if (! filled($value)) {
+            return null;
+        }
+
+        try {
+            return Carbon::parse((string) $value)->format('Y-m-d\TH:i');
+        } catch (\Throwable) {
+            return null;
+        }
     }
 }

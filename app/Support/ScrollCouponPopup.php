@@ -8,16 +8,13 @@ use Illuminate\Support\Collection;
 
 class ScrollCouponPopup
 {
-    public static function forStore(?Store $store, int $limit = 5): ?array
+    public static function forStore(?Store $store, int $limit = 5, bool $openAffiliateOnCopy = false): ?array
     {
         if (! $store || ! $store->is_active) {
             return null;
         }
 
-        $coupons = $store->coupons()
-            ->valid()
-            ->orderByDesc('is_featured')
-            ->latest()
+        $coupons = $store->publicStoreCouponsQuery()
             ->take($limit)
             ->get();
 
@@ -25,29 +22,30 @@ class ScrollCouponPopup
             return null;
         }
 
-        return self::buildPayload($store, $coupons);
+        return self::buildPayload($store, $coupons, $openAffiliateOnCopy);
     }
 
     /**
      * @param  Collection<int, Coupon>  $coupons
      */
-    public static function buildPayload(Store $store, Collection $coupons): array
+    public static function buildPayload(Store $store, Collection $coupons, bool $openAffiliateOnCopy = false): array
     {
-        $affiliateUrl = $coupons->first()
-            ? route('coupons.go', $coupons->first()->slug)
-            : (string) $store->shopUrl();
+        $affiliateUrl = (string) ($store->affiliate_url ?: $store->shopUrl());
 
         return [
             'storeName' => $store->name,
             'storeSlug' => $store->slug,
             'storeLogo' => $store->logoUrl(),
             'affiliateUrl' => $affiliateUrl,
+            'openAffiliateOnCopy' => $openAffiliateOnCopy,
             'coupons' => $coupons->map(fn (Coupon $coupon) => [
                 'title' => $coupon->title,
                 'discount' => $coupon->discountLabel(),
-                'code' => $coupon->code,
+                'hasCode' => filled($coupon->code),
+                'codeMasked' => filled($coupon->code) ? $coupon->maskedCodeParts() : null,
                 'expires' => $coupon->expiresLabel(),
                 'goUrl' => route('coupons.go', $coupon->slug),
+                'affiliateUrl' => $coupon->affiliateClickUrl(),
                 'revealUrl' => route('coupons.reveal', $coupon->slug),
             ])->values()->all(),
         ];

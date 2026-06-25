@@ -14,6 +14,7 @@
             <th>Store</th>
             <th>Code</th>
             <th>Type</th>
+            <th>On /coupons</th>
             <th>Status</th>
             <th>Clicks</th>
             <th class="table-actions-col">Actions</th>
@@ -26,6 +27,7 @@
                 <td>{{ $coupon->store?->name }}</td>
                 <td><code>{{ $coupon->code ?? '—' }}</code></td>
                 <td>{{ $coupon->typeLabel() }}</td>
+                <td>{{ $coupon->show_on_coupons ? 'Yes' : 'No' }}</td>
                 <td>{{ $coupon->is_active ? 'Active' : 'Inactive' }}</td>
                 <td><strong>{{ number_format($coupon->click_count) }}</strong></td>
                 <td>
@@ -34,7 +36,7 @@
             </tr>
         @empty
             <tr>
-                <td colspan="7">No coupons yet. <a href="{{ route('member.coupons.create') }}">Create one</a> (add a store first if needed).</td>
+                <td colspan="8">No coupons yet. <a href="{{ route('member.coupons.create') }}">Create one</a> (add a store first if needed).</td>
             </tr>
         @endforelse
     </tbody>

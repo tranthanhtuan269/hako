@@ -1,35 +1,110 @@
 document.addEventListener('DOMContentLoaded', function () {
     const csrf = document.querySelector('meta[name="csrf-token"]')?.content;
 
-    document.querySelectorAll('.btn-copy').forEach(function (btn) {
-        btn.addEventListener('click', async function () {
-            const code = btn.dataset.code;
-            const revealUrl = btn.dataset.revealUrl;
+    function openAffiliateTab(url) {
+        if (!url) {
+            return;
+        }
 
-            if (code) {
-                await copyText(code, btn);
+        window.open(url, '_blank', 'noopener,noreferrer');
+    }
+
+    function shouldOpenAffiliateOnCopy(btn) {
+        return btn.dataset.openAffiliateOnCopy === '1';
+    }
+
+    function affiliateUrlFrom(btn, revealData) {
+        return revealData?.affiliate_url || btn.dataset.affiliateUrl || '';
+    }
+
+    function revealCouponCode(btn, code) {
+        const container = btn?.closest('[data-code-reveal], .sp-code-split, .coupon-code-split, .code-box-wrap, .scroll-coupon-popup-code');
+        const maskEl = container?.querySelector('[data-masked-code]');
+
+        if (!maskEl || !code) {
+            return;
+        }
+
+        maskEl.textContent = code;
+        maskEl.classList.add('is-revealed');
+    }
+
+    async function resolveCouponCode(btn) {
+        const code = btn.dataset.code;
+        if (code) {
+            return code;
+        }
+
+        const revealUrl = btn.dataset.revealUrl;
+        if (!revealUrl || !csrf) {
+            return null;
+        }
+
+        try {
+            const res = await fetch(revealUrl, {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': csrf,
+                    'Accept': 'application/json',
+                },
+            });
+            const data = await res.json();
+
+            return data.code || null;
+        } catch (e) {
+            return null;
+        }
+    }
+
+    window.revealCouponCode = revealCouponCode;
+    window.resolveCouponCode = resolveCouponCode;
+
+    document.querySelectorAll('[data-share-copy]').forEach(function (btn) {
+        btn.addEventListener('click', async function () {
+            const url = btn.dataset.shareCopy;
+            if (!url) {
                 return;
             }
 
-            if (!revealUrl || !csrf) return;
-
             try {
-                const res = await fetch(revealUrl, {
-                    method: 'POST',
-                    headers: {
-                        'X-CSRF-TOKEN': csrf,
-                        'Accept': 'application/json',
-                    },
-                });
-                const data = await res.json();
-                if (data.code) {
-                    await copyText(data.code, btn);
+                if (navigator.clipboard?.writeText) {
+                    await navigator.clipboard.writeText(url);
                 } else {
-                    alert('This offer has no promo code. Click "Shop Now" for details.');
+                    throw new Error('Clipboard unavailable');
                 }
             } catch (e) {
-                alert('Could not retrieve the code. Please try again.');
+                window.prompt('Copy this link:', url);
+                return;
             }
+
+            btn.classList.add('is-copied');
+            const originalLabel = btn.getAttribute('aria-label');
+            btn.setAttribute('aria-label', 'Link copied');
+
+            window.setTimeout(function () {
+                btn.classList.remove('is-copied');
+                btn.setAttribute('aria-label', originalLabel || 'Copy link');
+            }, 2000);
+        });
+    });
+
+    document.querySelectorAll('.btn-copy').forEach(function (btn) {
+        btn.addEventListener('click', async function () {
+            const openAffiliate = shouldOpenAffiliateOnCopy(btn);
+            const code = await resolveCouponCode(btn);
+
+            if (!code) {
+                alert('Could not retrieve the code. Please try again.');
+                return;
+            }
+
+            revealCouponCode(btn, code);
+
+            if (openAffiliate) {
+                openAffiliateTab(affiliateUrlFrom(btn));
+            }
+
+            await copyText(code, btn);
         });
     });
 
@@ -75,8 +150,10 @@ function initStoreAutoplaySlider() {
     let timer = null;
     let resumeTimer = null;
     let isDragging = false;
+    let dragActive = false;
     let dragMoved = false;
     let dragStartX = 0;
+    let dragStartY = 0;
     let dragStartOffset = 0;
     let dragOffset = 0;
 
@@ -214,16 +291,12 @@ function initStoreAutoplaySlider() {
         }
 
         isDragging = true;
+        dragActive = false;
         dragMoved = false;
         dragStartX = event.clientX;
+        dragStartY = event.clientY;
         dragStartOffset = dragOffset;
-        track.style.transition = 'none';
-        viewport.classList.add('is-dragging');
         pauseAutoplay();
-
-        if (viewport.setPointerCapture) {
-            viewport.setPointerCapture(event.pointerId);
-        }
     }
 
     function onPointerMove(event) {
@@ -231,13 +304,30 @@ function initStoreAutoplaySlider() {
             return;
         }
 
-        const delta = event.clientX - dragStartX;
+        const deltaX = event.clientX - dragStartX;
+        const deltaY = event.clientY - dragStartY;
 
-        if (Math.abs(delta) > 4) {
+        if (!dragActive) {
+            if (Math.abs(deltaX) < 12 && Math.abs(deltaY) < 12) {
+                return;
+            }
+
+            if (Math.abs(deltaX) <= Math.abs(deltaY)) {
+                isDragging = false;
+                return;
+            }
+
+            dragActive = true;
             dragMoved = true;
+            track.style.transition = 'none';
+            viewport.classList.add('is-dragging');
+
+            if (viewport.setPointerCapture) {
+                viewport.setPointerCapture(event.pointerId);
+            }
         }
 
-        applyOffset(dragStartOffset - delta, false);
+        applyOffset(dragStartOffset - deltaX, false);
     }
 
     function onPointerUp(event) {
@@ -245,7 +335,9 @@ function initStoreAutoplaySlider() {
             return;
         }
 
+        const wasDrag = dragActive;
         isDragging = false;
+        dragActive = false;
         viewport.classList.remove('is-dragging');
 
         if (viewport.releasePointerCapture) {
@@ -256,8 +348,24 @@ function initStoreAutoplaySlider() {
             }
         }
 
+        if (!wasDrag) {
+            if (event.pointerType !== 'mouse') {
+                const link = event.target.closest('a.store-chip');
+                if (link && link.href) {
+                    window.location.assign(link.href);
+                }
+            }
+
+            scheduleResume(5000);
+            dragMoved = false;
+            return;
+        }
+
         goTo(indexFromOffset(dragOffset));
         scheduleResume(5000);
+        window.setTimeout(function () {
+            dragMoved = false;
+        }, 0);
     }
 
     function setup() {
@@ -297,7 +405,6 @@ function initStoreAutoplaySlider() {
 
         event.preventDefault();
         event.stopPropagation();
-        dragMoved = false;
     }, true);
 
     viewport.addEventListener('dragstart', function (event) {

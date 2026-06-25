@@ -92,6 +92,11 @@
                 {!! $post->content !!}
             </div>
             <aside class="blog-sidebar">
+                @include('partials.social-share', [
+                    'url' => route('blog.show', $post->slug),
+                    'title' => $post->title,
+                    'label' => 'Share this article',
+                ])
                 @include('blog.partials.author-box', ['post' => $post])
                 <div class="sidebar-box">
                     <h3>Save More Today</h3>

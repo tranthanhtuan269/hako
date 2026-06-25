@@ -13,6 +13,16 @@
     </div>
     <div class="offer-field offer-field-desc">
         <label>Description</label>
-        <textarea name="offers[{{ $index }}][description]" rows="2" placeholder="Terms, exclusions, expiration...">{{ old("offers.$index.description", $offer['description'] ?? '') }}</textarea>
+        <textarea name="offers[{{ $index }}][description]" rows="2" placeholder="Terms, exclusions, minimum order...">{{ old("offers.$index.description", $offer['description'] ?? '') }}</textarea>
+    </div>
+    <div class="offer-meta-row">
+        <div class="offer-field offer-field-expires">
+            <label>Expiration (optional)</label>
+            <input
+                type="datetime-local"
+                name="offers[{{ $index }}][expires_at]"
+                value="{{ old("offers.$index.expires_at", $offer['expires_at'] ?? '') }}"
+            >
+        </div>
     </div>
 </div>

@@ -8,7 +8,7 @@
     <a href="{{ route('admin.categories.index') }}" class="btn btn-outline">← Back to list</a>
 </div>
 
-<form method="POST" action="{{ $category->exists ? route('admin.categories.update', $category) : route('admin.categories.store') }}" class="import-card category-form">
+<form method="POST" action="{{ $category->exists ? route('admin.categories.update', $category) : route('admin.categories.store') }}" class="import-card category-form" enctype="multipart/form-data">
     @csrf
     @if($category->exists)
         @method('PUT')
@@ -71,117 +71,12 @@
     margin-bottom: 1.5rem;
 }
 .admin-page-header h1 { margin: 0; }
-.category-form.import-card {
-    max-width: 720px;
-}
+.category-form.import-card { max-width: 820px; }
 .import-card {
     background: var(--card, #fff);
     border: 1px solid var(--border, #e5e7eb);
     border-radius: 8px;
     padding: 1.25rem 1.5rem;
 }
-.category-icon-preview {
-    display: flex;
-    align-items: center;
-    gap: .75rem;
-    margin-bottom: .75rem;
-    padding: .65rem .85rem;
-    background: #f8fafc;
-    border: 1px solid var(--border, #e5e7eb);
-    border-radius: 8px;
-}
-.category-icon-preview-emoji {
-    font-size: 2rem;
-    line-height: 1;
-}
-.category-icon-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(7.5rem, 1fr));
-    gap: .5rem;
-    max-height: 320px;
-    overflow-y: auto;
-    padding: .5rem;
-    border: 1px solid var(--border, #e5e7eb);
-    border-radius: 8px;
-    background: #fafafa;
-}
-.category-icon-option {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: .25rem;
-    padding: .5rem .35rem;
-    border: 2px solid transparent;
-    border-radius: 8px;
-    background: #fff;
-    cursor: pointer;
-    transition: border-color .15s, background .15s, box-shadow .15s;
-    font: inherit;
-    color: inherit;
-}
-.category-icon-option:hover {
-    border-color: #cbd5e1;
-    background: #f1f5f9;
-}
-.category-icon-option.is-selected {
-    border-color: var(--primary, #2563eb);
-    background: #eff6ff;
-    box-shadow: 0 0 0 1px var(--primary, #2563eb);
-}
-.category-icon-option-emoji {
-    font-size: 1.75rem;
-    line-height: 1;
-}
-.category-icon-option-label {
-    font-size: .65rem;
-    color: var(--muted, #64748b);
-    text-align: center;
-    line-height: 1.2;
-    max-width: 100%;
-}
-.btn-sm { padding: .35rem .65rem; font-size: .8rem; }
 </style>
-@endpush
-
-@push('scripts')
-<script>
-(function () {
-    const input = document.getElementById('icon');
-    const preview = document.getElementById('category-icon-preview');
-    const previewEmoji = document.getElementById('category-icon-preview-emoji');
-    const clearBtn = document.getElementById('category-icon-clear');
-    const options = document.querySelectorAll('.category-icon-option');
-
-    function setIcon(value) {
-        if (!input) return;
-        input.value = value || '';
-
-        options.forEach(function (btn) {
-            var selected = btn.dataset.icon === value && value !== '';
-            btn.classList.toggle('is-selected', selected);
-            btn.setAttribute('aria-selected', selected ? 'true' : 'false');
-        });
-
-        if (preview && previewEmoji) {
-            if (value) {
-                preview.hidden = false;
-                previewEmoji.textContent = value;
-            } else {
-                preview.hidden = true;
-                previewEmoji.textContent = '';
-            }
-        }
-    }
-
-    options.forEach(function (btn) {
-        btn.addEventListener('click', function () {
-            setIcon(btn.dataset.icon || '');
-        });
-    });
-
-    clearBtn?.addEventListener('click', function () {
-        setIcon('');
-    });
-})();
-</script>
 @endpush

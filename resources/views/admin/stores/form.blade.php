@@ -23,7 +23,17 @@
     @include('partials.store-category-field', ['store' => $store, 'categories' => $categories])
     @include('partials.store-website-field', ['store' => $store])
     @include('partials.store-description-editor', ['value' => $store->description, 'editorId' => 'admin-store-description'])
+    @include('partials.store-coupon-display-fields', ['store' => $store, 'storeCoupons' => $storeCoupons ?? collect()])
     <div class="form-group"><label>Sort order</label><input type="number" name="sort_order" value="{{ old('sort_order', $store->sort_order ?? 0) }}"></div>
+    <div class="form-check">
+        <input type="checkbox" name="show_on_stores" value="1" id="show_on_stores" @checked(old('show_on_stores', $store->show_on_stores ?? true))>
+        <label for="show_on_stores">Show on public Stores page (/stores)</label>
+    </div>
+    <div class="form-group">
+        <label for="stores_list_sort_order">Order on Stores page</label>
+        <input type="number" id="stores_list_sort_order" name="stores_list_sort_order" min="0" max="9999" value="{{ old('stores_list_sort_order', $store->stores_list_sort_order ?? 0) }}" style="max-width:8rem;">
+        <p class="form-hint">Higher numbers appear first on the stores listing page.</p>
+    </div>
     <div class="form-check">
         <input type="checkbox" name="is_active" value="1" @checked(old('is_active', $store->is_active ?? true))>
         <label>Active</label>

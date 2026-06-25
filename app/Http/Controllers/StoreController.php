@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Category;
+use App\Models\SiteSetting;
 use App\Support\ScrollCouponPopup;
 use App\Support\ThemeManager;
 use App\Models\Store;
@@ -12,10 +13,12 @@ class StoreController extends Controller
 {
     public function index(): View
     {
-        $stores = Store::active()
+        $limit = max(1, (int) SiteSetting::get('stores_page_limit', 24));
+
+        $stores = Store::publicCatalogQuery()
+            ->with('category')
             ->withCount(['coupons' => fn ($q) => $q->valid()])
-            ->orderBy('sort_order')
-            ->paginate(24);
+            ->paginate($limit);
 
         return view('stores.index', compact('stores'));
     }
@@ -28,10 +31,8 @@ class StoreController extends Controller
             ->firstOrFail();
         $store->incrementViews();
 
-        $coupons = $store->coupons()
-            ->valid()
-            ->latest()
-            ->paginate(16);
+        $coupons = $store->publicStoreCouponsQuery()
+            ->paginate($store->storeCouponLimit());
 
         $similarStores = Store::active()
             ->when($store->category_id, fn ($q) => $q->where('category_id', $store->category_id))
@@ -42,7 +43,7 @@ class StoreController extends Controller
 
         $topCategories = Category::active()->orderBy('sort_order')->take(8)->get();
 
-        $scrollPopup = ScrollCouponPopup::forStore($store);
+        $scrollPopup = ScrollCouponPopup::forStore($store, openAffiliateOnCopy: true);
 
         $viewName = 'stores.show';
         $themeView = 'themes.'.ThemeManager::current().'.store-show';

@@ -26,7 +26,7 @@
                 </span>
             </a>
             <form action="{{ route('search') }}" method="GET" class="search-form">
-                <input type="search" name="q" placeholder="Search codes, stores..." value="{{ request('q') }}">
+                <input type="search" name="q" placeholder="Search codes, stores, articles..." value="{{ request('q') }}">
                 <button type="submit">Search</button>
             </form>
             <nav class="main-nav">

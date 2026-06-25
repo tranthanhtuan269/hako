@@ -57,11 +57,17 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     async function resolveCode(btn) {
-        const code = btn.dataset.code;
-        if (code) return code;
+        if (typeof window.resolveCouponCode === 'function') {
+            const code = await window.resolveCouponCode(btn);
+            if (code) {
+                return { code: code, affiliateUrl: btn.dataset.affiliateUrl || '' };
+            }
+        }
 
         const revealUrl = btn.dataset.revealUrl;
-        if (!revealUrl || !csrf) return null;
+        if (!revealUrl || !csrf) {
+            return null;
+        }
 
         const res = await fetch(revealUrl, {
             method: 'POST',
@@ -71,20 +77,40 @@ document.addEventListener('DOMContentLoaded', function () {
             },
         });
         const data = await res.json();
-        return data.code || null;
+
+        return {
+            code: data.code || null,
+            affiliateUrl: data.affiliate_url || btn.dataset.affiliateUrl || '',
+        };
+    }
+
+    function openAffiliateTab(url) {
+        if (!url) {
+            return;
+        }
+
+        window.open(url, '_blank', 'noopener,noreferrer');
     }
 
     document.querySelectorAll('.sp-code-copy').forEach(function (btn) {
         btn.addEventListener('click', async function () {
             try {
-                const code = await resolveCode(btn);
-                if (!code) {
+                const result = await resolveCode(btn);
+                if (!result?.code) {
                     alert('This offer has no promo code. Click "Get Deal" for details.');
                     return;
                 }
 
+                if (btn.dataset.openAffiliateOnCopy === '1') {
+                    openAffiliateTab(result.affiliateUrl);
+                }
+
+                if (typeof window.revealCouponCode === 'function') {
+                    window.revealCouponCode(btn, result.code);
+                }
+
                 openModal({
-                    code: code,
+                    code: result.code,
                     title: btn.dataset.couponTitle || '',
                     discount: btn.dataset.couponDiscount || '',
                     store: btn.dataset.couponStore || '',
@@ -92,7 +118,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     shopUrl: btn.dataset.shopUrl || '#',
                 });
 
-                await copyText(code, btn);
+                await copyText(result.code, btn);
             } catch (e) {
                 alert('Could not retrieve the code. Please try again.');
             }

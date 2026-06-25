@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Coupon;
+use App\Models\SiteSetting;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -14,11 +15,12 @@ class CouponController extends Controller
     {
         $type = $request->get('type');
 
-        $coupons = Coupon::with(['store.category'])
-            ->valid()
+        $limit = max(1, (int) SiteSetting::get('coupons_page_limit', 16));
+
+        $coupons = Coupon::publicCatalogQuery()
+            ->with(['store.category'])
             ->ofType($type)
-            ->latest()
-            ->paginate(16)
+            ->paginate($limit)
             ->withQueryString();
 
         return view('coupons.index', compact('coupons', 'type'));

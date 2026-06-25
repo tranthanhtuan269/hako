@@ -101,6 +101,14 @@ class Post extends Model
             });
     }
 
+    public function scopeForStore(Builder $query, Store $store): Builder
+    {
+        return $query->where(function (Builder $q) use ($store) {
+            $q->where('store_id', $store->id)
+                ->orWhere('content', 'like', '%/stores/'.$store->slug.'%');
+        });
+    }
+
     public function hasStoredFeaturedImage(): bool
     {
         return PublicImage::isStored($this->featured_image);

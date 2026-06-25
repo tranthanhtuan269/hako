@@ -96,12 +96,18 @@ class CouponController extends Controller
             'code' => ['nullable', 'string', 'max:100'],
             'is_featured' => ['boolean'],
             'is_active' => ['boolean'],
+            'show_on_coupons' => ['boolean'],
+            'coupons_sort_order' => ['nullable', 'integer', 'min:0', 'max:9999'],
+            'expires_at' => ['nullable', 'date'],
         ]);
 
         $data['code'] = filled($data['code'] ?? null) ? trim($data['code']) : null;
         $data['type'] = filled($data['code']) ? 'coupon' : 'discount';
         $data['is_featured'] = $request->boolean('is_featured');
         $data['is_active'] = $request->boolean('is_active', true);
+        $data['show_on_coupons'] = $request->boolean('show_on_coupons', true);
+        $data['coupons_sort_order'] = (int) ($data['coupons_sort_order'] ?? 0);
+        $data['expires_at'] = filled($data['expires_at'] ?? null) ? $data['expires_at'] : null;
 
         return $data;
     }

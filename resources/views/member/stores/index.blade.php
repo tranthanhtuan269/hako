@@ -32,7 +32,7 @@
                 <td>{{ $store->name }}</td>
                 <td>
                     @if($store->category)
-                        <span>{{ $store->category->icon }} {{ $store->category->name }}</span>
+                        <span class="category-inline">@include('partials.category-icon', ['category' => $store->category, 'size' => 'sm']) {{ $store->category->name }}</span>
                     @else
                         <span class="text-muted">—</span>
                     @endif

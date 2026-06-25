@@ -34,7 +34,7 @@
         <p>{{ config('site.tagline') }}.</p>
         <p class="hero-subtitle">Deals for brands like Amazon, Walmart, Target, and other U.S. retailers. {{ config('site.name') }} is not affiliated with these merchants.</p>
         <form action="{{ route('search') }}" method="GET" class="search-form" style="max-width:480px;margin:0 auto;">
-            <input type="search" name="q" placeholder="Search coupons, stores...">
+            <input type="search" name="q" placeholder="Search coupons, stores, articles...">
             <button type="submit">Search</button>
         </form>
         <div class="hero-stats">
@@ -49,7 +49,7 @@
 @if($latestPosts->isNotEmpty())
 <section class="section">
     <div class="container">
-        <h2 class="section-title">Blogs <a href="{{ route('blog.index') }}">All articles →</a></h2>
+        <h2 class="section-title">Review <a href="{{ route('blog.index') }}">All articles →</a></h2>
         <div class="blog-grid">
             @foreach($latestPosts as $post)
                 @include('blog.partials.card', ['post' => $post])
@@ -96,7 +96,7 @@
         <div class="category-grid home-category-grid">
             @foreach($categories as $category)
                 <a href="{{ route('categories.show', $category->slug) }}" class="category-chip">
-                    <span class="icon">{{ $category->icon ?? '🏷️' }}</span>
+                    <span class="icon">@include('partials.category-icon', ['category' => $category, 'size' => 'md'])</span>
                     <strong>{{ $category->name }}</strong>
                 </a>
             @endforeach
