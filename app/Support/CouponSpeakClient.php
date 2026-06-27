@@ -30,43 +30,100 @@ final class CouponSpeakClient
      */
     public function fetchOffersByStore(string $storeQuery): array
     {
-        $apiUrl = $this->apiBaseUrl();
+        return $this->fetchStoreBundle($storeQuery)['offers'];
+    }
 
-        if ($apiUrl === '') {
-            return [];
+    /**
+     * Coupons + optional cached store profile from scan API (?profile=1).
+     *
+     * @return array{
+     *     offers: list<array{code: ?string, title: string, description: ?string, coupon_type: ?string, discount_label: ?string, expires_at: ?string}>,
+     *     store_profile: ?array<string, mixed>,
+     *     profile_cached: bool
+     * }
+     */
+    public function fetchStoreBundle(string $storeQuery): array
+    {
+        $empty = [
+            'offers' => [],
+            'store_profile' => null,
+            'profile_cached' => false,
+        ];
+
+        $storeQuery = trim($storeQuery);
+
+        if ($storeQuery === '' || $this->apiBaseUrl() === '') {
+            return $empty;
         }
 
         try {
             $response = $this->jsonClient()
                 ->timeout(12)
-                ->get($apiUrl, [
+                ->get($this->apiBaseUrl(), [
                     'site' => $this->siteSlug(),
                     'store' => $storeQuery,
                     'limit' => (int) config('services.couponspeak.limit', 20),
+                    'profile' => 1,
                 ]);
 
             if (! $response->successful()) {
-                return [];
+                return $empty;
             }
 
-            $coupons = $response->json('coupons');
+            $body = $response->json();
+            $coupons = is_array($body['coupons'] ?? null) ? $body['coupons'] : [];
+            $profile = is_array($body['store_profile'] ?? null) ? $body['store_profile'] : null;
 
-            if (! is_array($coupons)) {
-                return [];
-            }
-
-            return $this->mapCouponsToOffers($coupons);
+            return [
+                'offers' => $this->mapCouponsToOffers($coupons),
+                'store_profile' => $profile,
+                'profile_cached' => (bool) ($body['profile_cached'] ?? ! empty($profile['detected_at'] ?? null)),
+            ];
         } catch (\Throwable) {
-            return [];
+            return $empty;
         }
+    }
+
+    public function profileIsUsable(?array $profile): bool
+    {
+        return is_array($profile) && filled($profile['name'] ?? null);
+    }
+
+    /**
+     * @param  array<string, mixed>  $profile
+     * @return array<string, mixed>
+     */
+    public function merchantFromProfile(array $profile, string $affiliateUrl): array
+    {
+        return [
+            'affiliate_url' => $affiliateUrl,
+            'final_url' => $profile['final_url'] ?? $profile['website'] ?? $affiliateUrl,
+            'domain' => $profile['domain'] ?? $this->hostFromUrl($affiliateUrl),
+            'name' => trim((string) ($profile['name'] ?? '')),
+            'logo' => $profile['logo'] ?? null,
+            'page_title' => $profile['page_title'] ?? $profile['meta_title'] ?? null,
+            'meta_description' => $profile['meta_description'] ?? null,
+            'category_name' => filled($profile['category_name'] ?? null)
+                ? trim((string) $profile['category_name'])
+                : null,
+            'faqs' => is_array($profile['faqs'] ?? null) ? $profile['faqs'] : [],
+            'products' => is_array($profile['products'] ?? null) ? $profile['products'] : [],
+        ];
     }
 
     /**
      * @param  list<Coupon>  $coupons
      * @return array<string, mixed>|null
      */
-    public function syncImportedStore(Store $store, array $coupons, string $affiliateUrl): ?array
-    {
+    /**
+     * @param  array<string, mixed>  $detectContext
+     */
+    public function syncImportedStore(
+        Store $store,
+        array $coupons,
+        string $affiliateUrl,
+        array $detectContext = []
+    ): ?array {
         $syncUrl = $this->syncUrl();
 
         if ($syncUrl === '' || $coupons === []) {
@@ -79,19 +136,36 @@ final class CouponSpeakClient
             return null;
         }
 
+        $detect = array_filter([
+            'page_title' => $detectContext['page_title'] ?? null,
+            'final_url' => $detectContext['final_url'] ?? null,
+            'faqs' => $detectContext['faqs'] ?? null,
+            'products' => $detectContext['products'] ?? null,
+            'generated_blog' => $detectContext['generated_blog'] ?? null,
+        ], fn ($value) => $value !== null && $value !== []);
+
         $payload = [
-            'store' => [
+            'store' => array_filter([
                 'domain' => $domain,
                 'slug' => $store->slug,
                 'name' => $store->name,
                 'affiliate_url' => $affiliateUrl,
-            ],
+                'website' => $detectContext['website'] ?? $store->website,
+                'logo_url' => $detectContext['logo'] ?? null,
+                'meta_description' => $detectContext['meta_description'] ?? null,
+                'category_name' => $detectContext['category_name'] ?? null,
+            ], fn ($value) => filled($value)),
+            'detect' => $detect !== [] ? $detect : null,
             'sync_mode' => 'replace',
             'coupons' => collect($coupons)
                 ->map(fn (Coupon $coupon) => $this->mapCouponForSync($coupon, $affiliateUrl))
                 ->values()
                 ->all(),
         ];
+
+        if ($payload['detect'] === null) {
+            unset($payload['detect']);
+        }
 
         try {
             $response = $this->jsonClient()

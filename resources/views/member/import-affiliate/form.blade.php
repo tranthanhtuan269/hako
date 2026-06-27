@@ -542,9 +542,11 @@
                 generatedBlogInput.value = JSON.stringify(data.generated_blog);
                 previewBlogTitle.textContent = data.generated_blog.title;
                 previewBlogExcerpt.textContent = data.generated_blog.excerpt || '';
-                previewBlogSource.textContent = data.generated_blog.source === 'gemini'
+                previewBlogSource.textContent = data.generated_blog.source === 'scan_cache'
+                    ? 'Loaded from scan cache — instant, no crawl or AI needed.'
+                    : (data.generated_blog.source === 'gemini'
                     ? 'Written by Gemini AI during detect — will be saved on import without regenerating.'
-                    : 'Template fallback used (AI unavailable). You can still import.';
+                    : 'Template fallback used (AI unavailable). You can still import.');
                 previewBlog.hidden = false;
             } else {
                 generatedBlogInput.value = '';
@@ -552,9 +554,11 @@
             }
 
             preview.hidden = false;
-            let statusMessage = merchant.category_name
+            let statusMessage = data.detect_source === 'scan_cache'
+                ? 'Loaded store profile from scan cache (fast).'
+                : (merchant.category_name
                 ? `Detected store. Suggested category: ${merchant.category_name}.`
-                : 'Detected store. Please choose a category if needed.';
+                : 'Detected store. Please choose a category if needed.');
 
             if (Array.isArray(data.suggested_offers) && data.suggested_offers.length) {
                 statusMessage += ` Loaded ${data.suggested_offers.length} offer(s) from coupon database.`;
@@ -562,7 +566,9 @@
                 statusMessage += ` No matching coupons found for ${data.store_query}.`;
             }
 
-            if (data.generated_blog?.source === 'gemini') {
+            if (data.generated_blog?.source === 'scan_cache') {
+                statusMessage += ' Cached blog article ready.';
+            } else if (data.generated_blog?.source === 'gemini') {
                 statusMessage += ' AI article ready.';
             } else if (data.generated_blog?.source === 'template') {
                 statusMessage += ' Blog draft prepared (template fallback).';

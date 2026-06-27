@@ -12,6 +12,8 @@ final class PublicImage
     /** @var list<string> */
     private const RASTER_EXTENSIONS = ['jpg', 'jpeg', 'png', 'webp', 'gif', 'ico'];
 
+    public const STORE_LOGO_WIDTH = 300;
+
     public static function url(?string $path): ?string
     {
         if (! $path) {
@@ -153,7 +155,7 @@ final class PublicImage
             $stored = self::ingestRemote($url, $directory);
 
             if ($stored) {
-                return $stored;
+                return self::resizeRasterToWidth($stored, self::STORE_LOGO_WIDTH) ?? $stored;
             }
         }
 
@@ -330,6 +332,78 @@ final class PublicImage
         }
 
         return 'png';
+    }
+
+    /**
+     * Scale a stored raster logo to a fixed width (height keeps aspect ratio).
+     */
+    public static function resizeRasterToWidth(string $path, int $targetWidth): ?string
+    {
+        if ($targetWidth < 1 || ! self::exists($path) || ! function_exists('imagecreatefromstring')) {
+            return null;
+        }
+
+        $binary = Storage::disk('public')->get($path);
+
+        if (! is_string($binary) || $binary === '') {
+            return null;
+        }
+
+        $format = self::detectFormat($binary);
+
+        if ($format === null || in_array($format, ['svg', 'ico'], true)) {
+            return $path;
+        }
+
+        $source = @imagecreatefromstring($binary);
+
+        if (! $source) {
+            return $path;
+        }
+
+        $srcW = imagesx($source);
+        $srcH = imagesy($source);
+
+        if ($srcW < 1 || $srcH < 1) {
+            imagedestroy($source);
+
+            return $path;
+        }
+
+        $destW = $targetWidth;
+        $destH = max(1, (int) round($srcH * ($targetWidth / $srcW)));
+
+        $dest = imagecreatetruecolor($destW, $destH);
+
+        if (in_array($format, ['png', 'gif', 'webp'], true)) {
+            imagealphablending($dest, false);
+            imagesavealpha($dest, true);
+            $transparent = imagecolorallocatealpha($dest, 0, 0, 0, 127);
+            imagefilledrectangle($dest, 0, 0, $destW, $destH, $transparent);
+            imagealphablending($dest, true);
+        }
+
+        imagecopyresampled($dest, $source, 0, 0, 0, 0, $destW, $destH, $srcW, $srcH);
+
+        $directory = trim(dirname($path), '/');
+        $outputExt = in_array($format, ['png', 'gif', 'webp'], true) ? 'png' : 'jpg';
+        $filename = $directory . '/logo-' . Str::uuid() . '.' . $outputExt;
+        $fullPath = Storage::disk('public')->path($filename);
+
+        $saved = $outputExt === 'png'
+            ? imagepng($dest, $fullPath, 8)
+            : imagejpeg($dest, $fullPath, 90);
+
+        imagedestroy($source);
+        imagedestroy($dest);
+
+        if (! $saved) {
+            return $path;
+        }
+
+        Storage::disk('public')->delete($path);
+
+        return self::isValidImage($filename) ? $filename : $path;
     }
 
     private static function renderFeaturedCanvas(string $binary, string $directory): ?string

@@ -253,6 +253,7 @@ final class AffiliateLinkResolver
             $candidates = array_merge($candidates, $this->extractLogoCandidatesFromHtml($html, $finalUrl));
         }
 
+        // build logo từ favicon, thảo nào có nhiều logo nhỏ thế. 
         $scheme = parse_url($finalUrl, PHP_URL_SCHEME) ?: 'https';
         $candidates[] = "{$scheme}://{$domain}/apple-touch-icon.png";
         $candidates[] = "{$scheme}://{$domain}/favicon.ico";

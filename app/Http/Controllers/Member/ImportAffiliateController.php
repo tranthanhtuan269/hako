@@ -44,16 +44,25 @@ class ImportAffiliateController extends Controller
             'website' => ['nullable', 'url', 'max:500'],
         ]);
 
-        $merchant = $resolver->resolve($data['affiliate_url']);
+        $affiliateUrl = $data['affiliate_url'];
+        $storeQuery = $couponSpeak->hostFromUrl($affiliateUrl) ?? '';
+        $bundle = $couponSpeak->fetchStoreBundle($storeQuery);
+        $detectSource = 'local';
+
+        if ($couponSpeak->profileIsUsable($bundle['store_profile'])) {
+            $merchant = $couponSpeak->merchantFromProfile($bundle['store_profile'], $affiliateUrl);
+            $detectSource = 'scan_cache';
+        } else {
+            $merchant = $resolver->resolve($affiliateUrl);
+        }
 
         if (filled($data['website'] ?? null)) {
             $merchant = $resolver->enrichFromWebsite($merchant, trim($data['website']));
         }
 
-        $storeQuery = $merchant['domain'] ?? $couponSpeak->hostFromUrl($data['affiliate_url']);
-        $suggestedOffers = $storeQuery
-            ? $couponSpeak->fetchOffersByStore($storeQuery)
-            : [];
+        $merchant['category_id'] = $this->resolveCategoryId($merchant);
+        $storeQuery = $merchant['domain'] ?? $storeQuery;
+        $suggestedOffers = $bundle['offers'];
 
         $offers = $this->normalizeOffers(
             collect($suggestedOffers)->map(fn (array $offer) => [
@@ -78,12 +87,21 @@ class ImportAffiliateController extends Controller
             $previewStore->setRelation('category', Category::find($merchant['category_id']));
         }
 
-        $generatedBlog = $contentBuilder->generateBlogPreview($previewStore, $offers, $merchant);
+        $cachedBlog = is_array($bundle['store_profile']['generated_blog'] ?? null)
+            ? $bundle['store_profile']['generated_blog']
+            : null;
+
+        if (is_array($cachedBlog) && filled($cachedBlog['content'] ?? null)) {
+            $generatedBlog = $contentBuilder->sanitizeBlogOutput($cachedBlog) + ['source' => 'scan_cache'];
+        } else {
+            $generatedBlog = $contentBuilder->generateBlogPreview($previewStore, $offers, $merchant);
+        }
 
         return response()->json([
             'ok' => true,
             'merchant' => $merchant,
             'store_query' => $storeQuery,
+            'detect_source' => $detectSource,
             'suggested_offers' => $suggestedOffers,
             'generated_blog' => $generatedBlog,
         ]);
@@ -207,6 +225,18 @@ class ImportAffiliateController extends Controller
             $result['store'],
             $result['createdCoupons'],
             $data['affiliate_url'],
+            [
+                'website' => filled($data['website'] ?? null) ? trim($data['website']) : $result['store']->website,
+                'logo' => $logoUrl,
+                'meta_description' => $merchant['meta_description'] ?? null,
+                'category_name' => optional(Category::find($data['category_id'] ?? null))?->name
+                    ?? ($merchant['category_name'] ?? null),
+                'page_title' => $merchant['page_title'] ?? null,
+                'final_url' => $merchant['final_url'] ?? null,
+                'faqs' => $merchant['faqs'] ?? [],
+                'products' => $merchant['products'] ?? [],
+                'generated_blog' => $preGeneratedBlog,
+            ],
         );
 
         $status = $publish ? 'published' : 'saved as drafts';
@@ -234,6 +264,24 @@ class ImportAffiliateController extends Controller
                     ? route('admin.coupons.index')
                     : route('member.coupons.index'),
             ]);
+    }
+
+    /**
+     * @param  array<string, mixed>  $merchant
+     */
+    private function resolveCategoryId(array $merchant): ?int
+    {
+        if (filled($merchant['category_id'] ?? null)) {
+            return (int) $merchant['category_id'];
+        }
+
+        $name = trim((string) ($merchant['category_name'] ?? ''));
+
+        if ($name === '') {
+            return null;
+        }
+
+        return Category::query()->where('name', $name)->value('id');
     }
 
     /**
