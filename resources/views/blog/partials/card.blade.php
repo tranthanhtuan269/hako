@@ -10,7 +10,7 @@
         </time>
         <p class="blog-card-author">@include('blog.partials.author-link', ['post' => $post])</p>
         <h2><a href="{{ route('blog.show', $post->slug) }}" @if($post->title !== $post->cardTitle()) title="{{ $post->title }}" @endif>{{ $post->cardTitle() }}</a></h2>
-        <p>{{ $post->excerpt ?: Str::limit(strip_tags($post->content), 160) }}</p>
+        <p class="blog-card-excerpt">{{ $post->excerpt ?: Str::limit(strip_tags($post->content), 160) }}</p>
         <div class="blog-card-meta">
             <span>{{ $post->readingTime() }} min read</span>
             <a href="{{ route('blog.show', $post->slug) }}" class="read-more">Read article →</a>

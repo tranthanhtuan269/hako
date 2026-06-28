@@ -1385,6 +1385,7 @@ div.pagination > nav.paginator-nav .pagination {
     font-size: 1.1rem;
     margin: .5rem 0;
     line-height: 1.35;
+    min-height: calc(1.35em * 3);
 }
 
 .blog-card-body h2 a {
@@ -1393,15 +1394,27 @@ div.pagination > nav.paginator-nav .pagination {
     display: -webkit-box;
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 3;
+    line-clamp: 3;
     overflow: hidden;
 }
 
 .blog-card-body h2 a:hover { color: var(--primary); }
 
-.blog-card-body p {
+.blog-card-excerpt {
     font-size: .9rem;
     color: var(--muted);
     flex: 1;
+    margin-bottom: .75rem;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+    line-clamp: 3;
+    overflow: hidden;
+}
+
+.blog-card-body p {
+    font-size: .9rem;
+    color: var(--muted);
     margin-bottom: .75rem;
 }
 
@@ -1413,6 +1426,11 @@ div.pagination > nav.paginator-nav .pagination {
 }
 
 .blog-card-author {
+    margin: .35rem 0 .15rem;
+    flex: 0 0 auto;
+}
+
+.blog-card-body p.blog-card-author {
     margin: .35rem 0 .15rem;
 }
 
