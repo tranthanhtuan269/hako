@@ -7,6 +7,9 @@
     <h1>My Coupons &amp; Deals</h1>
     <a href="{{ route('member.coupons.create') }}" class="btn btn-primary">+ Add Coupon</a>
 </div>
+
+@include('partials.coupon-index-filters', ['action' => route('member.coupons.index'), 'stores' => $stores])
+
 <table class="admin-table">
     <thead>
         <tr>
@@ -36,7 +39,13 @@
             </tr>
         @empty
             <tr>
-                <td colspan="8">No coupons yet. <a href="{{ route('member.coupons.create') }}">Create one</a> (add a store first if needed).</td>
+                <td colspan="8">
+                    @if(request()->hasAny(['title', 'store_id']))
+                        No coupons match your search.
+                    @else
+                        No coupons yet. <a href="{{ route('member.coupons.create') }}">Create one</a> (add a store first if needed).
+                    @endif
+                </td>
             </tr>
         @endforelse
     </tbody>

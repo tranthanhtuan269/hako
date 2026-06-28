@@ -15,14 +15,20 @@ class CouponController extends Controller
 {
     use SyncsCouponsCatalogDisplay;
 
-    public function index(): View
+    public function index(Request $request): View
     {
+        $title = trim((string) $request->query('title', ''));
+        $storeId = $request->integer('store_id') ?: null;
+
         $coupons = Coupon::with(['store.category'])
+            ->filterSearch($title !== '' ? $title : null, $storeId)
             ->orderByDesc('coupons_sort_order')
             ->orderByDesc('created_at')
             ->get();
 
-        return view('admin.coupons.index', compact('coupons'));
+        $stores = Store::orderBy('name')->get(['id', 'name']);
+
+        return view('admin.coupons.index', compact('coupons', 'stores'));
     }
 
     public function updateSortOrder(Request $request)

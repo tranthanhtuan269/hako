@@ -45,7 +45,10 @@ class ImportAffiliateController extends Controller
         ]);
 
         $affiliateUrl = $data['affiliate_url'];
-        $storeQuery = $couponSpeak->hostFromUrl($affiliateUrl) ?? '';
+        $finalUrl = $resolver->finalUrl($affiliateUrl);
+        $storeQuery = $couponSpeak->hostFromUrl($finalUrl)
+            ?? $couponSpeak->hostFromUrl($affiliateUrl)
+            ?? '';
         $bundle = $couponSpeak->fetchStoreBundle($storeQuery);
         $detectSource = 'local';
 
@@ -60,7 +63,24 @@ class ImportAffiliateController extends Controller
             $merchant = $resolver->enrichFromWebsite($merchant, trim($data['website']));
         }
 
+        if ($bundle['scan_logo'] !== null) {
+            $merchant['logo'] = $bundle['scan_logo'];
+        } elseif (
+            ! filled($merchant['logo'] ?? null)
+            && $couponSpeak->profileIsUsable($bundle['store_profile'])
+        ) {
+            $merchant['logo'] = $resolver->resolve($affiliateUrl)['logo'] ?? null;
+        }
+
         $merchant['category_id'] = $this->resolveCategoryId($merchant);
+        $merchant['affiliate_url'] = $affiliateUrl;
+        $merchant['final_url'] = $merchant['final_url'] ?? $finalUrl;
+
+        if (! filled($merchant['domain'] ?? null)) {
+            $merchant['domain'] = $couponSpeak->hostFromUrl($finalUrl)
+                ?? $couponSpeak->hostFromUrl($affiliateUrl);
+        }
+
         $storeQuery = $merchant['domain'] ?? $storeQuery;
         $suggestedOffers = $bundle['offers'];
 
@@ -150,7 +170,9 @@ class ImportAffiliateController extends Controller
             $domain = $domain ? preg_replace('/^www\./', '', $domain) : null;
         }
         $storedLogo = PublicImage::ingestStoreLogo($logoUrl, $domain, $userId);
-        $storedFeatured = PublicImage::storeBlogFeaturedFromRemote($logoUrl, $userId) ?? $storedLogo;
+        $storedFeatured = PublicImage::isScanAssetUrl($logoUrl)
+            ? $storedLogo
+            : (PublicImage::storeBlogFeaturedFromRemote($logoUrl, $userId) ?? $storedLogo);
 
         $result = DB::transaction(function () use (
             $data,

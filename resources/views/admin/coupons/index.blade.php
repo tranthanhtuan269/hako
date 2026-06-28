@@ -14,6 +14,8 @@
     </div>
 </div>
 
+@include('partials.coupon-index-filters', ['action' => route('admin.coupons.index'), 'stores' => $stores])
+
 <div class="coupon-sort-table-wrap">
 <table class="admin-table coupon-sort-table">
     <thead>
@@ -54,7 +56,7 @@
             </tr>
         @empty
             <tr>
-                <td colspan="10">No coupons yet.</td>
+                <td colspan="10">{{ request()->hasAny(['title', 'store_id']) ? 'No coupons match your search.' : 'No coupons yet.' }}</td>
             </tr>
         @endforelse
     </tbody>

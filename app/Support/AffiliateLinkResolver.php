@@ -14,11 +14,40 @@ final class AffiliateLinkResolver
         private readonly MerchantProductEnricher $productEnricher = new MerchantProductEnricher(),
     ) {}
 
+    public function finalUrl(string $affiliateUrl): string
+    {
+        $affiliateUrl = trim($affiliateUrl);
+
+        if ($affiliateUrl === '') {
+            return '';
+        }
+
+        $redirected = $this->followRedirects($affiliateUrl);
+        $seedUrl = $this->unwrapAffiliateUrl($affiliateUrl);
+
+        if ($seedUrl === $affiliateUrl) {
+            return $redirected;
+        }
+
+        $unwrappedFinal = $this->followRedirects($seedUrl);
+        $host = parse_url($unwrappedFinal, PHP_URL_HOST);
+
+        if (is_string($host) && $host !== '') {
+            $host = preg_replace('/^www\./', '', strtolower($host));
+
+            if (! $this->isAffiliateHost($host)) {
+                return $unwrappedFinal;
+            }
+        }
+
+        return $redirected;
+    }
+
     public function resolve(string $affiliateUrl): array
     {
         $affiliateUrl = trim($affiliateUrl);
         $seedUrl = $this->unwrapAffiliateUrl($affiliateUrl);
-        $finalUrl = $this->followRedirects($seedUrl);
+        $finalUrl = $this->finalUrl($affiliateUrl);
         $host = $this->merchantDomain($finalUrl, $seedUrl, $affiliateUrl);
 
         $html = $this->fetchHtml($finalUrl) ?? $this->fetchHtml($seedUrl) ?? $this->fetchHtml($affiliateUrl);
@@ -147,16 +176,33 @@ final class AffiliateLinkResolver
 
     private function followRedirects(string $url): string
     {
+        if ($url === '') {
+            return '';
+        }
+
+        if (function_exists('curl_init')) {
+            $curlFinal = $this->followRedirectsWithCurl($url);
+
+            if ($curlFinal !== null) {
+                return $curlFinal;
+            }
+        }
+
         try {
-            $response = Http::withOptions([
+            $client = Http::withOptions([
                 'allow_redirects' => ['max' => 10, 'track_redirects' => true],
             ])
                 ->timeout(12)
+                ->withoutVerifying()
                 ->withHeaders([
                     'User-Agent' => config('site.bot_user_agent'),
-                    'Accept' => 'text/html,application/xhtml+xml',
-                ])
-                ->get($url);
+                ]);
+
+            $response = $client->head($url);
+
+            if (! $response->successful() && in_array($response->status(), [405, 501], true)) {
+                $response = $client->get($url);
+            }
 
             if ($response->successful()) {
                 return (string) ($response->effectiveUri() ?? $url);
@@ -166,6 +212,38 @@ final class AffiliateLinkResolver
         }
 
         return $url;
+    }
+
+    private function followRedirectsWithCurl(string $url): ?string
+    {
+        $ch = curl_init($url);
+
+        if ($ch === false) {
+            return null;
+        }
+
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_MAXREDIRS => 10,
+            CURLOPT_NOBODY => true,
+            CURLOPT_SSL_VERIFYPEER => false,
+            CURLOPT_TIMEOUT => 12,
+            CURLOPT_USERAGENT => (string) config('site.bot_user_agent', 'Mozilla/5.0'),
+        ]);
+
+        curl_exec($ch);
+
+        $finalUrl = curl_getinfo($ch, CURLINFO_EFFECTIVE_URL);
+        $error = curl_errno($ch);
+
+        curl_close($ch);
+
+        if ($error !== 0 || ! is_string($finalUrl) || $finalUrl === '') {
+            return null;
+        }
+
+        return $finalUrl;
     }
 
     private function merchantDomain(string $finalUrl, string $seedUrl, string $affiliateUrl): string

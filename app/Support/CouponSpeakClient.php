@@ -39,6 +39,7 @@ final class CouponSpeakClient
      * @return array{
      *     offers: list<array{code: ?string, title: string, description: ?string, coupon_type: ?string, discount_label: ?string, expires_at: ?string}>,
      *     store_profile: ?array<string, mixed>,
+     *     scan_logo: ?string,
      *     profile_cached: bool
      * }
      */
@@ -47,6 +48,7 @@ final class CouponSpeakClient
         $empty = [
             'offers' => [],
             'store_profile' => null,
+            'scan_logo' => null,
             'profile_cached' => false,
         ];
 
@@ -72,11 +74,14 @@ final class CouponSpeakClient
 
             $body = $response->json();
             $coupons = is_array($body['coupons'] ?? null) ? $body['coupons'] : [];
-            $profile = is_array($body['store_profile'] ?? null) ? $body['store_profile'] : null;
+            $profile = is_array($body['store_profile'] ?? null) ? $body['store_profile'] : [];
+            $profile = $this->mergeApiStoreMetaIntoProfile($profile, $body);
+            $scanLogo = $this->resolveScanLogo($body, $profile);
 
             return [
                 'offers' => $this->mapCouponsToOffers($coupons),
-                'store_profile' => $profile,
+                'store_profile' => $profile !== [] ? $profile : null,
+                'scan_logo' => $scanLogo,
                 'profile_cached' => (bool) ($body['profile_cached'] ?? ! empty($profile['detected_at'] ?? null)),
             ];
         } catch (\Throwable) {
@@ -87,6 +92,82 @@ final class CouponSpeakClient
     public function profileIsUsable(?array $profile): bool
     {
         return is_array($profile) && filled($profile['name'] ?? null);
+    }
+
+    /**
+     * Logo from scan /coupons response. Null means caller should use the local detect flow.
+     */
+    public function resolveScanLogo(array $body, ?array $profile = null): ?string
+    {
+        if (array_key_exists('logo', $body)) {
+            if (! filled($body['logo'])) {
+                return null;
+            }
+
+            return $this->resolveScanAssetUrl((string) $body['logo']);
+        }
+
+        $profileLogo = is_array($profile) ? ($profile['logo'] ?? null) : null;
+
+        if (! filled($profileLogo)) {
+            return null;
+        }
+
+        return $this->resolveScanAssetUrl((string) $profileLogo);
+    }
+
+    public function resolveScanAssetUrl(string $url): string
+    {
+        $url = trim($url);
+
+        if (preg_match('#^https?://#i', $url)) {
+            return $url;
+        }
+
+        if (str_starts_with($url, '//')) {
+            return 'https:' . $url;
+        }
+
+        if (str_starts_with($url, '/')) {
+            return rtrim($this->scanWebBaseUrl(), '/') . $url;
+        }
+
+        return $url;
+    }
+
+    /**
+     * @param  array<string, mixed>  $profile
+     * @param  array<string, mixed>  $body
+     * @return array<string, mixed>
+     */
+    private function mergeApiStoreMetaIntoProfile(array $profile, array $body): array
+    {
+        if (filled($body['store_name'] ?? null)) {
+            $profile['name'] = trim((string) $body['store_name']);
+        }
+
+        if (filled($body['store_slug'] ?? null)) {
+            $profile['slug'] = trim((string) $body['store_slug']);
+        }
+
+        if (filled($body['category_name'] ?? null)) {
+            $profile['category_name'] = trim((string) $body['category_name']);
+        }
+
+        if (array_key_exists('logo', $body)) {
+            $profile['logo'] = filled($body['logo'])
+                ? $this->resolveScanAssetUrl((string) $body['logo'])
+                : null;
+        }
+
+        return $profile;
+    }
+
+    private function scanWebBaseUrl(): string
+    {
+        $api = $this->apiBaseUrl();
+
+        return (string) preg_replace('#/api(?:/coupons)?/?$#', '', $api);
     }
 
     /**
@@ -230,12 +311,17 @@ final class CouponSpeakClient
         return strtolower(explode('.', $domain)[0] ?? $domain);
     }
 
+    private function apiBaseUrl(): string
+    {
+        return $this->normalizeApiUrl(trim((string) config('services.couponspeak.url', '')));
+    }
+
     private function syncUrl(): string
     {
         $syncUrl = trim((string) config('services.couponspeak.sync_url', ''));
 
         if ($syncUrl !== '') {
-            return $this->appendSiteQuery($this->forceHttps($syncUrl));
+            return $this->appendSiteQuery($this->normalizeApiUrl($syncUrl));
         }
 
         $apiUrl = $this->apiBaseUrl();
@@ -247,17 +333,24 @@ final class CouponSpeakClient
         return $this->appendSiteQuery($apiUrl . '/import');
     }
 
-    private function apiBaseUrl(): string
+    private function normalizeApiUrl(string $url): string
     {
-        return rtrim($this->forceHttps((string) config('services.couponspeak.url', '')), '/');
-    }
-
-    private function forceHttps(string $url): string
-    {
-        $url = trim($url);
+        $url = rtrim($url, '/');
 
         if ($url === '') {
             return '';
+        }
+
+        $host = parse_url($url, PHP_URL_HOST);
+
+        if (! is_string($host) || $host === '') {
+            return $url;
+        }
+
+        $host = strtolower($host);
+
+        if ($host === 'localhost' || str_ends_with($host, '.test') || str_ends_with($host, '.local')) {
+            return (string) preg_replace('#^https://#i', 'http://', $url);
         }
 
         return (string) preg_replace('#^http://#i', 'https://', $url);
@@ -265,7 +358,28 @@ final class CouponSpeakClient
 
     private function jsonClient(): \Illuminate\Http\Client\PendingRequest
     {
-        return Http::acceptJson()->asJson();
+        $client = Http::acceptJson()->asJson();
+
+        if ($this->shouldDisableTlsVerify($this->apiBaseUrl())) {
+            $client = $client->withoutVerifying();
+        }
+
+        return $client;
+    }
+
+    private function shouldDisableTlsVerify(string $url): bool
+    {
+        $host = parse_url($url, PHP_URL_HOST);
+
+        if (! is_string($host) || $host === '') {
+            return false;
+        }
+
+        $host = strtolower($host);
+
+        return $host === 'localhost'
+            || str_ends_with($host, '.test')
+            || str_ends_with($host, '.local');
     }
 
     private function appendSiteQuery(string $url): string

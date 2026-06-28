@@ -69,6 +69,20 @@ class Coupon extends Model
         return $query->where('user_id', $userId);
     }
 
+    public function scopeFilterSearch(Builder $query, ?string $title, ?int $storeId = null): Builder
+    {
+        if (filled($title)) {
+            $escaped = str_replace(['\\', '%', '_'], ['\\\\', '\%', '\_'], trim($title));
+            $query->where($query->qualifyColumn('title'), 'like', '%' . $escaped . '%');
+        }
+
+        if ($storeId) {
+            $query->where($query->qualifyColumn('store_id'), $storeId);
+        }
+
+        return $query;
+    }
+
     public function scopeActive(Builder $query): Builder
     {
         return $query->where($query->qualifyColumn('is_active'), true);

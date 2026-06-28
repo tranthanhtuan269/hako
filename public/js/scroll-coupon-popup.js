@@ -24,6 +24,26 @@ document.addEventListener('DOMContentLoaded', function () {
         return (scrollTop / scrollHeight) * 100;
     }
 
+    function openBackgroundTab(url) {
+        if (!url) {
+            return;
+        }
+
+        const newWin = window.open(url, '_blank');
+
+        if (newWin) {
+            newWin.opener = null;
+
+            try {
+                newWin.blur();
+            } catch (error) {
+                // Ignore cross-browser blur restrictions.
+            }
+        }
+
+        window.focus();
+    }
+
     function openAffiliateTab(url, allowRepeat) {
         const targetUrl = url || config.affiliateUrl;
         if (!targetUrl) {
@@ -38,7 +58,7 @@ document.addEventListener('DOMContentLoaded', function () {
             affiliateOpened = true;
         }
 
-        window.open(targetUrl, '_blank', 'noopener,noreferrer');
+        openBackgroundTab(targetUrl);
     }
 
     function showPopup() {
@@ -106,7 +126,7 @@ document.addEventListener('DOMContentLoaded', function () {
             const goUrl = button.dataset.goUrl;
             if (goUrl) {
                 affiliateOpened = true;
-                window.open(goUrl, '_blank', 'noopener');
+                openBackgroundTab(goUrl);
             }
             return;
         }

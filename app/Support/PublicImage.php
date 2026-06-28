@@ -114,6 +114,32 @@ final class PublicImage
     }
 
     /**
+     * Logo hosted on the scan service (already processed at source).
+     */
+    public static function isScanAssetUrl(?string $url): bool
+    {
+        if (! self::isRemote($url)) {
+            return false;
+        }
+
+        $scanHost = self::scanAssetHost();
+
+        if ($scanHost === '') {
+            return false;
+        }
+
+        $urlHost = strtolower((string) parse_url($url, PHP_URL_HOST));
+
+        if ($urlHost !== $scanHost) {
+            return false;
+        }
+
+        $path = (string) parse_url($url, PHP_URL_PATH);
+
+        return str_contains($path, '/uploads/store-logos/');
+    }
+
+    /**
      * Download a remote image to public storage, or return an already stored path.
      * Never returns a remote URL — only a stored path or null.
      */
@@ -138,10 +164,16 @@ final class PublicImage
 
     /**
      * Try primary URL, then common logo sources — all saved locally.
+     * Scan logos are stored as-is (no resize, no Clearbit fallback).
      */
     public static function ingestStoreLogo(?string $primaryUrl, ?string $domain, int|string $userId): ?string
     {
         $directory = "stores/{$userId}/logos";
+
+        if (self::isScanAssetUrl($primaryUrl)) {
+            return self::ingestRemote($primaryUrl, $directory);
+        }
+
         $domain = $domain ? preg_replace('/^www\./', '', $domain) : null;
 
         $candidates = array_values(array_unique(array_filter([
@@ -177,11 +209,16 @@ final class PublicImage
 
     /**
      * Build a blog-friendly featured image with the logo centered on a fixed canvas.
+     * Scan logos are stored as-is (no canvas rebuild).
      */
     public static function storeBlogFeaturedFromRemote(?string $url, int|string $userId): ?string
     {
         if (! filled($url)) {
             return null;
+        }
+
+        if (self::isScanAssetUrl($url)) {
+            return self::ingestRemote($url, "posts/{$userId}");
         }
 
         $binary = self::downloadBinary($url);
@@ -229,12 +266,7 @@ final class PublicImage
         }
 
         try {
-            $response = Http::timeout(20)
-                ->withHeaders([
-                    'User-Agent' => config('site.bot_user_agent'),
-                    'Accept' => 'image/*,*/*',
-                ])
-                ->get($url);
+            $response = self::httpClient($url)->get($url);
 
             if (! $response->successful()) {
                 return null;
@@ -267,6 +299,35 @@ final class PublicImage
         Storage::disk('public')->put($filename, $binary);
 
         return $filename;
+    }
+
+    private static function scanAssetHost(): string
+    {
+        $apiUrl = trim((string) config('services.couponspeak.url', ''));
+
+        if ($apiUrl === '') {
+            return '';
+        }
+
+        $host = parse_url($apiUrl, PHP_URL_HOST);
+
+        return is_string($host) ? strtolower($host) : '';
+    }
+
+    private static function httpClient(string $url): \Illuminate\Http\Client\PendingRequest
+    {
+        $client = Http::timeout(20)->withHeaders([
+            'User-Agent' => config('site.bot_user_agent'),
+            'Accept' => 'image/*,*/*',
+        ]);
+
+        $host = strtolower((string) parse_url($url, PHP_URL_HOST));
+
+        if ($host === 'localhost' || str_ends_with($host, '.test') || str_ends_with($host, '.local')) {
+            $client = $client->withoutVerifying();
+        }
+
+        return $client;
     }
 
     private static function detectFormat(string $binary): ?string

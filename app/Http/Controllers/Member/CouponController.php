@@ -13,16 +13,23 @@ use Illuminate\View\View;
 
 class CouponController extends Controller
 {
-    public function index(): View
+    public function index(Request $request): View
     {
         $this->authorize('viewAny', Coupon::class);
 
+        $title = trim((string) $request->query('title', ''));
+        $storeId = $request->integer('store_id') ?: null;
+
         $coupons = Coupon::with(['store.category'])
             ->ownedBy(auth()->id())
+            ->filterSearch($title !== '' ? $title : null, $storeId)
             ->latest()
-            ->paginate(20);
+            ->paginate(20)
+            ->withQueryString();
 
-        return view('member.coupons.index', compact('coupons'));
+        $stores = Store::ownedBy(auth()->id())->orderBy('name')->get(['id', 'name']);
+
+        return view('member.coupons.index', compact('coupons', 'stores'));
     }
 
     public function create(): View|RedirectResponse
