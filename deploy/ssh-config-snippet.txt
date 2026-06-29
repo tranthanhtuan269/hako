@@ -1,0 +1,6 @@
+Host hako-vps
+    HostName 167.233.100.164
+    User root
+    IdentityFile ~/.ssh/id_ed25519
+    IdentitiesOnly yes
+    ServerAliveInterval 60
