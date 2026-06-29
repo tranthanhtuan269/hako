@@ -2,8 +2,15 @@
 
 @section('title', $post->seoTitle())
 @section('meta_description', $post->seoDescription())
+@section('og_title', $post->ogShareTitle())
+@section('og_description', $post->ogShareDescription())
 @section('canonical', route('blog.show', $post->slug))
+@section('og_url', route('blog.show', $post->slug))
 @section('og_type', 'article')
+@if($post->ogImageUrl())
+@section('og_image', $post->ogImageUrl())
+@endif
+@section('og_image_alt', $post->title)
 
 @push('styles')
 <style>

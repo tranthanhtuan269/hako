@@ -124,6 +124,21 @@ class Post extends Model
         return $this->meta_title ?: $this->title;
     }
 
+    public function ogShareTitle(): string
+    {
+        return $this->title;
+    }
+
+    public function ogShareDescription(): string
+    {
+        return $this->seoDescription();
+    }
+
+    public function ogImageUrl(): ?string
+    {
+        return $this->featuredImageUrl();
+    }
+
     public function cardTitle(int $maxLength = 90): string
     {
         return static::normalizeTitle($this->title, $maxLength);

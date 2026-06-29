@@ -2,7 +2,10 @@
 
 @section('title', config('site.name') . ' — Top Hub of US Online Coupons and Promo Codes')
 @section('meta_description', config('site.default_description'))
+@section('og_title', config('site.name') . ' — ' . config('site.tagline'))
+@section('og_description', config('site.default_description'))
 @section('canonical', route('home'))
+@section('og_url', route('home'))
 
 @push('structured_data')
 <script type="application/ld+json">

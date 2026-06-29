@@ -2,12 +2,15 @@
 
 @section('title', $coupon->seoTitle())
 @section('meta_description', $coupon->seoDescription())
+@section('og_title', $coupon->store->name.' — '.$coupon->title)
+@section('og_description', $coupon->seoDescription())
 @section('canonical', route('coupons.show', $coupon->slug))
+@section('og_url', route('coupons.show', $coupon->slug))
 @section('og_type', 'article')
 @if($coupon->ogImageUrl())
 @section('og_image', $coupon->ogImageUrl())
 @endif
-@section('og_image_alt', $coupon->store->name.' — '.$coupon->title)
+@section('og_image_alt', $coupon->store->name)
 
 @push('og_meta')
 @if($coupon->ogImageUrl())

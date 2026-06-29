@@ -244,6 +244,22 @@ class Store extends Model
         return "{$this->name} Coupons & Promo Codes";
     }
 
+    public function ogShareTitle(): string
+    {
+        return $this->name;
+    }
+
+    public function ogShareDescription(): string
+    {
+        $plain = HtmlCleaner::plainText($this->description);
+
+        if (filled($plain)) {
+            return Seo::description($plain);
+        }
+
+        return $this->seoDescription();
+    }
+
     public function seoDescription(): string
     {
         $count = $this->visibleStoreCouponsCount();

@@ -2,11 +2,14 @@
 
 @section('title', $store->seoTitle())
 @section('meta_description', $store->seoDescription())
+@section('og_title', $store->ogShareTitle())
+@section('og_description', $store->ogShareDescription())
 @section('canonical', route('stores.show', $store->slug))
+@section('og_url', route('stores.show', $store->slug))
 @if($store->ogImageUrl())
 @section('og_image', $store->ogImageUrl())
 @endif
-@section('og_image_alt', $store->name.' coupons and promo codes')
+@section('og_image_alt', $store->name)
 
 @push('og_meta')
 @if($store->ogImageUrl())
