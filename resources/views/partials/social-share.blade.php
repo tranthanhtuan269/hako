@@ -1,16 +1,79 @@
 @php
+    use App\Support\Seo;
+
+    $shareStore = $store ?? null;
     $shareUrl = $url ?? url()->current();
-    $shareTitle = $title ?? config('site.name');
+    $shareTitle = $title ?? ($shareStore?->seoTitle()) ?? config('site.name');
+    $shareDescription = $description ?? ($shareStore?->seoDescription()) ?? config('site.default_description');
+    $shareImage = $image ?? ($shareStore?->ogImageUrl());
     $shareLabel = $label ?? 'Share';
+    $shareMeta = $shareStore?->shareMeta();
+
+    $shareSummaryParts = array_filter([
+        $shareTitle,
+        $shareDescription !== $shareTitle ? $shareDescription : null,
+    ]);
+    if ($shareMeta) {
+        $storeFacts = array_filter([
+            $shareMeta['category'] ?? null,
+            ($shareMeta['coupon_count'] ?? 0) > 0
+                ? $shareMeta['coupon_count'].' active '.str('coupon')->plural($shareMeta['coupon_count'])
+                : null,
+            $shareMeta['website_label'] ?? null,
+        ]);
+        if ($storeFacts !== []) {
+            $shareSummaryParts[] = implode(' · ', $storeFacts);
+        }
+    }
+    $shareSummaryParts[] = $shareUrl;
+    $shareText = implode("\n\n", $shareSummaryParts);
+
     $encodedUrl = rawurlencode($shareUrl);
     $encodedTitle = rawurlencode($shareTitle);
-    $encodedWhatsApp = rawurlencode($shareTitle.' '.$shareUrl);
+    $encodedText = rawurlencode($shareText);
+    $encodedWhatsApp = rawurlencode($shareText);
+    $shareImageAbsolute = $shareImage ? Seo::absoluteUrl($shareImage) : null;
 @endphp
 
-<div class="social-share{{ !empty($compact) ? ' social-share--compact' : '' }}" data-social-share>
+<div class="social-share{{ !empty($compact) ? ' social-share--compact' : '' }}{{ $shareStore ? ' social-share--with-preview' : '' }}" data-social-share>
+    @if($shareStore)
+        <div class="social-share-preview">
+            <div class="social-share-preview-media">
+                @include('partials.store-logo', ['store' => $shareStore, 'size' => 'md', 'linked' => false])
+            </div>
+            <div class="social-share-preview-body">
+                <strong class="social-share-preview-title">{{ $shareStore->name }}</strong>
+                @if($shareMeta)
+                    <p class="social-share-preview-meta">
+                        @if(!empty($shareMeta['category']))
+                            <span>{{ $shareMeta['category'] }}</span>
+                        @endif
+                        @if(($shareMeta['coupon_count'] ?? 0) > 0)
+                            <span>{{ $shareMeta['coupon_count'] }} active {{ str('coupon')->plural($shareMeta['coupon_count']) }}</span>
+                        @endif
+                        @if(!empty($shareMeta['website_label']))
+                            <span>{{ $shareMeta['website_label'] }}</span>
+                        @endif
+                    </p>
+                @endif
+                <p class="social-share-preview-desc">{{ \Illuminate\Support\Str::limit(strip_tags($shareDescription), 140) }}</p>
+            </div>
+        </div>
+    @elseif($shareImageAbsolute)
+        <div class="social-share-preview social-share-preview--image-only">
+            <img src="{{ $shareImageAbsolute }}" alt="" class="social-share-preview-img" loading="lazy">
+            <div class="social-share-preview-body">
+                <strong class="social-share-preview-title">{{ $shareTitle }}</strong>
+                @if($shareDescription)
+                    <p class="social-share-preview-desc">{{ \Illuminate\Support\Str::limit(strip_tags($shareDescription), 140) }}</p>
+                @endif
+            </div>
+        </div>
+    @endif
+
     <span class="social-share-label">{{ $shareLabel }}</span>
     <div class="social-share-buttons" role="group" aria-label="{{ $shareLabel }}">
-        <a href="https://www.facebook.com/sharer/sharer.php?u={{ $encodedUrl }}"
+        <a href="https://www.facebook.com/sharer/sharer.php?u={{ $encodedUrl }}&quote={{ $encodedTitle }}"
             class="social-share-btn social-share-btn--facebook"
             target="_blank"
             rel="noopener noreferrer"
@@ -41,8 +104,19 @@
         <button type="button"
             class="social-share-btn social-share-btn--copy"
             data-share-copy="{{ $shareUrl }}"
+            data-share-text='@json($shareText)'
             aria-label="Copy link">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>
+        </button>
+        <button type="button"
+            class="social-share-btn social-share-btn--native"
+            data-share-native
+            data-share-title='@json($shareTitle)'
+            data-share-text='@json($shareText)'
+            data-share-url='@json($shareUrl)'
+            hidden
+            aria-label="Share">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92-1.31-2.92-2.92-2.92z"/></svg>
         </button>
     </div>
 </div>

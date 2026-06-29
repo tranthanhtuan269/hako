@@ -6,6 +6,14 @@
 @if($store->ogImageUrl())
 @section('og_image', $store->ogImageUrl())
 @endif
+@section('og_image_alt', $store->name.' coupons and promo codes')
+
+@push('og_meta')
+@if($store->ogImageUrl())
+<meta property="og:image:secure_url" content="{{ \App\Support\Seo::absoluteUrl($store->ogImageUrl()) }}">
+@endif
+<meta property="og:updated_time" content="{{ $store->updated_at?->toIso8601String() }}">
+@endpush
 
 @push('structured_data')
 @include('partials.breadcrumb-schema', ['breadcrumbs' => [
@@ -14,13 +22,21 @@
     ['name' => $store->name, 'url' => route('stores.show', $store->slug)],
 ]])
 <script type="application/ld+json">
-{
-    "@context": "https://schema.org",
-    "@type": "CollectionPage",
-    "name": @json($store->seoTitle()),
-    "url": @json(route('stores.show', $store->slug)),
-    "description": @json($store->seoDescription())
-}
+@json(array_filter([
+    '@context' => 'https://schema.org',
+    '@type' => 'CollectionPage',
+    'name' => $store->seoTitle(),
+    'url' => route('stores.show', $store->slug),
+    'description' => $store->seoDescription(),
+    'image' => $store->ogImageUrl() ? \App\Support\Seo::absoluteUrl($store->ogImageUrl()) : null,
+    'about' => array_filter([
+        '@type' => 'Organization',
+        'name' => $store->name,
+        'url' => $store->publicWebsiteUrl(),
+        'logo' => $store->ogImageUrl() ? \App\Support\Seo::absoluteUrl($store->ogImageUrl()) : null,
+        'category' => $store->category?->name,
+    ], fn ($value) => filled($value)),
+], fn ($value) => filled($value)), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)
 </script>
 @endpush
 
@@ -47,6 +63,8 @@
                 @include('partials.social-share', [
                     'url' => route('stores.show', $store->slug),
                     'title' => $store->seoTitle(),
+                    'description' => $store->seoDescription(),
+                    'store' => $store,
                     'label' => 'Share this store',
                     'compact' => true,
                 ])

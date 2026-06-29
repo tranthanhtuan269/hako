@@ -6,7 +6,6 @@ document.addEventListener('DOMContentLoaded', function () {
         return;
     }
 
-    const csrf = document.querySelector('meta[name="csrf-token"]')?.content;
     const storageKey = 'scroll-coupon-popup-' + config.storeSlug;
     let shown = false;
     let affiliateOpened = false;
@@ -98,64 +97,6 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
-    async function resolveCode(button) {
-        if (typeof window.resolveCouponCode === 'function') {
-            return window.resolveCouponCode(button);
-        }
-
-        const revealUrl = button.dataset.revealUrl;
-        if (!revealUrl || !csrf) {
-            return null;
-        }
-
-        const response = await fetch(revealUrl, {
-            method: 'POST',
-            headers: {
-                'X-CSRF-TOKEN': csrf,
-                'Accept': 'application/json',
-            },
-        });
-
-        const data = await response.json();
-        return data.code || null;
-    }
-
-    async function copyCode(button) {
-        const code = await resolveCode(button);
-        if (!code) {
-            const goUrl = button.dataset.goUrl;
-            if (goUrl) {
-                affiliateOpened = true;
-                openBackgroundTab(goUrl);
-            }
-            return;
-        }
-
-        if (config.openAffiliateOnCopy) {
-            const affiliateUrl = button.dataset.affiliateUrl || config.affiliateUrl;
-            if (affiliateUrl) {
-                openAffiliateTab(affiliateUrl, true);
-            }
-        }
-
-        if (typeof window.revealCouponCode === 'function') {
-            window.revealCouponCode(button, code);
-        }
-
-        try {
-            await navigator.clipboard.writeText(code);
-            const original = button.textContent;
-            button.textContent = 'Copied!';
-            button.classList.add('is-copied');
-            setTimeout(function () {
-                button.textContent = original;
-                button.classList.remove('is-copied');
-            }, 2000);
-        } catch (error) {
-            prompt('Copy this code:', code);
-        }
-    }
-
     modal.querySelectorAll('[data-scroll-popup-close]').forEach(function (element) {
         element.addEventListener('click', closePopup);
     });
@@ -169,12 +110,6 @@ document.addEventListener('DOMContentLoaded', function () {
     modal.querySelectorAll('[data-scroll-popup-deal]').forEach(function (element) {
         element.addEventListener('click', function () {
             affiliateOpened = true;
-        });
-    });
-
-    modal.querySelectorAll('.scroll-coupon-popup-copy').forEach(function (button) {
-        button.addEventListener('click', function () {
-            copyCode(button);
         });
     });
 

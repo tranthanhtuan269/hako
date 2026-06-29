@@ -95,6 +95,8 @@
                 @include('partials.social-share', [
                     'url' => route('blog.show', $post->slug),
                     'title' => $post->title,
+                    'description' => $post->seoDescription(),
+                    'image' => $post->featuredImageUrl(),
                     'label' => 'Share this article',
                 ])
                 @include('blog.partials.author-box', ['post' => $post])

@@ -241,6 +241,63 @@ body.theme-savingspro .sp-verified-badge--lg {
     margin-bottom: .5rem;
 }
 
+body.theme-savingspro .sp-coupon-code-preview,
+body.theme-savingspro .sp-coupon-row-code {
+    font-family: ui-monospace, 'Cascadia Code', monospace;
+    font-weight: 700;
+    font-size: .85rem;
+    letter-spacing: .06em;
+    color: var(--text);
+    line-height: 1.2;
+}
+
+body.theme-savingspro .sp-coupon-code-preview {
+    margin-bottom: .15rem;
+}
+
+body.theme-savingspro .sp-coupon-row-meta {
+    display: flex;
+    flex-direction: column;
+    gap: .25rem;
+}
+
+body.theme-savingspro .sp-coupon-row-code {
+    font-size: .8rem;
+}
+
+body.theme-savingspro .sp-code-copy--solo,
+body.theme-savingspro .sp-code-copy--row {
+    background: var(--primary);
+    color: #fff;
+    border: none;
+    padding: .65rem 1rem;
+    font-weight: 700;
+    font-size: .78rem;
+    letter-spacing: .05em;
+    cursor: pointer;
+    font-family: inherit;
+    white-space: nowrap;
+    border-radius: 10px;
+}
+
+body.theme-savingspro .sp-code-copy--solo {
+    width: 100%;
+}
+
+body.theme-savingspro .sp-code-copy--row {
+    min-width: 120px;
+}
+
+body.theme-savingspro .sp-code-copy--solo:hover,
+body.theme-savingspro .sp-code-copy--row:hover {
+    background: var(--primary-dark);
+}
+
+body.theme-savingspro .sp-code-copy--solo.copied,
+body.theme-savingspro .sp-code-copy--row.copied {
+    background: #059669;
+}
+
 body.theme-savingspro .sp-coupon-discount {
     font-size: 1.65rem;
     font-weight: 800;
@@ -899,6 +956,14 @@ body.theme-savingspro .sp-modal-shop {
     width: 100%;
     padding: .75rem;
     border-radius: 999px;
+}
+
+body.theme-savingspro .sp-modal-ok {
+    width: 100%;
+    padding: .75rem;
+    border-radius: 999px;
+    margin-bottom: .65rem;
+    font-weight: 700;
 }
 
 body.theme-savingspro .filter-tabs a.active {

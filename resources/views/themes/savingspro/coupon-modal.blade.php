@@ -25,6 +25,9 @@
             <span class="sp-modal-expires" id="sp-modal-expires"></span>
             <span class="sp-modal-helpful">Was this helpful?</span>
         </div>
-        <a href="#" class="btn btn-primary sp-modal-shop" id="sp-modal-shop" target="_blank" rel="noopener sponsored">Shop Now</a>
+        <button type="button" class="btn btn-primary sp-modal-ok" id="sp-modal-ok" data-coupon-modal-close-affiliate>
+            OK — Go to Store
+        </button>
+        <a href="#" class="btn btn-outline sp-modal-shop" id="sp-modal-shop" target="_blank" rel="noopener sponsored">Shop Now</a>
     </div>
 </div>

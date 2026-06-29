@@ -100,11 +100,9 @@
     </footer>
 
     <script src="{{ asset('js/app.js') }}?v={{ filemtime(public_path('js/app.js')) }}"></script>
-    @if($activeTheme === 'savingspro')
-        @include('themes.savingspro.coupon-modal')
-        @if(file_exists(public_path('js/themes/savingspro.js')))
-            <script src="{{ asset('js/themes/savingspro.js') }}?v={{ filemtime(public_path('js/themes/savingspro.js')) }}"></script>
-        @endif
+    @include('themes.savingspro.coupon-modal')
+    @if($activeTheme === 'savingspro' && file_exists(public_path('js/themes/savingspro.js')))
+        <script src="{{ asset('js/themes/savingspro.js') }}?v={{ filemtime(public_path('js/themes/savingspro.js')) }}"></script>
     @endif
     @stack('scripts')
 </body>

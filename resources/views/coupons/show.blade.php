@@ -7,6 +7,14 @@
 @if($coupon->ogImageUrl())
 @section('og_image', $coupon->ogImageUrl())
 @endif
+@section('og_image_alt', $coupon->store->name.' — '.$coupon->title)
+
+@push('og_meta')
+@if($coupon->ogImageUrl())
+<meta property="og:image:secure_url" content="{{ \App\Support\Seo::absoluteUrl($coupon->ogImageUrl()) }}">
+@endif
+<meta property="article:section" content="{{ $coupon->store->category?->name ?? 'Coupons' }}">
+@endpush
 
 @push('structured_data')
 @include('partials.breadcrumb-schema', ['breadcrumbs' => [
@@ -15,32 +23,39 @@
     ['name' => $coupon->title, 'url' => route('coupons.show', $coupon->slug)],
 ]])
 <script type="application/ld+json">
-{
-    "@context": "https://schema.org",
-    "@type": "Offer",
-    "name": @json($coupon->title),
-    "description": @json($coupon->seoDescription()),
-    "url": @json(route('coupons.show', $coupon->slug)),
-    "category": @json($coupon->typeLabel()),
-    @if($coupon->expires_at)
-    "priceValidUntil": @json($coupon->expires_at->toDateString()),
-    @endif
-    "seller": {
-        "@type": "Organization",
-        "name": @json($coupon->store->name),
-        "url": @json($coupon->store->publicWebsiteUrl() ?? $coupon->store->shopUrl())
-    }
-}
+@json(array_filter([
+    '@context' => 'https://schema.org',
+    '@type' => 'Offer',
+    'name' => $coupon->title,
+    'description' => $coupon->seoDescription(),
+    'url' => route('coupons.show', $coupon->slug),
+    'category' => $coupon->typeLabel(),
+    'priceValidUntil' => $coupon->expires_at?->toDateString(),
+    'image' => $coupon->ogImageUrl() ? \App\Support\Seo::absoluteUrl($coupon->ogImageUrl()) : null,
+    'seller' => array_filter([
+        '@type' => 'Organization',
+        'name' => $coupon->store->name,
+        'url' => $coupon->store->publicWebsiteUrl() ?? $coupon->store->shopUrl(),
+        'logo' => $coupon->store->ogImageUrl() ? \App\Support\Seo::absoluteUrl($coupon->store->ogImageUrl()) : null,
+    ], fn ($value) => filled($value)),
+], fn ($value) => filled($value)), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)
 </script>
 @endpush
 
 @section('content')
 <div class="container">
-    <article class="coupon-detail">
+    <article class="coupon-detail" @if($coupon->code) data-code-reveal @endif>
         <div class="coupon-detail-brand">
             @include('partials.store-logo', ['store' => $coupon->store, 'size' => 'lg', 'showName' => true])
         </div>
         <span class="coupon-type">{{ $coupon->typeLabel() }}</span>
+        @if($coupon->code)
+            <div class="code-box-wrap coupon-detail-code">
+                <div class="code-box" id="coupon-code">
+                    @include('partials.coupon-code-masked', ['coupon' => $coupon])
+                </div>
+            </div>
+        @endif
         <div class="badge-lg">{{ $coupon->discountLabel() }}</div>
         <h1>{{ $coupon->title }}</h1>
         <p class="coupon-detail-meta">
@@ -55,13 +70,16 @@
             <p><small>Expires: {{ $coupon->expires_at->format('m/d/Y g:i A') }}</small></p>
         @endif
 
+        @include('partials.social-share', [
+            'url' => route('coupons.show', $coupon->slug),
+            'title' => $coupon->seoTitle(),
+            'description' => $coupon->seoDescription(),
+            'store' => $coupon->store,
+            'label' => 'Share this deal',
+        ])
+
         @if($coupon->code)
-            <div class="code-box-wrap" data-code-reveal>
-                <div class="code-box" id="coupon-code">
-                    @include('partials.coupon-code-masked', ['coupon' => $coupon])
-                </div>
-            </div>
-            <button type="button" class="btn btn-copy btn-primary" data-reveal-url="{{ route('coupons.reveal', $coupon->slug) }}" style="width:100%;margin-bottom:.5rem;">
+            <button type="button" class="btn btn-copy btn-primary" data-reveal-url="{{ route('coupons.reveal', $coupon->slug) }}" data-affiliate-url="{{ $coupon->affiliateClickUrl() }}" data-shop-url="{{ route('coupons.go', $coupon->slug) }}" data-coupon-title="{{ $coupon->title }}" data-coupon-discount="{{ $coupon->discountLabel() }}" data-coupon-store="{{ $coupon->store->name }}" data-coupon-expires="{{ $coupon->expiresLabel() }}" style="width:100%;margin-bottom:.5rem;">
                 Show &amp; Copy Code
             </button>
         @endif

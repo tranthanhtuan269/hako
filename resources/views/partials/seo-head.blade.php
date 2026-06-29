@@ -22,6 +22,10 @@
 <meta property="og:description" content="{{ $metaDescription }}">
 <meta property="og:url" content="{{ $canonical }}">
 <meta property="og:image" content="{{ $ogImage }}">
+@if(trim($__env->yieldContent('og_image_alt')))
+<meta property="og:image:alt" content="{{ trim($__env->yieldContent('og_image_alt')) }}">
+@endif
+@stack('og_meta')
 
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="{{ $metaTitle }}">

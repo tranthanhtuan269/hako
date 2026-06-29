@@ -257,4 +257,19 @@ class Store extends Model
     {
         return $this->logoUrl();
     }
+
+    /**
+     * @return array{name: string, image: ?string, description: string, coupon_count: int, category: ?string, website_label: ?string}
+     */
+    public function shareMeta(): array
+    {
+        return [
+            'name' => $this->name,
+            'image' => $this->ogImageUrl(),
+            'description' => $this->seoDescription(),
+            'coupon_count' => $this->visibleStoreCouponsCount(),
+            'category' => $this->category?->name,
+            'website_label' => $this->publicWebsiteLabel(),
+        ];
+    }
 }

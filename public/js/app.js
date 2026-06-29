@@ -1,38 +1,27 @@
 document.addEventListener('DOMContentLoaded', function () {
     const csrf = document.querySelector('meta[name="csrf-token"]')?.content;
 
-    function openAffiliateTab(url) {
-        if (!url) {
-            return;
-        }
-
-        window.open(url, '_blank', 'noopener,noreferrer');
-    }
-
-    function shouldOpenAffiliateOnCopy(btn) {
-        return btn.dataset.openAffiliateOnCopy === '1';
-    }
-
-    function affiliateUrlFrom(btn, revealData) {
-        return revealData?.affiliate_url || btn.dataset.affiliateUrl || '';
-    }
-
     function revealCouponCode(btn, code) {
-        const container = btn?.closest('[data-code-reveal], .sp-code-split, .coupon-code-split, .code-box-wrap, .scroll-coupon-popup-code');
-        const maskEl = container?.querySelector('[data-masked-code]');
+        const container = btn?.closest('[data-code-reveal], .sp-code-split, .coupon-code-split, .code-box-wrap, .scroll-coupon-popup-code, .scroll-coupon-popup-item, .coupon-detail, .sp-coupon-card, .sp-coupon-row');
+        const maskEls = container?.querySelectorAll('[data-masked-code]');
 
-        if (!maskEl || !code) {
+        if (!maskEls?.length || !code) {
             return;
         }
 
-        maskEl.textContent = code;
-        maskEl.classList.add('is-revealed');
+        maskEls.forEach(function (maskEl) {
+            maskEl.textContent = code;
+            maskEl.classList.add('is-revealed');
+        });
     }
 
-    async function resolveCouponCode(btn) {
-        const code = btn.dataset.code;
-        if (code) {
-            return code;
+    async function resolveCouponReveal(btn) {
+        if (btn.dataset.code) {
+            return {
+                code: btn.dataset.code,
+                affiliateUrl: btn.dataset.affiliateUrl || btn.dataset.shopUrl || btn.dataset.goUrl || '',
+                title: btn.dataset.couponTitle || '',
+            };
         }
 
         const revealUrl = btn.dataset.revealUrl;
@@ -50,14 +39,30 @@ document.addEventListener('DOMContentLoaded', function () {
             });
             const data = await res.json();
 
-            return data.code || null;
+            if (!data.code) {
+                return null;
+            }
+
+            return {
+                code: data.code,
+                affiliateUrl: data.affiliate_url || btn.dataset.affiliateUrl || btn.dataset.shopUrl || btn.dataset.goUrl || '',
+                title: data.title || btn.dataset.couponTitle || '',
+            };
         } catch (e) {
             return null;
         }
     }
 
+    async function resolveCouponCode(btn) {
+        const result = await resolveCouponReveal(btn);
+        return result?.code || null;
+    }
+
     window.revealCouponCode = revealCouponCode;
     window.resolveCouponCode = resolveCouponCode;
+    window.resolveCouponReveal = resolveCouponReveal;
+
+    initCouponRevealModal();
 
     document.querySelectorAll('[data-share-copy]').forEach(function (btn) {
         btn.addEventListener('click', async function () {
@@ -66,14 +71,23 @@ document.addEventListener('DOMContentLoaded', function () {
                 return;
             }
 
+            let shareText = url;
+            if (btn.dataset.shareText) {
+                try {
+                    shareText = JSON.parse(btn.dataset.shareText);
+                } catch (e) {
+                    shareText = btn.dataset.shareText;
+                }
+            }
+
             try {
                 if (navigator.clipboard?.writeText) {
-                    await navigator.clipboard.writeText(url);
+                    await navigator.clipboard.writeText(shareText);
                 } else {
                     throw new Error('Clipboard unavailable');
                 }
             } catch (e) {
-                window.prompt('Copy this link:', url);
+                window.prompt('Copy this text:', shareText);
                 return;
             }
 
@@ -88,29 +102,74 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 
-    document.querySelectorAll('.btn-copy').forEach(function (btn) {
+    document.querySelectorAll('[data-share-native]').forEach(function (btn) {
+        if (!navigator.share) {
+            return;
+        }
+
+        btn.hidden = false;
+
         btn.addEventListener('click', async function () {
-            const openAffiliate = shouldOpenAffiliateOnCopy(btn);
-            const code = await resolveCouponCode(btn);
+            let title = '';
+            let text = '';
+            let url = '';
 
-            if (!code) {
-                alert('Could not retrieve the code. Please try again.');
-                return;
+            try {
+                title = btn.dataset.shareTitle ? JSON.parse(btn.dataset.shareTitle) : '';
+                text = btn.dataset.shareText ? JSON.parse(btn.dataset.shareText) : '';
+                url = btn.dataset.shareUrl ? JSON.parse(btn.dataset.shareUrl) : '';
+            } catch (e) {
+                title = btn.dataset.shareTitle || '';
+                text = btn.dataset.shareText || '';
+                url = btn.dataset.shareUrl || '';
             }
 
-            revealCouponCode(btn, code);
-
-            if (openAffiliate) {
-                openAffiliateTab(affiliateUrlFrom(btn));
+            try {
+                await navigator.share({ title: title, text: text, url: url });
+            } catch (e) {
+                if (e?.name !== 'AbortError') {
+                    // Ignore user cancellation.
+                }
             }
-
-            await copyText(code, btn);
         });
     });
+
+    initStoreAutoplaySlider();
+});
+
+function initCouponRevealModal() {
+    const modal = document.getElementById('sp-coupon-modal');
+    if (!modal) {
+        return;
+    }
+
+    const csrf = document.querySelector('meta[name="csrf-token"]')?.content;
+    const titleEl = document.getElementById('sp-modal-title');
+    const subtitleEl = document.getElementById('sp-modal-subtitle');
+    const codeEl = document.getElementById('sp-modal-code');
+    const codeInlineEl = document.getElementById('sp-modal-code-inline');
+    const expiresEl = document.getElementById('sp-modal-expires');
+    const shopEl = document.getElementById('sp-modal-shop');
+    const okBtn = document.getElementById('sp-modal-ok');
+    const copyBtn = document.getElementById('sp-modal-copy');
+    let activeCode = '';
+    let pendingAffiliateUrl = '';
+    let modalWasShown = false;
+
+    function openAffiliateTab(url) {
+        if (!url) {
+            return;
+        }
+
+        window.open(url, '_blank', 'noopener,noreferrer');
+    }
 
     async function copyText(text, btn) {
         try {
             await navigator.clipboard.writeText(text);
+            if (!btn) {
+                return;
+            }
             const original = btn.textContent;
             btn.textContent = 'Copied!';
             btn.classList.add('copied');
@@ -123,8 +182,144 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
-    initStoreAutoplaySlider();
-});
+    function openModal(data) {
+        activeCode = data.code || '';
+        pendingAffiliateUrl = data.affiliateUrl || data.shopUrl || '';
+        modalWasShown = true;
+
+        if (titleEl) {
+            titleEl.textContent = data.title || data.discount || 'Special Offer';
+        }
+        if (subtitleEl) {
+            subtitleEl.textContent = data.store
+                ? 'Valid at ' + data.store + (data.discount ? ' — ' + data.discount : '')
+                : 'Paste this code at checkout to save.';
+        }
+        if (codeEl) {
+            codeEl.textContent = activeCode || '—';
+        }
+        if (codeInlineEl) {
+            codeInlineEl.textContent = activeCode || '';
+        }
+        if (expiresEl) {
+            expiresEl.textContent = data.expires || '';
+        }
+        if (shopEl) {
+            shopEl.href = pendingAffiliateUrl || data.shopUrl || '#';
+        }
+
+        modal.hidden = false;
+        modal.setAttribute('aria-hidden', 'false');
+        document.body.classList.add('sp-modal-open');
+
+        if (activeCode) {
+            copyText(activeCode, copyBtn);
+        }
+    }
+
+    function closeModal(openAffiliate) {
+        const shouldOpenAffiliate = openAffiliate && modalWasShown && pendingAffiliateUrl;
+
+        modal.hidden = true;
+        modal.setAttribute('aria-hidden', 'true');
+        document.body.classList.remove('sp-modal-open');
+
+        if (shouldOpenAffiliate) {
+            openAffiliateTab(pendingAffiliateUrl);
+        }
+
+        activeCode = '';
+        pendingAffiliateUrl = '';
+        modalWasShown = false;
+    }
+
+    modal.querySelectorAll('[data-sp-modal-close]').forEach(function (el) {
+        el.addEventListener('click', function () {
+            closeModal(true);
+        });
+    });
+
+    if (okBtn) {
+        okBtn.addEventListener('click', function () {
+            closeModal(true);
+        });
+    }
+
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape' && !modal.hidden) {
+            closeModal(true);
+        }
+    });
+
+    if (copyBtn) {
+        copyBtn.addEventListener('click', function () {
+            if (activeCode) {
+                copyText(activeCode, copyBtn);
+            }
+        });
+    }
+
+    async function handleRevealClick(btn) {
+        if (btn.id === 'sp-modal-copy' || btn.closest('#sp-coupon-modal')) {
+            return;
+        }
+
+        try {
+            let result = null;
+
+            if (typeof window.resolveCouponReveal === 'function') {
+                result = await window.resolveCouponReveal(btn);
+            } else if (typeof window.resolveCouponCode === 'function') {
+                const code = await window.resolveCouponCode(btn);
+                if (code) {
+                    result = {
+                        code: code,
+                        affiliateUrl: btn.dataset.affiliateUrl || btn.dataset.shopUrl || btn.dataset.goUrl || '',
+                        title: btn.dataset.couponTitle || '',
+                    };
+                }
+            }
+
+            if (!result?.code) {
+                alert('Could not retrieve the code. Please try again.');
+                return;
+            }
+
+            if (typeof window.revealCouponCode === 'function') {
+                window.revealCouponCode(btn, result.code);
+            }
+
+            const scrollPopup = document.getElementById('scroll-coupon-popup');
+            if (scrollPopup && scrollPopup.hidden === false) {
+                scrollPopup.hidden = true;
+                scrollPopup.setAttribute('aria-hidden', 'true');
+                document.body.classList.remove('scroll-coupon-popup-open');
+            }
+
+            openModal({
+                code: result.code,
+                affiliateUrl: result.affiliateUrl,
+                title: result.title || btn.dataset.couponTitle || '',
+                discount: btn.dataset.couponDiscount || '',
+                store: btn.dataset.couponStore || '',
+                expires: btn.dataset.couponExpires || '',
+                shopUrl: btn.dataset.shopUrl || btn.dataset.goUrl || '',
+            });
+        } catch (e) {
+            alert('Could not retrieve the code. Please try again.');
+        }
+    }
+
+    document.querySelectorAll('.btn-copy, .sp-code-copy, .scroll-coupon-popup-copy').forEach(function (btn) {
+        btn.addEventListener('click', function (event) {
+            event.preventDefault();
+            handleRevealClick(btn);
+        });
+    });
+
+    window.openCouponRevealModal = openModal;
+    window.closeCouponRevealModal = closeModal;
+}
 
 function initStoreAutoplaySlider() {
     const slider = document.querySelector('.store-slider');

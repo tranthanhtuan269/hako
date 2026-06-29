@@ -4,13 +4,18 @@
 @if(view()->exists($themeCard))
     @include($themeCard, get_defined_vars())
 @else
-<article class="coupon-card {{ $coupon->is_featured ? 'featured' : '' }}{{ ($linkCardToDetail ?? false) ? ' coupon-card--clickable' : '' }}">
+<article class="coupon-card {{ $coupon->is_featured ? 'featured' : '' }}{{ ($linkCardToDetail ?? false) ? ' coupon-card--clickable' : '' }}" @if($coupon->code) data-code-reveal @endif>
     @if($linkCardToDetail ?? false)
         <a href="{{ route('coupons.show', $coupon->slug) }}" class="coupon-card-overlay" aria-label="View {{ $coupon->title }}"></a>
     @endif
     <div class="coupon-card-top">
         @include('partials.store-logo', ['store' => $coupon->store, 'size' => 'md', 'showVerified' => false])
         <div class="coupon-card-badges">
+            @if($coupon->code)
+                <div class="coupon-code-preview">
+                    @include('partials.coupon-code-masked', ['coupon' => $coupon])
+                </div>
+            @endif
             <div class="coupon-badge">{{ $coupon->discountLabel() }}</div>
             <div class="coupon-type">{{ $coupon->typeLabel() }}</div>
         </div>
@@ -34,20 +39,17 @@
     @endif
     <div class="coupon-actions">
         @if($coupon->code)
-            <div class="coupon-code-split" data-code-reveal>
-                <span class="coupon-code-display">
-                    @include('partials.coupon-code-masked', ['coupon' => $coupon])
-                </span>
-                <button type="button" class="btn btn-copy"
-                    data-reveal-url="{{ route('coupons.reveal', $coupon->slug) }}"
-                    @if($openAffiliateOnCopy ?? false)
-                        data-open-affiliate-on-copy="1"
-                        data-affiliate-url="{{ $coupon->affiliateClickUrl() }}"
-                    @endif
-                >
-                    Show Code
-                </button>
-            </div>
+            <button type="button" class="btn btn-copy"
+                data-reveal-url="{{ route('coupons.reveal', $coupon->slug) }}"
+                data-affiliate-url="{{ $coupon->affiliateClickUrl() }}"
+                data-shop-url="{{ route('coupons.go', $coupon->slug) }}"
+                data-coupon-title="{{ $coupon->title }}"
+                data-coupon-discount="{{ $coupon->discountLabel() }}"
+                data-coupon-store="{{ $coupon->store?->name }}"
+                data-coupon-expires="{{ $coupon->expiresLabel() }}"
+            >
+                Show Code
+            </button>
             <a href="{{ route('coupons.go', $coupon->slug) }}" class="btn btn-outline" target="_blank" rel="noopener sponsored">Shop Now</a>
         @else
             <a href="{{ route('coupons.go', $coupon->slug) }}" class="btn btn-outline" target="_blank" rel="noopener sponsored">Shop Now</a>

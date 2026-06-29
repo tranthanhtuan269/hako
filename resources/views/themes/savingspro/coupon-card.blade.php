@@ -1,4 +1,4 @@
-<article class="sp-coupon-card coupon-card {{ $coupon->is_featured ? 'featured sp-coupon-card--featured' : '' }}{{ ($linkCardToDetail ?? false) ? ' coupon-card--clickable' : '' }}">
+<article class="sp-coupon-card coupon-card {{ $coupon->is_featured ? 'featured sp-coupon-card--featured' : '' }}{{ ($linkCardToDetail ?? false) ? ' coupon-card--clickable' : '' }}" @if($coupon->code) data-code-reveal @endif>
     @if($linkCardToDetail ?? false)
         <a href="{{ route('coupons.show', $coupon->slug) }}" class="coupon-card-overlay" aria-label="View {{ $coupon->title }}"></a>
     @endif
@@ -6,6 +6,11 @@
         @include('partials.store-logo', ['store' => $coupon->store, 'size' => 'md', 'showVerified' => false])
         <span class="sp-verified-badge">Verified</span>
     </div>
+    @if($coupon->code)
+        <div class="sp-coupon-code-preview">
+            @include('partials.coupon-code-masked', ['coupon' => $coupon])
+        </div>
+    @endif
     <div class="sp-coupon-discount">{{ $coupon->discountLabel() }}</div>
     <h3 class="coupon-title sp-coupon-title">
         @if($linkCardToDetail ?? false)
@@ -29,22 +34,18 @@
     @endif
     <div class="coupon-actions sp-coupon-actions">
         @if($coupon->code)
-            <div class="sp-code-split" data-code-reveal>
-                <span class="sp-code-text">
-                    @include('partials.coupon-code-masked', ['coupon' => $coupon])
-                </span>
-                <button type="button"
-                    class="sp-code-copy"
-                    data-reveal-url="{{ route('coupons.reveal', $coupon->slug) }}"
-                    data-coupon-title="{{ $coupon->title }}"
-                    data-coupon-discount="{{ $coupon->discountLabel() }}"
-                    data-coupon-store="{{ $coupon->store?->name }}"
-                    data-coupon-expires="{{ $coupon->expiresLabel() }}"
-                    data-shop-url="{{ route('coupons.go', $coupon->slug) }}"
-                    aria-label="Copy promo code">
-                    COPY
-                </button>
-            </div>
+            <button type="button"
+                class="sp-code-copy sp-code-copy--solo"
+                data-reveal-url="{{ route('coupons.reveal', $coupon->slug) }}"
+                data-affiliate-url="{{ $coupon->affiliateClickUrl() }}"
+                data-coupon-title="{{ $coupon->title }}"
+                data-coupon-discount="{{ $coupon->discountLabel() }}"
+                data-coupon-store="{{ $coupon->store?->name }}"
+                data-coupon-expires="{{ $coupon->expiresLabel() }}"
+                data-shop-url="{{ route('coupons.go', $coupon->slug) }}"
+                aria-label="Show promo code">
+                Show Code
+            </button>
         @else
             <a href="{{ route('coupons.go', $coupon->slug) }}" class="btn btn-primary sp-get-deal-btn" target="_blank" rel="noopener sponsored">Get Deal</a>
         @endif
