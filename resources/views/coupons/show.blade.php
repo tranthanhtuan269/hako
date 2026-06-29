@@ -26,22 +26,7 @@
     ['name' => $coupon->title, 'url' => route('coupons.show', $coupon->slug)],
 ]])
 <script type="application/ld+json">
-@json(array_filter([
-    '@context' => 'https://schema.org',
-    '@type' => 'Offer',
-    'name' => $coupon->title,
-    'description' => $coupon->seoDescription(),
-    'url' => route('coupons.show', $coupon->slug),
-    'category' => $coupon->typeLabel(),
-    'priceValidUntil' => $coupon->expires_at?->toDateString(),
-    'image' => $coupon->ogImageUrl() ? \App\Support\Seo::absoluteUrl($coupon->ogImageUrl()) : null,
-    'seller' => array_filter([
-        '@type' => 'Organization',
-        'name' => $coupon->store->name,
-        'url' => $coupon->store->publicWebsiteUrl() ?? $coupon->store->shopUrl(),
-        'logo' => $coupon->store->ogImageUrl() ? \App\Support\Seo::absoluteUrl($coupon->store->ogImageUrl()) : null,
-    ], fn ($value) => filled($value)),
-], fn ($value) => filled($value)), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)
+@json($coupon->structuredData(), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)
 </script>
 @endpush
 

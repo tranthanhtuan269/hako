@@ -25,21 +25,7 @@
     ['name' => $store->name, 'url' => route('stores.show', $store->slug)],
 ]])
 <script type="application/ld+json">
-@json(array_filter([
-    '@context' => 'https://schema.org',
-    '@type' => 'CollectionPage',
-    'name' => $store->seoTitle(),
-    'url' => route('stores.show', $store->slug),
-    'description' => $store->seoDescription(),
-    'image' => $store->ogImageUrl() ? \App\Support\Seo::absoluteUrl($store->ogImageUrl()) : null,
-    'about' => array_filter([
-        '@type' => 'Organization',
-        'name' => $store->name,
-        'url' => $store->publicWebsiteUrl(),
-        'logo' => $store->ogImageUrl() ? \App\Support\Seo::absoluteUrl($store->ogImageUrl()) : null,
-        'category' => $store->category?->name,
-    ], fn ($value) => filled($value)),
-], fn ($value) => filled($value)), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)
+@json($store->structuredData(), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)
 </script>
 @endpush
 

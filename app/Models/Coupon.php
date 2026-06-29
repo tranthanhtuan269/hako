@@ -228,4 +228,27 @@ class Coupon extends Model
 
         return $this->store?->shopUrl();
     }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function structuredData(): array
+    {
+        return array_filter([
+            '@context' => 'https://schema.org',
+            '@type' => 'Offer',
+            'name' => $this->title,
+            'description' => $this->seoDescription(),
+            'url' => route('coupons.show', $this->slug),
+            'category' => $this->typeLabel(),
+            'priceValidUntil' => $this->expires_at?->toDateString(),
+            'image' => $this->ogImageUrl() ? Seo::absoluteUrl($this->ogImageUrl()) : null,
+            'seller' => array_filter([
+                '@type' => 'Organization',
+                'name' => $this->store->name,
+                'url' => $this->store->publicWebsiteUrl() ?? $this->store->shopUrl(),
+                'logo' => $this->store->ogImageUrl() ? Seo::absoluteUrl($this->store->ogImageUrl()) : null,
+            ], fn ($value) => filled($value)),
+        ], fn ($value) => filled($value));
+    }
 }

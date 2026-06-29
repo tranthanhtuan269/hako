@@ -288,4 +288,26 @@ class Store extends Model
             'website_label' => $this->publicWebsiteLabel(),
         ];
     }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function structuredData(): array
+    {
+        return array_filter([
+            '@context' => 'https://schema.org',
+            '@type' => 'CollectionPage',
+            'name' => $this->seoTitle(),
+            'url' => route('stores.show', $this->slug),
+            'description' => $this->seoDescription(),
+            'image' => $this->ogImageUrl() ? Seo::absoluteUrl($this->ogImageUrl()) : null,
+            'about' => array_filter([
+                '@type' => 'Organization',
+                'name' => $this->name,
+                'url' => $this->publicWebsiteUrl(),
+                'logo' => $this->ogImageUrl() ? Seo::absoluteUrl($this->ogImageUrl()) : null,
+                'category' => $this->category?->name,
+            ], fn ($value) => filled($value)),
+        ], fn ($value) => filled($value));
+    }
 }
