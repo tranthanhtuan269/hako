@@ -26,7 +26,7 @@
     ['name' => $coupon->title, 'url' => route('coupons.show', $coupon->slug)],
 ]])
 <script type="application/ld+json">
-@json(array_filter([
+{!! json_encode(array_filter([
     '@context' => 'https://schema.org',
     '@type' => 'Offer',
     'name' => $coupon->title,
@@ -41,7 +41,7 @@
         'url' => $coupon->store->publicWebsiteUrl() ?? $coupon->store->shopUrl(),
         'logo' => $coupon->store->ogImageUrl() ? \App\Support\Seo::absoluteUrl($coupon->store->ogImageUrl()) : null,
     ], fn ($value) => filled($value)),
-], fn ($value) => filled($value)), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)
+], fn ($value) => filled($value)), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) !!}
 </script>
 @endpush
 

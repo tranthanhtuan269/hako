@@ -25,7 +25,7 @@
     ['name' => $store->name, 'url' => route('stores.show', $store->slug)],
 ]])
 <script type="application/ld+json">
-@json(array_filter([
+{!! json_encode(array_filter([
     '@context' => 'https://schema.org',
     '@type' => 'CollectionPage',
     'name' => $store->seoTitle(),
@@ -39,7 +39,7 @@
         'logo' => $store->ogImageUrl() ? \App\Support\Seo::absoluteUrl($store->ogImageUrl()) : null,
         'category' => $store->category?->name,
     ], fn ($value) => filled($value)),
-], fn ($value) => filled($value)), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)
+], fn ($value) => filled($value)), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) !!}
 </script>
 @endpush
 
