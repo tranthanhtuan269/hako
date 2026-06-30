@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Support\SiteBranding;
 use App\Support\ThemeManager;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\View;
@@ -24,6 +25,14 @@ class AppServiceProvider extends ServiceProvider
     {
         Paginator::useBootstrapFive();
 
+        try {
+            $siteLogoUrl = SiteBranding::logoUrl();
+            $siteSocialLinks = SiteBranding::socialLinks();
+        } catch (\Throwable) {
+            $siteLogoUrl = null;
+            $siteSocialLinks = [];
+        }
+
         View::share([
             'siteName' => config('site.name'),
             'siteUrl' => rtrim(config('site.url'), '/'),
@@ -32,6 +41,8 @@ class AppServiceProvider extends ServiceProvider
             'privacyEmail' => config('site.privacy_email'),
             'lastUpdated' => config('site.legal_last_updated'),
             'activeTheme' => ThemeManager::current(),
+            'siteLogoUrl' => $siteLogoUrl,
+            'siteSocialLinks' => $siteSocialLinks,
         ]);
     }
 }

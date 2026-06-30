@@ -32,6 +32,14 @@
             </p>
         </div>
 
+        @if(!empty($siteSocialLinks))
+            <div class="contact-card">
+                <h3>Follow Us</h3>
+                <p>Connect with {{ $siteName }} on social media.</p>
+                @include('partials.site-social-links')
+            </div>
+        @endif
+
         <div class="contact-card">
             <h3>Mailing Address</h3>
             <p>

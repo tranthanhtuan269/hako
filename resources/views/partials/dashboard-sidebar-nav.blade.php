@@ -11,6 +11,7 @@
             <a href="{{ route('admin.coupons.index') }}" @class(['active' => request()->routeIs('admin.coupons.*')])>Coupons</a>
             <a href="{{ route('admin.posts.index') }}" @class(['active' => request()->routeIs('admin.posts.*')])>Blogs</a>
             <a href="{{ route('admin.themes.index') }}" @class(['active' => request()->routeIs('admin.themes.*')])>Frontend Theme</a>
+            <a href="{{ route('admin.branding.index') }}" @class(['active' => request()->routeIs('admin.branding.*')])>Logo &amp; Social</a>
             <a href="{{ route('admin.tracking.index') }}" @class(['active' => request()->routeIs('admin.tracking.*')])>Tracking Scripts</a>
             @if(config('affiliate.enabled'))
             <a href="{{ route('admin.affiliate.orders.index') }}" @class(['active' => request()->routeIs('admin.affiliate.*')])>Referral Program</a>
@@ -20,6 +21,7 @@
             @if($isAdmin)
                 <a href="{{ route('admin.categories.index') }}" @class(['active' => request()->routeIs('admin.categories.*')])>Categories</a>
                 <a href="{{ route('admin.themes.index') }}" @class(['active' => request()->routeIs('admin.themes.*')])>Frontend Theme</a>
+                <a href="{{ route('admin.branding.index') }}" @class(['active' => request()->routeIs('admin.branding.*')])>Logo &amp; Social</a>
                 <a href="{{ route('admin.tracking.index') }}" @class(['active' => request()->routeIs('admin.tracking.*')])>Tracking Scripts</a>
             @endif
             <a href="{{ route('member.stores.index') }}" @class(['active' => request()->routeIs('member.stores.*')])>Stores</a>

@@ -18,13 +18,7 @@
 <body class="theme-{{ $activeTheme }}">
     <header class="site-header">
         <div class="container header-inner">
-            <a href="{{ route('home') }}" class="site-brand">
-                <span class="site-brand-icon">%</span>
-                <span class="site-brand-text">
-                    <strong>{{ config('site.name') }}</strong>
-                    <small>{{ config('site.tagline') }}</small>
-                </span>
-            </a>
+            @include('partials.site-brand')
             <form action="{{ route('search') }}" method="GET" class="search-form">
                 <input type="search" name="q" placeholder="Search codes, stores, articles..." value="{{ request('q') }}">
                 <button type="submit">Search</button>
@@ -86,12 +80,16 @@
                 <a href="{{ route('pages.about') }}">About Us</a>
                 <a href="{{ route('pages.contact') }}">Contact Us</a>
             </div>
-            <div>
+            <div class="footer-legal-col">
                 <h4>Legal</h4>
                 <a href="{{ route('pages.privacy') }}">Privacy Policy</a>
                 <a href="{{ route('pages.terms') }}">Terms of Service</a>
                 <a href="{{ route('pages.cookies') }}">Cookie Policy</a>
                 <a href="{{ route('pages.disclaimer') }}">Disclaimer</a>
+                @if(!empty($siteSocialLinks))
+                    <h4 class="footer-social-heading">Follow Us</h4>
+                    @include('partials.site-social-links')
+                @endif
             </div>
         </div>
         <div class="container footer-copy">

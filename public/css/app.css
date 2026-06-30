@@ -84,6 +84,63 @@ a:hover { text-decoration: underline; }
     flex-shrink: 0;
 }
 
+.site-brand-logo {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    object-fit: contain;
+    flex-shrink: 0;
+    background: #fff;
+}
+
+.site-social-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .55rem;
+    margin: .85rem 0 .35rem;
+}
+
+.site-social-links--compact {
+    margin: .5rem 0 0;
+}
+
+.site-social-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, .12);
+    color: #fff;
+    text-decoration: none !important;
+    transition: background .15s ease, transform .15s ease;
+}
+
+.site-social-link svg {
+    width: 18px;
+    height: 18px;
+    fill: currentColor;
+}
+
+.site-social-link:hover {
+    background: rgba(255, 255, 255, .22);
+    transform: translateY(-1px);
+}
+
+.contact-card .site-social-links {
+    margin-top: .65rem;
+}
+
+.contact-card .site-social-link {
+    background: #eef2ff;
+    color: var(--secondary);
+}
+
+.contact-card .site-social-link:hover {
+    background: #dbeafe;
+}
+
 .search-form {
     flex: 1;
     min-width: 200px;
@@ -1049,6 +1106,12 @@ div.pagination > nav.paginator-nav .pagination {
 }
 
 .footer-grid h4 { margin-bottom: .75rem; }
+.footer-social-heading {
+    margin-top: 1.25rem;
+}
+.footer-legal-col .site-social-links {
+    margin-top: .5rem;
+}
 .footer-grid p { color: rgba(255,255,255,.75); margin-bottom: .35rem; }
 .footer-grid a { display: block; color: rgba(255,255,255,.8); margin-bottom: .35rem; }
 .footer-copy { border-top: 1px solid rgba(255,255,255,.2); padding-top: 1rem; font-size: .85rem; opacity: .7; }
@@ -1103,6 +1166,15 @@ div.pagination > nav.paginator-nav .pagination {
     font-size: 1.15rem;
     font-weight: 700;
     flex-shrink: 0;
+}
+
+.sidebar-logo-img {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    object-fit: contain;
+    flex-shrink: 0;
+    background: rgba(255, 255, 255, .95);
 }
 .sidebar-logo-text {
     display: flex;
