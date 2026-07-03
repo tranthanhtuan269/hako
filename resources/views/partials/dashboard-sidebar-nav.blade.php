@@ -33,11 +33,16 @@
     <hr class="sidebar-divider" aria-hidden="true">
 
     <div class="sidebar-nav-group">
+        @include('partials.dashboard-sidebar-google-ads', ['isAdmin' => $isAdmin])
+    </div>
+
+    <hr class="sidebar-divider" aria-hidden="true">
+
+    <div class="sidebar-nav-group">
         <a href="{{ route('member.import-affiliate.create') }}" @class(['active' => request()->routeIs('member.import-affiliate.*')])>Import from Affiliate Link</a>
         @if(config('affiliate.enabled'))
         <a href="{{ route('member.affiliate.index') }}" @class(['active' => request()->routeIs('member.affiliate.*')])>Referral Program</a>
         @endif
-        <a href="{{ route('member.keywords.create') }}" @class(['active' => request()->routeIs('member.keywords.*')])>Keyword Generator</a>
     </div>
 
     <hr class="sidebar-divider" aria-hidden="true">

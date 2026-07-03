@@ -12,11 +12,13 @@ class StoreKeywordSet extends Model
         'user_id',
         'products',
         'result',
+        'ads_settings',
     ];
 
     protected $casts = [
         'products' => 'array',
         'result' => 'array',
+        'ads_settings' => 'array',
     ];
 
     public function store(): BelongsTo

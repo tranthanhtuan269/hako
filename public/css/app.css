@@ -1243,6 +1243,34 @@ div.pagination > nav.paginator-nav .pagination {
 .sidebar-nav-group--footer {
     margin-top: auto;
 }
+.sidebar-nav-section {
+    display: flex;
+    flex-direction: column;
+    gap: .15rem;
+}
+.sidebar-nav-section-label {
+    display: block;
+    font-size: .72rem;
+    font-weight: 700;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, .55);
+    padding: .35rem .75rem .25rem;
+}
+.sidebar-nav-sublink {
+    display: block;
+    color: rgba(255, 255, 255, .85);
+    padding: .55rem .75rem .55rem 1.15rem;
+    border-radius: 6px;
+    margin-bottom: .15rem;
+    text-decoration: none;
+    font-size: .98rem;
+}
+.sidebar-nav-sublink:hover,
+.sidebar-nav-sublink.active {
+    background: rgba(255, 255, 255, .15);
+    color: #fff;
+}
 .sidebar-logout-form {
     margin: .25rem 0 0;
 }

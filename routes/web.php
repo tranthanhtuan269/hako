@@ -26,6 +26,7 @@ use App\Http\Controllers\Admin\StoreController as AdminStoreController;
 use App\Http\Controllers\Admin\ThemeController;
 use App\Http\Controllers\Admin\TrackingController;
 use App\Http\Controllers\Admin\BrandingController;
+use App\Http\Controllers\Admin\AdsSettingsController;
 use App\Http\Controllers\Admin\AffiliateOrderController as AdminAffiliateOrderController;
 use App\Http\Controllers\Admin\AffiliatePayoutController as AdminAffiliatePayoutController;
 use App\Http\Controllers\ReferralController;
@@ -79,6 +80,9 @@ Route::middleware(['auth', 'noindex'])->prefix('dashboard')->name('member.')->gr
     Route::post('import-affiliate', [ImportAffiliateController::class, 'store'])->name('import-affiliate.store');
     Route::get('keywords', [KeywordGeneratorController::class, 'create'])->name('keywords.create');
     Route::get('keywords/load', [KeywordGeneratorController::class, 'load'])->name('keywords.load');
+    Route::get('keywords/export-csv', [KeywordGeneratorController::class, 'exportCsv'])->name('keywords.export-csv');
+    Route::get('keywords/export-assets-csv', [KeywordGeneratorController::class, 'exportAssetsCsv'])->name('keywords.export-assets-csv');
+    Route::get('keywords/export-targeting-csv', [KeywordGeneratorController::class, 'exportTargetingCsv'])->name('keywords.export-targeting-csv');
     Route::post('keywords', [KeywordGeneratorController::class, 'generate'])->name('keywords.generate');
     Route::resource('stores', MemberStoreController::class)->except(['show']);
     Route::resource('coupons', MemberCouponController::class)->except(['show']);
@@ -110,6 +114,9 @@ Route::middleware(['auth', 'admin', 'noindex'])->prefix('admin')->name('admin.')
     Route::put('tracking', [TrackingController::class, 'update'])->name('tracking.update');
     Route::get('branding', [BrandingController::class, 'index'])->name('branding.index');
     Route::put('branding', [BrandingController::class, 'update'])->name('branding.update');
+    Route::get('ads-settings', [AdsSettingsController::class, 'index'])->name('ads-settings.index');
+    Route::put('ads-settings', [AdsSettingsController::class, 'update'])->name('ads-settings.update');
+    Route::post('ads-settings/reset', [AdsSettingsController::class, 'reset'])->name('ads-settings.reset');
 
     Route::middleware('affiliate.enabled')->group(function () {
         Route::get('affiliate/orders', [AdminAffiliateOrderController::class, 'index'])->name('affiliate.orders.index');
