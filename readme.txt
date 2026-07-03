@@ -2,7 +2,7 @@
   THUOC360 — Huong dan cai dat tren may tinh ca nhan (Windows)
 ================================================================================
 
-File zip nay chua ma nguon Laravel 10 + du lieu mau (database + anh logo).
+File zip nay chua ma nguon Laravel 10.
 Cach don gian nhat: dung Laragon (PHP + MySQL + Apache trong mot goi).
 
 --------------------------------------------------------------------------------
@@ -31,10 +31,9 @@ Cach don gian nhat: dung Laragon (PHP + MySQL + Apache trong mot goi).
 
   a) Mo Laragon -> Start All
   b) Menu Laragon -> MySQL -> HeidiSQL (hoac phpMyAdmin)
-  c) Tao database moi ten: thuoc360
-  d) Import file:
-      database\thuoc360_data.sql
-     (chua stores, coupons, blog, tai khoan admin/member tu server)
+  c) Tao database moi ten: thuoc360 (hoac ten trong .env)
+
+  Khong can import file SQL mau. Sau migrate se co tai khoan admin va danh muc (categories).
 
 --------------------------------------------------------------------------------
 4. FILE CAU HINH .env
@@ -58,9 +57,10 @@ Cach don gian nhat: dung Laragon (PHP + MySQL + Apache trong mot goi).
 
       php artisan key:generate
       php artisan storage:link
-      php artisan migrate --force
+      php artisan migrate --seed --force
 
-  Lenh migrate dam bao bang moi nhat; du lieu chinh lay tu file SQL import.
+  Lenh tren tao bang, tai khoan admin (xem DatabaseSeeder), va categories mac dinh.
+  Stores, coupons, blogs: them qua admin/member hoac import affiliate.
 
   QUAN TRONG — storage:link (buoc 4c):
   Anh store/blog luu trong storage\app\public\ nhung web chi doc qua public\storage\.

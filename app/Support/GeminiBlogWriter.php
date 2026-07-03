@@ -12,7 +12,7 @@ final class GeminiBlogWriter
     public function isEnabled(): bool
     {
         return (bool) config('ai.gemini.enabled')
-            && filled(config('ai.gemini.api_key'));
+            && filled(SiteIntegrations::geminiApiKey());
     }
 
     /**
@@ -31,7 +31,7 @@ final class GeminiBlogWriter
             return null;
         }
 
-        $apiKey = (string) config('ai.gemini.api_key');
+        $apiKey = SiteIntegrations::geminiApiKey();
         $model = (string) config('ai.gemini.model', 'gemini-2.0-flash');
         $timeout = (int) config('ai.gemini.timeout', 90);
         $prompt = $this->buildPrompt($context);

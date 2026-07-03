@@ -303,7 +303,7 @@ final class PublicImage
 
     private static function scanAssetHost(): string
     {
-        $apiUrl = trim((string) config('services.couponspeak.url', ''));
+        $apiUrl = trim((string) config('services.scan.url', ''));
 
         if ($apiUrl === '') {
             return '';

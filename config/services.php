@@ -31,11 +31,10 @@ return [
         'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
     ],
 
-    'couponspeak' => [
-        'url' => env('COUPONSPEAK_API_URL', 'https://scan.test/api/coupons'),
-        'sync_url' => env('COUPONSPEAK_SYNC_URL'),
-        'site' => env('COUPONSPEAK_SITE', env('COUPONSPEAK_API_SITE')),
-        'limit' => env('COUPONSPEAK_API_LIMIT', 20),
+    'scan' => [
+        'url' => env('SCAN_API_URL', 'https://scan.test/api/coupons'),
+        'sync_url' => env('SCAN_SYNC_URL'),
+        'limit' => (int) env('SCAN_API_LIMIT', 20),
     ],
 
 ];

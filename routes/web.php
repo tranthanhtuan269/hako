@@ -26,6 +26,7 @@ use App\Http\Controllers\Admin\StoreController as AdminStoreController;
 use App\Http\Controllers\Admin\ThemeController;
 use App\Http\Controllers\Admin\TrackingController;
 use App\Http\Controllers\Admin\BrandingController;
+use App\Http\Controllers\Admin\IntegrationsController;
 use App\Http\Controllers\Admin\AdsSettingsController;
 use App\Http\Controllers\Admin\AffiliateOrderController as AdminAffiliateOrderController;
 use App\Http\Controllers\Admin\AffiliatePayoutController as AdminAffiliatePayoutController;
@@ -114,6 +115,8 @@ Route::middleware(['auth', 'admin', 'noindex'])->prefix('admin')->name('admin.')
     Route::put('tracking', [TrackingController::class, 'update'])->name('tracking.update');
     Route::get('branding', [BrandingController::class, 'index'])->name('branding.index');
     Route::put('branding', [BrandingController::class, 'update'])->name('branding.update');
+    Route::get('integrations', [IntegrationsController::class, 'index'])->name('integrations.index');
+    Route::put('integrations', [IntegrationsController::class, 'update'])->name('integrations.update');
     Route::get('ads-settings', [AdsSettingsController::class, 'index'])->name('ads-settings.index');
     Route::put('ads-settings', [AdsSettingsController::class, 'update'])->name('ads-settings.update');
     Route::post('ads-settings/reset', [AdsSettingsController::class, 'reset'])->name('ads-settings.reset');
