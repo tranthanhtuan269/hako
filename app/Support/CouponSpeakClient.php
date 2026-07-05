@@ -64,7 +64,7 @@ final class CouponSpeakClient
                 ->get($this->apiBaseUrl(), [
                     'site' => $this->siteSlug(),
                     'store' => $storeQuery,
-                    'limit' => (int) config('services.scan.limit', 20),
+                    'limit' => SiteIntegrations::scanApiLimit(),
                     'profile' => 1,
                 ]);
 
@@ -304,12 +304,12 @@ final class CouponSpeakClient
 
     private function apiBaseUrl(): string
     {
-        return $this->normalizeApiUrl(trim((string) config('services.scan.url', '')));
+        return $this->normalizeApiUrl(SiteIntegrations::scanApiUrl());
     }
 
     private function syncUrl(): string
     {
-        $syncUrl = trim((string) config('services.scan.sync_url', ''));
+        $syncUrl = SiteIntegrations::scanSyncUrl();
 
         if ($syncUrl !== '') {
             return $this->appendSiteQuery($this->normalizeApiUrl($syncUrl));

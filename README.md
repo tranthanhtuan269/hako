@@ -38,14 +38,11 @@ php artisan serve
 
 ## Site config
 
-Edit `config/site.php` or `.env`:
+Edit `config/site.php` or `.env` for `SITE_DOMAIN`, `SITE_URL`, etc.
 
-```
-SITE_DOMAIN=thuoc360.com
-SITE_URL=https://thuoc360.com
-SITE_CONTACT_EMAIL=contact@thuoc360.com
-SITE_PRIVACY_EMAIL=privacy@thuoc360.com
-```
+Contact emails and Twitter handle default from `SITE_DOMAIN` (e.g. `contact@yourdomain.com`).
+
+Scan API settings: **Admin → Integrations** (stored in database, not `.env`).
 
 ## License
 

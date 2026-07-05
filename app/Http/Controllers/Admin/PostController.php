@@ -12,11 +12,19 @@ use Illuminate\View\View;
 
 class PostController extends Controller
 {
-    public function index(): View
+    public function index(Request $request): View
     {
-        $posts = Post::orderByDesc('created_at')->paginate(20);
+        $q = trim((string) $request->query('q', ''));
 
-        return view('admin.posts.index', compact('posts'));
+        $query = Post::query()->orderByDesc('is_pinned_home')->orderByDesc('home_pin_sort_order')->orderByDesc('created_at');
+
+        if ($q !== '') {
+            $query->where('title', 'like', '%'.$q.'%');
+        }
+
+        $posts = $query->paginate(20)->withQueryString();
+
+        return view('admin.posts.index', compact('posts', 'q'));
     }
 
     public function create(): View
@@ -60,6 +68,27 @@ class PostController extends Controller
         $post->delete();
 
         return redirect()->route('admin.posts.index')->with('success', 'Blog post deleted successfully.');
+    }
+
+    public function toggleHomePin(Post $post): RedirectResponse
+    {
+        if ($post->is_pinned_home) {
+            $post->update([
+                'is_pinned_home' => false,
+                'home_pin_sort_order' => 0,
+            ]);
+
+            return back()->with('success', 'Post unpinned from homepage.');
+        }
+
+        $nextOrder = (int) Post::query()->pinnedHome()->max('home_pin_sort_order') + 1;
+
+        $post->update([
+            'is_pinned_home' => true,
+            'home_pin_sort_order' => $nextOrder,
+        ]);
+
+        return back()->with('success', 'Post pinned to homepage.');
     }
 
     private function validated(Request $request): array

@@ -20,15 +20,24 @@
     <div class="import-card">
         <h2>Store</h2>
         <div class="form-group">
-            <label for="store_id">Store *</label>
-            <select id="store_id" name="store_id" required>
-                <option value="">— Select store —</option>
-                @foreach($stores as $store)
-                    <option value="{{ $store->id }}" @selected((int) old('store_id', $selectedStoreId ?? 0) === $store->id)>
-                        {{ $store->name }}
-                    </option>
-                @endforeach
-            </select>
+            <label for="store_search">Store *</label>
+            <div class="store-combobox" data-store-combobox>
+                <input type="hidden" name="store_id" id="store_id" value="{{ old('store_id', $selectedStoreId ?? '') }}" required>
+                <div class="admin-search-field">
+                    <input
+                        type="search"
+                        id="store_search"
+                        class="admin-search-input store-combobox-input"
+                        value="{{ $selectedStore?->name ?? '' }}"
+                        placeholder="Type to search stores…"
+                        autocomplete="off"
+                        spellcheck="false"
+                        data-store-combobox-input
+                    >
+                    <button type="button" class="admin-search-clear" data-store-combobox-clear aria-label="Clear store" @if(! filled($selectedStoreId ?? null)) hidden @endif>×</button>
+                </div>
+                <ul class="store-combobox-list" data-store-combobox-list hidden role="listbox" aria-label="Stores"></ul>
+            </div>
             <p id="store-load-status" class="form-hint" style="margin-top:.5rem;"></p>
             @error('store_id')<p class="form-error">{{ $message }}</p>@enderror
         </div>
@@ -283,6 +292,62 @@
 .keyword-ads-preview th {
     background: #f8fafc;
 }
+.admin-search-field { position: relative; width: 100%; }
+.admin-search-input {
+    width: 100%;
+    box-sizing: border-box;
+    padding: .55rem 2.25rem .55rem .75rem;
+    border: 1px solid var(--border, #e5e7eb);
+    border-radius: 8px;
+    font: inherit;
+}
+.admin-search-clear {
+    position: absolute;
+    top: 50%;
+    right: .45rem;
+    transform: translateY(-50%);
+    border: 0;
+    background: transparent;
+    color: #64748b;
+    font-size: 1.35rem;
+    line-height: 1;
+    padding: .15rem .35rem;
+    cursor: pointer;
+    border-radius: 4px;
+}
+.admin-search-clear:hover { color: #0f172a; background: #f1f5f9; }
+.store-combobox { position: relative; width: 100%; }
+.store-combobox-list {
+    position: absolute;
+    z-index: 20;
+    left: 0;
+    right: 0;
+    top: calc(100% + .25rem);
+    margin: 0;
+    padding: .35rem 0;
+    list-style: none;
+    max-height: 14rem;
+    overflow-y: auto;
+    background: #fff;
+    border: 1px solid var(--border, #e5e7eb);
+    border-radius: 8px;
+    box-shadow: 0 8px 24px rgba(15, 23, 42, .12);
+}
+.store-combobox-option {
+    padding: .5rem .75rem;
+    cursor: pointer;
+    font-size: .95rem;
+}
+.store-combobox-option:hover,
+.store-combobox-option.is-active {
+    background: #eff6ff;
+    color: #1d4ed8;
+}
+.store-combobox-empty {
+    padding: .65rem .75rem;
+    color: var(--muted);
+    font-size: .9rem;
+}
 </style>
 @endpush
 
@@ -292,7 +357,12 @@
     const list = document.getElementById('product-list');
     const tpl = document.getElementById('product-row-template');
     const addBtn = document.getElementById('add-product-btn');
-    const storeSelect = document.getElementById('store_id');
+    const storeIdInput = document.getElementById('store_id');
+    const storeSearchInput = document.getElementById('store_search');
+    const storeCombobox = document.querySelector('[data-store-combobox]');
+    const storeComboboxList = document.querySelector('[data-store-combobox-list]');
+    const storeComboboxClear = document.querySelector('[data-store-combobox-clear]');
+    const stores = @json($stores->map(fn ($store) => ['id' => $store->id, 'name' => $store->name])->values());
     const loadStatus = document.getElementById('store-load-status');
     const resultsWrap = document.getElementById('keyword-results-wrap');
     const loadUrl = @json(route('member.keywords.load'));
@@ -475,6 +545,7 @@
             loadStatus.textContent = '';
             resultsWrap.innerHTML = '';
             renderProducts(['']);
+            updateExportCsvLink('');
             return;
         }
 
@@ -510,6 +581,121 @@
         }
     }
 
+    function syncStoreClearButton() {
+        if (!storeComboboxClear) return;
+        storeComboboxClear.hidden = storeSearchInput.value.trim() === '' && !storeIdInput.value;
+    }
+
+    function storeById(id) {
+        return stores.find((store) => String(store.id) === String(id)) || null;
+    }
+
+    function renderStoreOptions(matches) {
+        if (!storeComboboxList) return;
+
+        storeComboboxList.innerHTML = '';
+
+        if (matches.length === 0) {
+            const empty = document.createElement('li');
+            empty.className = 'store-combobox-empty';
+            empty.textContent = 'No stores found.';
+            storeComboboxList.appendChild(empty);
+            storeComboboxList.hidden = false;
+            return;
+        }
+
+        matches.forEach((store) => {
+            const item = document.createElement('li');
+            item.className = 'store-combobox-option';
+            item.setAttribute('role', 'option');
+            item.dataset.storeId = String(store.id);
+            item.textContent = store.name;
+            storeComboboxList.appendChild(item);
+        });
+
+        storeComboboxList.hidden = false;
+    }
+
+    function filterStores(query) {
+        const q = query.trim().toLowerCase();
+
+        if (q === '') {
+            return stores.slice(0, 50);
+        }
+
+        return stores.filter((store) => store.name.toLowerCase().includes(q));
+    }
+
+    function selectStore(store) {
+        if (!store) return;
+
+        storeIdInput.value = String(store.id);
+        storeSearchInput.value = store.name;
+        storeComboboxList.hidden = true;
+        syncStoreClearButton();
+        loadSavedKeywords(store.id);
+    }
+
+    function clearStoreSelection() {
+        storeIdInput.value = '';
+        storeSearchInput.value = '';
+        storeComboboxList.hidden = true;
+        syncStoreClearButton();
+        loadSavedKeywords('');
+        storeSearchInput.focus();
+    }
+
+    function bindStoreCombobox() {
+        if (!storeSearchInput || !storeIdInput) return;
+
+        storeSearchInput.addEventListener('input', () => {
+            const selected = storeById(storeIdInput.value);
+
+            if (!selected || selected.name !== storeSearchInput.value.trim()) {
+                storeIdInput.value = '';
+            }
+
+            renderStoreOptions(filterStores(storeSearchInput.value));
+            syncStoreClearButton();
+        });
+
+        storeSearchInput.addEventListener('focus', () => {
+            renderStoreOptions(filterStores(storeSearchInput.value));
+        });
+
+        storeSearchInput.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape') {
+                storeComboboxList.hidden = true;
+                return;
+            }
+
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                const first = storeComboboxList.querySelector('.store-combobox-option');
+                if (first) {
+                    selectStore(storeById(first.dataset.storeId));
+                }
+            }
+        });
+
+        storeComboboxList?.addEventListener('mousedown', (event) => {
+            const option = event.target.closest('.store-combobox-option');
+            if (!option) return;
+            event.preventDefault();
+            selectStore(storeById(option.dataset.storeId));
+        });
+
+        storeComboboxClear?.addEventListener('click', () => {
+            clearStoreSelection();
+        });
+
+        document.addEventListener('click', (event) => {
+            if (!storeCombobox?.contains(event.target)) {
+                storeComboboxList.hidden = true;
+            }
+        });
+    }
+
     addBtn?.addEventListener('click', () => {
         const node = tpl.content.cloneNode(true);
         list.appendChild(node);
@@ -525,17 +711,14 @@
         renumberLabels();
     });
 
-    storeSelect?.addEventListener('change', () => {
-        loadSavedKeywords(storeSelect.value);
-    });
-
+    bindStoreCombobox();
     document.getElementById('ad_group_mode')?.addEventListener('change', toggleAdGroupFields);
-
     toggleAdGroupFields();
     bindMultiSelectTools();
     bindResultActions(document);
-    if (storeSelect?.value) {
-        updateExportCsvLink(storeSelect.value);
+    syncStoreClearButton();
+    if (storeIdInput?.value) {
+        updateExportCsvLink(storeIdInput.value);
     }
 })();
 </script>

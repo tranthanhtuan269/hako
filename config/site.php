@@ -43,7 +43,7 @@ return [
 
     'og_image' => env('SITE_OG_IMAGE') ?: null,
 
-    'twitter_handle' => env('SITE_TWITTER', '@'.str_replace('.', '', explode('.', $domain)[0])),
+    'twitter_handle' => env('SITE_TWITTER') ?: ('@'.str_replace('.', '', explode('.', $domain)[0])),
 
     'locale' => 'en_US',
 

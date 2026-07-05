@@ -28,11 +28,14 @@ class Store extends Model
         'stores_list_sort_order',
         'store_coupon_limit',
         'is_active',
+        'is_pinned_home',
+        'home_pin_sort_order',
         'view_count',
     ];
 
     protected $casts = [
         'is_active' => 'boolean',
+        'is_pinned_home' => 'boolean',
         'show_on_stores' => 'boolean',
         'store_coupon_limit' => 'integer',
         'stores_list_sort_order' => 'integer',
@@ -85,6 +88,22 @@ class Store extends Model
     public function scopeActive($query)
     {
         return $query->where('is_active', true);
+    }
+
+    public function scopePinnedHome(Builder $query): Builder
+    {
+        return $query->where('is_pinned_home', true);
+    }
+
+    public static function homeFeaturedQuery(int $limit = 12): Builder
+    {
+        return static::query()
+            ->active()
+            ->orderByDesc('is_pinned_home')
+            ->orderByDesc('home_pin_sort_order')
+            ->orderBy('sort_order')
+            ->orderBy('name')
+            ->limit($limit);
     }
 
     public function scopeVisibleOnStoresPage(Builder $query): Builder

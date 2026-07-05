@@ -3,6 +3,7 @@
 namespace App\Support;
 
 use Illuminate\Http\UploadedFile;
+use App\Support\SiteIntegrations;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -303,7 +304,7 @@ final class PublicImage
 
     private static function scanAssetHost(): string
     {
-        $apiUrl = trim((string) config('services.scan.url', ''));
+        $apiUrl = trim((string) SiteIntegrations::scanApiUrl());
 
         if ($apiUrl === '') {
             return '';

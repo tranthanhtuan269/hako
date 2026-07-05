@@ -32,9 +32,9 @@ return [
     ],
 
     'scan' => [
-        'url' => env('SCAN_API_URL', 'https://scan.test/api/coupons'),
-        'sync_url' => env('SCAN_SYNC_URL'),
-        'limit' => (int) env('SCAN_API_LIMIT', 20),
+        'url' => '',
+        'sync_url' => '',
+        'limit' => 20,
     ],
 
 ];

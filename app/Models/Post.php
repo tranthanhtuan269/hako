@@ -27,12 +27,15 @@ class Post extends Model
         'author_name',
         'published_at',
         'is_published',
+        'is_pinned_home',
+        'home_pin_sort_order',
         'view_count',
     ];
 
     protected $casts = [
         'published_at' => 'datetime',
         'is_published' => 'boolean',
+        'is_pinned_home' => 'boolean',
     ];
 
     protected static function booted(): void
@@ -99,6 +102,22 @@ class Post extends Model
                 $q->whereNull('published_at')
                     ->orWhere('published_at', '<=', Carbon::now());
             });
+    }
+
+    public function scopePinnedHome(Builder $query): Builder
+    {
+        return $query->where('is_pinned_home', true);
+    }
+
+    public static function homeFeaturedQuery(int $limit = 6): Builder
+    {
+        return static::query()
+            ->published()
+            ->with('user')
+            ->orderByDesc('is_pinned_home')
+            ->orderByDesc('home_pin_sort_order')
+            ->orderByDesc('published_at')
+            ->limit($limit);
     }
 
     public function scopeForStore(Builder $query, Store $store): Builder

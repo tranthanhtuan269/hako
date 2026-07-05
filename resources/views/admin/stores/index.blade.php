@@ -20,6 +20,17 @@
     </div>
 </div>
 
+@include('partials.admin-list-search', [
+    'action' => route('admin.stores.index'),
+    'value' => $q ?? '',
+    'placeholder' => 'Search by store name…',
+    'clearUrl' => route('admin.stores.index', array_filter([
+        'sort' => ($sort ?? 'order') !== 'order' ? $sort : null,
+        'dir' => ($sort ?? 'order') !== 'order' ? $dir : null,
+    ])),
+    'hiddenFields' => ($sort ?? 'order') !== 'order' ? ['sort' => $sort, 'dir' => $dir] : [],
+])
+
 <div class="coupon-sort-table-wrap">
 <table class="admin-table coupon-sort-table">
     <thead>
@@ -28,6 +39,7 @@
             @include('partials.table-sort-th', ['column' => 'order', 'label' => 'Page order', 'currentSort' => $sort ?? 'order', 'currentDir' => $dir ?? 'desc'])
             <th>Logo</th>
             @include('partials.table-sort-th', ['column' => 'name', 'label' => 'Name', 'currentSort' => $sort ?? 'order', 'currentDir' => $dir ?? 'desc'])
+            <th>Home</th>
             <th>On /stores</th>
             @include('partials.table-sort-th', ['column' => 'coupons', 'label' => 'Coupons', 'currentSort' => $sort ?? 'order', 'currentDir' => $dir ?? 'desc'])
             @include('partials.table-sort-th', ['column' => 'clicks', 'label' => 'Clicks', 'currentSort' => $sort ?? 'order', 'currentDir' => $dir ?? 'desc'])
@@ -57,6 +69,20 @@
                     @endif
                 </td>
                 <td>{{ $store->name }}</td>
+                <td>
+                    <form action="{{ route('admin.stores.toggle-home-pin', $store) }}" method="POST" style="display:inline;">
+                        @csrf
+                        @method('PATCH')
+                        @foreach(request()->only(['q', 'sort', 'dir']) as $key => $value)
+                            @if(filled($value))
+                                <input type="hidden" name="{{ $key }}" value="{{ $value }}">
+                            @endif
+                        @endforeach
+                        <button type="submit" class="btn btn-outline btn-sm" title="{{ $store->is_pinned_home ? 'Unpin from homepage' : 'Pin to homepage' }}">
+                            {{ $store->is_pinned_home ? '📌 Pinned' : 'Pin' }}
+                        </button>
+                    </form>
+                </td>
                 <td>{{ $store->show_on_stores ? 'Yes' : 'No' }}</td>
                 <td>{{ number_format($store->coupons_count) }}</td>
                 <td><strong>{{ number_format((int) ($store->coupons_click_sum ?? 0)) }}</strong></td>
@@ -72,7 +98,7 @@
             </tr>
         @empty
             <tr>
-                <td colspan="10">No stores yet. <a href="{{ route('admin.stores.create') }}">Add a store</a>.</td>
+                <td colspan="11">No stores yet. <a href="{{ route('admin.stores.create') }}">Add a store</a>.</td>
             </tr>
         @endforelse
     </tbody>
@@ -114,6 +140,7 @@
 }
 .coupon-sort-status[data-type="success"] { color: #047857; }
 .coupon-sort-status[data-type="error"] { color: #dc2626; }
+.btn-sm { padding: .25rem .55rem; font-size: .8125rem; }
 </style>
 @endpush
 

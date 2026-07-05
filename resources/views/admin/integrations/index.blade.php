@@ -5,7 +5,7 @@
 @section('content')
 <h1>Integrations</h1>
 <p class="form-hint" style="margin-bottom:1.25rem;">
-    Scan API URLs and limits are set in <code>.env</code> (<code>SCAN_API_URL</code>, <code>SCAN_SYNC_URL</code>, <code>SCAN_API_LIMIT</code>).
+    Configure Scan API and Gemini AI. Settings are stored in the database per site.
 </p>
 
 <form action="{{ route('admin.integrations.update') }}" method="POST">
@@ -13,11 +13,26 @@
     @method('PUT')
 
     <div class="integrations-section">
-        <h2>Scan</h2>
+        <h2>Scan API</h2>
+        <div class="form-group">
+            <label for="scan_api_url">Coupons API URL</label>
+            <input type="url" id="scan_api_url" name="scan_api_url" value="{{ old('scan_api_url', $scanApiUrl) }}" maxlength="500" placeholder="https://scan.example.com/api/coupons">
+            @error('scan_api_url')<p class="form-error">{{ $message }}</p>@enderror
+        </div>
+        <div class="form-group">
+            <label for="scan_sync_url">Import / sync URL</label>
+            <input type="url" id="scan_sync_url" name="scan_sync_url" value="{{ old('scan_sync_url', $scanSyncUrl) }}" maxlength="500" placeholder="https://scan.example.com/api/coupons/import">
+            @error('scan_sync_url')<p class="form-error">{{ $message }}</p>@enderror
+        </div>
+        <div class="form-group">
+            <label for="scan_api_limit">API limit per request</label>
+            <input type="number" id="scan_api_limit" name="scan_api_limit" value="{{ old('scan_api_limit', $scanApiLimit) }}" min="1" max="200">
+            @error('scan_api_limit')<p class="form-error">{{ $message }}</p>@enderror
+        </div>
         <div class="form-group">
             <label for="scan_site">Scan site slug</label>
-            <input type="text" id="scan_site" name="scan_site" value="{{ old('scan_site', $scanSite) }}" maxlength="80" placeholder="e.g. selloradeals" pattern="[A-Za-z0-9_-]+">
-            <p class="form-hint">Site identifier sent to the Scan API when importing coupons. Letters, numbers, hyphen, underscore only. Leave empty to derive from <code>SITE_DOMAIN</code>.</p>
+            <input type="text" id="scan_site" name="scan_site" value="{{ old('scan_site', $scanSite) }}" maxlength="80" placeholder="e.g. hako" pattern="[A-Za-z0-9_-]+">
+            <p class="form-hint">Site identifier sent to Scan when importing coupons. Leave empty to derive from <code>SITE_DOMAIN</code>.</p>
             @error('scan_site')<p class="form-error">{{ $message }}</p>@enderror
         </div>
     </div>
@@ -30,7 +45,7 @@
                 <p class="form-hint" style="margin-bottom:.5rem;">Current key: <code>{{ $geminiMasked }}</code></p>
             @endif
             <input type="password" id="gemini_api_key" name="gemini_api_key" value="" maxlength="500" autocomplete="new-password" placeholder="{{ $geminiConfigured ? 'Leave blank to keep current key' : 'Paste API key' }}">
-            <p class="form-hint">Used for AI blog generation on affiliate import. Stored in the database (not <code>.env</code>).</p>
+            <p class="form-hint">Used for AI blog generation on affiliate import.</p>
             @error('gemini_api_key')<p class="form-error">{{ $message }}</p>@enderror
         </div>
         @if($geminiConfigured)

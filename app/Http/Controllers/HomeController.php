@@ -14,13 +14,9 @@ class HomeController extends Controller
     public function index(): View
     {
         $categories = Category::active()->orderBy('sort_order')->take(18)->get();
-        $stores = Store::active()->orderBy('sort_order')->take(12)->get();
+        $stores = Store::homeFeaturedQuery(12)->get();
 
-        $latestPosts = Post::published()
-            ->with('user')
-            ->orderByDesc('published_at')
-            ->take(6)
-            ->get();
+        $latestPosts = Post::homeFeaturedQuery(6)->get();
 
         $stats = [
             'coupons' => Coupon::valid()->count(),

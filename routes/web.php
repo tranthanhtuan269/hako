@@ -27,6 +27,7 @@ use App\Http\Controllers\Admin\ThemeController;
 use App\Http\Controllers\Admin\TrackingController;
 use App\Http\Controllers\Admin\BrandingController;
 use App\Http\Controllers\Admin\IntegrationsController;
+use App\Http\Controllers\Admin\AccountController;
 use App\Http\Controllers\Admin\AdsSettingsController;
 use App\Http\Controllers\Admin\AffiliateOrderController as AdminAffiliateOrderController;
 use App\Http\Controllers\Admin\AffiliatePayoutController as AdminAffiliatePayoutController;
@@ -99,6 +100,9 @@ Route::middleware(['auth', 'noindex'])->prefix('dashboard')->name('member.')->gr
 
 Route::middleware(['auth', 'admin', 'noindex'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('account', [AccountController::class, 'edit'])->name('account.edit');
+    Route::put('account/profile', [AccountController::class, 'updateProfile'])->name('account.profile');
+    Route::put('account/password', [AccountController::class, 'updatePassword'])->name('account.password');
     Route::get('coupons/catalog-display', [AdminCouponController::class, 'catalogDisplay'])->name('coupons.catalog-display');
     Route::put('coupons/catalog-display', [AdminCouponController::class, 'updateCatalogDisplay'])->name('coupons.catalog-display.update');
     Route::put('coupons/sort-order', [AdminCouponController::class, 'updateSortOrder'])->name('coupons.sort-order');
@@ -106,8 +110,10 @@ Route::middleware(['auth', 'admin', 'noindex'])->prefix('admin')->name('admin.')
     Route::get('stores/catalog-display', [AdminStoreController::class, 'catalogDisplay'])->name('stores.catalog-display');
     Route::put('stores/catalog-display', [AdminStoreController::class, 'updateCatalogDisplay'])->name('stores.catalog-display.update');
     Route::put('stores/sort-order', [AdminStoreController::class, 'updateSortOrder'])->name('stores.sort-order');
+    Route::patch('stores/{store}/home-pin', [AdminStoreController::class, 'toggleHomePin'])->name('stores.toggle-home-pin');
     Route::resource('stores', AdminStoreController::class)->except(['show']);
     Route::resource('categories', AdminCategoryController::class)->except(['show']);
+    Route::patch('posts/{post}/home-pin', [AdminPostController::class, 'toggleHomePin'])->name('posts.toggle-home-pin');
     Route::resource('posts', AdminPostController::class)->except(['show']);
     Route::get('themes', [ThemeController::class, 'index'])->name('themes.index');
     Route::put('themes', [ThemeController::class, 'update'])->name('themes.update');

@@ -22,12 +22,20 @@ class StoreController extends Controller
 
     public function index(Request $request): View
     {
-        $sorted = StoreQuerySort::apply(Store::with('category'), $request);
+        $q = trim((string) $request->query('q', ''));
+
+        $query = Store::with('category');
+
+        if ($q !== '') {
+            $query->where('name', 'like', '%'.$q.'%');
+        }
+
+        $sorted = StoreQuerySort::apply($query, $request);
         $stores = $sorted['query']->get();
         $sort = $sorted['sort'];
         $dir = $sorted['dir'];
 
-        return view('admin.stores.index', compact('stores', 'sort', 'dir'));
+        return view('admin.stores.index', compact('stores', 'sort', 'dir', 'q'));
     }
 
     public function catalogDisplay(): View
@@ -111,6 +119,27 @@ class StoreController extends Controller
         $store->delete();
 
         return redirect()->route('admin.stores.index')->with('success', 'Store deleted successfully.');
+    }
+
+    public function toggleHomePin(Store $store): RedirectResponse
+    {
+        if ($store->is_pinned_home) {
+            $store->update([
+                'is_pinned_home' => false,
+                'home_pin_sort_order' => 0,
+            ]);
+
+            return back()->with('success', "{$store->name} unpinned from homepage.");
+        }
+
+        $nextOrder = (int) Store::query()->pinnedHome()->max('home_pin_sort_order') + 1;
+
+        $store->update([
+            'is_pinned_home' => true,
+            'home_pin_sort_order' => $nextOrder,
+        ]);
+
+        return back()->with('success', "{$store->name} pinned to homepage.");
     }
 
     private function resolveLogo(Request $request, ?string $logoUrl, ?string $existing = null, ?Store $store = null): ?string
