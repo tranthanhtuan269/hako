@@ -107,15 +107,7 @@ class ImportAffiliateController extends Controller
             $previewStore->setRelation('category', Category::find($merchant['category_id']));
         }
 
-        $cachedBlog = is_array($bundle['store_profile']['generated_blog'] ?? null)
-            ? $bundle['store_profile']['generated_blog']
-            : null;
-
-        if (is_array($cachedBlog) && filled($cachedBlog['content'] ?? null)) {
-            $generatedBlog = $contentBuilder->sanitizeBlogOutput($cachedBlog) + ['source' => 'scan_cache'];
-        } else {
-            $generatedBlog = $contentBuilder->generateBlogPreview($previewStore, $offers, $merchant);
-        }
+        $generatedBlog = $contentBuilder->generateBlogPreview($previewStore, $offers, $merchant);
 
         return response()->json([
             'ok' => true,
@@ -257,7 +249,6 @@ class ImportAffiliateController extends Controller
                 'final_url' => $merchant['final_url'] ?? null,
                 'faqs' => $merchant['faqs'] ?? [],
                 'products' => $merchant['products'] ?? [],
-                'generated_blog' => $preGeneratedBlog,
             ],
         );
 

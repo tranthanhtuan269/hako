@@ -222,7 +222,6 @@ final class CouponSpeakClient
             'final_url' => $detectContext['final_url'] ?? null,
             'faqs' => $detectContext['faqs'] ?? null,
             'products' => $detectContext['products'] ?? null,
-            'generated_blog' => $detectContext['generated_blog'] ?? null,
         ], fn ($value) => $value !== null && $value !== []);
 
         $payload = [
