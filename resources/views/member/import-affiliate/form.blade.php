@@ -60,6 +60,10 @@
         <div id="merchant-preview" class="merchant-preview" hidden>
             <img id="preview-logo" src="" alt="" class="merchant-preview-logo">
             <div>
+                <div id="preview-existing-import" class="preview-existing-import" hidden>
+                    <strong>Existing import found</strong>
+                    <p id="preview-existing-import-text" class="form-hint" style="margin:.35rem 0 0;"></p>
+                </div>
                 <strong id="preview-name"></strong>
                 <p id="preview-domain" class="form-hint" style="margin:.25rem 0 0;"></p>
                 <p id="preview-meta" class="form-hint" style="margin:.35rem 0 0;"></p>
@@ -130,17 +134,9 @@
         @error('offers.*.expires_at')<p class="form-error">{{ $message }}</p>@enderror
     </div>
 
-    <div class="import-card">
-        <div class="form-check">
-            <input type="checkbox" name="publish" value="1" id="publish" @checked(old('publish'))>
-            <label for="publish">Publish store, offers, and blog post immediately</label>
-        </div>
-        <p class="form-hint">Leave unchecked to save everything as drafts for review first (recommended).</p>
-    </div>
-
     <input type="hidden" name="generated_blog" id="generated_blog" value="{{ old('generated_blog') }}">
 
-    <button type="submit" class="btn btn-primary">Import &amp; Generate Content</button>
+    <button type="submit" class="btn btn-primary" id="import-submit-btn">Import &amp; Generate Content</button>
     <a href="{{ route('member.dashboard') }}" class="btn btn-outline">Cancel</a>
 </form>
 
@@ -269,6 +265,19 @@
     -webkit-line-clamp: 3;
     overflow: hidden;
 }
+.preview-existing-import {
+    margin-bottom: .75rem;
+    padding: .65rem .75rem;
+    border-radius: 8px;
+    background: #fffbeb;
+    border: 1px solid #fcd34d;
+    color: #92400e;
+    font-size: .88rem;
+}
+.preview-existing-import strong {
+    display: block;
+    color: #78350f;
+}
 .offer-block {
     border: 1px solid var(--border);
     border-radius: 8px;
@@ -367,7 +376,18 @@
     const csrf = document.querySelector('meta[name="csrf-token"]').content;
     const offersList = document.getElementById('offers-list');
     const template = document.getElementById('offer-block-template');
+    const importForm = document.getElementById('import-form');
+    const importSubmitBtn = document.getElementById('import-submit-btn');
     let offerIndex = offersList.querySelectorAll('.offer-block').length;
+
+    importForm.addEventListener('submit', () => {
+        if (importSubmitBtn.disabled) {
+            return;
+        }
+
+        importSubmitBtn.disabled = true;
+        importSubmitBtn.textContent = 'Importing…';
+    });
 
     document.getElementById('add-offer-btn').addEventListener('click', () => {
         const html = template.innerHTML.replaceAll('__INDEX__', String(offerIndex++));
@@ -444,6 +464,8 @@
         const previewBlogTitle = document.getElementById('preview-blog-title');
         const previewBlogExcerpt = document.getElementById('preview-blog-excerpt');
         const previewBlogSource = document.getElementById('preview-blog-source');
+        const previewExistingImport = document.getElementById('preview-existing-import');
+        const previewExistingImportText = document.getElementById('preview-existing-import-text');
         const generatedBlogInput = document.getElementById('generated_blog');
         const detectBtn = document.getElementById('detect-store-btn');
         const affiliateInput = document.getElementById('affiliate_url');
@@ -466,6 +488,7 @@
                 preview.hidden = true;
                 previewProducts.hidden = true;
                 previewBlog.hidden = true;
+                previewExistingImport.hidden = true;
                 generatedBlogInput.value = '';
                 status.textContent = '';
                 status.className = 'form-hint detect-status';
@@ -524,6 +547,20 @@
                 ? `Domain: ${merchant.domain}`
                 : '';
             document.getElementById('preview-meta').textContent = merchant.meta_description || merchant.page_title || '';
+
+            if (data.existing_import) {
+                const existing = data.existing_import;
+                const postLabel = existing.post_title
+                    ? `post “${existing.post_title}”`
+                    : 'an existing post';
+                previewExistingImportText.textContent =
+                    `This merchant is already imported as “${existing.store_name}”. `
+                    + `Submitting will update that store, replace its offers, and refresh ${postLabel} instead of creating duplicates.`;
+                previewExistingImport.hidden = false;
+            } else {
+                previewExistingImport.hidden = true;
+                previewExistingImportText.textContent = '';
+            }
 
             if (Array.isArray(merchant.products) && merchant.products.length) {
                 previewProductsList.innerHTML = merchant.products

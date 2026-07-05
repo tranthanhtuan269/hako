@@ -162,7 +162,68 @@ class Store extends Model
 
         $host = parse_url($this->website, PHP_URL_HOST);
 
-        return $host ? preg_replace('/^www\./', '', $host) : null;
+        return $host ? preg_replace('/^www\./', '', strtolower($host)) : null;
+    }
+
+    public static function normalizeMerchantHost(?string $url): ?string
+    {
+        if (! filled($url)) {
+            return null;
+        }
+
+        $url = trim($url);
+        $host = parse_url($url, PHP_URL_HOST);
+
+        if (! is_string($host) || $host === '') {
+            $host = parse_url('https://'.$url, PHP_URL_HOST);
+        }
+
+        if (! is_string($host) || $host === '') {
+            return null;
+        }
+
+        return preg_replace('/^www\./', '', strtolower($host));
+    }
+
+    /**
+     * Find an existing store for the same merchant (by domain / affiliate host) for this user.
+     * When several match, returns the most recently updated store.
+     */
+    public static function findForMerchantImport(
+        int $userId,
+        ?string $website,
+        ?string $affiliateUrl,
+        ?string $domain = null,
+    ): ?self {
+        $hosts = array_values(array_unique(array_filter([
+            filled($domain) ? preg_replace('/^www\./', '', strtolower(trim($domain))) : null,
+            self::normalizeMerchantHost($website),
+            self::normalizeMerchantHost($affiliateUrl),
+        ])));
+
+        if ($hosts === []) {
+            return null;
+        }
+
+        return self::query()
+            ->ownedBy($userId)
+            ->get()
+            ->filter(function (self $store) use ($hosts): bool {
+                $storeHosts = array_values(array_unique(array_filter([
+                    $store->domain(),
+                    self::normalizeMerchantHost($store->website),
+                    self::normalizeMerchantHost($store->affiliate_url),
+                ])));
+
+                return $storeHosts !== [] && array_intersect($hosts, $storeHosts) !== [];
+            })
+            ->sortByDesc(fn (self $store) => $store->updated_at?->timestamp ?? 0)
+            ->first();
+    }
+
+    public function reviewPostSlug(): string
+    {
+        return Str::slug($this->slug.'-review');
     }
 
     /** Affiliate tracking link — used when shoppers click through to the merchant. */

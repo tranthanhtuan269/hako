@@ -120,6 +120,27 @@ class Post extends Model
             ->limit($limit);
     }
 
+    public static function stableReviewPostSlug(Store $store): string
+    {
+        $slug = $store->reviewPostSlug();
+        $original = $slug;
+        $i = 1;
+
+        while (
+            Post::query()
+                ->where('slug', $slug)
+                ->where(function (Builder $q) use ($store): void {
+                    $q->whereNull('store_id')
+                        ->orWhere('store_id', '!=', $store->id);
+                })
+                ->exists()
+        ) {
+            $slug = $original.'-'.$i++;
+        }
+
+        return $slug;
+    }
+
     public function scopeForStore(Builder $query, Store $store): Builder
     {
         return $query->where(function (Builder $q) use ($store) {
