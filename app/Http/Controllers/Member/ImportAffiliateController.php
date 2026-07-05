@@ -109,6 +109,16 @@ class ImportAffiliateController extends Controller
 
         $generatedBlog = $contentBuilder->generateBlogPreview($previewStore, $offers, $merchant);
 
+        $existingStore = Store::findForMerchantImport(
+            auth()->id(),
+            $data['website'] ?? null,
+            $affiliateUrl,
+            $merchant['domain'] ?? null,
+        );
+        $existingPost = $existingStore
+            ? Post::query()->where('store_id', $existingStore->id)->orderByDesc('updated_at')->first()
+            : null;
+
         return response()->json([
             'ok' => true,
             'merchant' => $merchant,
@@ -116,6 +126,14 @@ class ImportAffiliateController extends Controller
             'detect_source' => $detectSource,
             'suggested_offers' => $suggestedOffers,
             'generated_blog' => $generatedBlog,
+            'existing_import' => $existingStore ? [
+                'store_id' => $existingStore->id,
+                'store_name' => $existingStore->name,
+                'store_slug' => $existingStore->slug,
+                'post_id' => $existingPost?->id,
+                'post_title' => $existingPost?->title,
+                'post_slug' => $existingPost?->slug,
+            ] : null,
         ]);
     }
 
@@ -141,7 +159,6 @@ class ImportAffiliateController extends Controller
             'offers.*.description' => ['nullable', 'string'],
             'offers.*.expires_at' => ['nullable', 'date'],
             'generated_blog' => ['nullable', 'string', 'max:100000'],
-            'publish' => ['boolean'],
         ]);
 
         $merchant = $resolver->resolve($data['affiliate_url']);
@@ -150,7 +167,7 @@ class ImportAffiliateController extends Controller
             $merchant = $resolver->enrichFromWebsite($merchant, trim($data['website']));
         }
 
-        $publish = $request->boolean('publish');
+        $publish = true;
         $storeName = trim($data['store_name']);
         $logoUrl = filled($data['logo_url'] ?? null) ? trim($data['logo_url']) : ($merchant['logo'] ?? null);
         $offers = $this->normalizeOffers($data['offers']);
@@ -166,6 +183,13 @@ class ImportAffiliateController extends Controller
             ? $storedLogo
             : (PublicImage::storeBlogFeaturedFromRemote($logoUrl, $userId) ?? $storedLogo);
 
+        $existingStore = Store::findForMerchantImport(
+            $userId,
+            filled($data['website'] ?? null) ? trim($data['website']) : null,
+            $data['affiliate_url'],
+            $domain,
+        );
+
         $result = DB::transaction(function () use (
             $data,
             $merchant,
@@ -176,12 +200,13 @@ class ImportAffiliateController extends Controller
             $offers,
             $contentBuilder,
             $logoUrl,
-            $preGeneratedBlog
+            $preGeneratedBlog,
+            $existingStore,
+            $userId,
         ) {
-            $store = Store::create([
-                'user_id' => auth()->id(),
+            $isUpdate = $existingStore !== null;
+            $storePayload = [
                 'name' => $storeName,
-                'slug' => StoreSlug::make($storeName),
                 'logo' => $storedLogo,
                 'website' => filled($data['website'] ?? null) ? trim($data['website']) : null,
                 'affiliate_url' => $data['affiliate_url'],
@@ -194,7 +219,22 @@ class ImportAffiliateController extends Controller
                 ),
                 'category_id' => filled($data['category_id'] ?? null) ? $data['category_id'] : null,
                 'is_active' => $publish,
-            ]);
+            ];
+
+            if ($isUpdate) {
+                $existingStore->update($storePayload);
+                $store = $existingStore->fresh();
+                Coupon::query()
+                    ->where('store_id', $store->id)
+                    ->where('user_id', $userId)
+                    ->delete();
+            } else {
+                $store = Store::create([
+                    'user_id' => $userId,
+                    'slug' => StoreSlug::make($storeName),
+                    ...$storePayload,
+                ]);
+            }
 
             if (! $storedLogo) {
                 $store->ensureLogoStored($logoUrl);
@@ -204,7 +244,7 @@ class ImportAffiliateController extends Controller
 
             foreach ($offers as $offer) {
                 $createdCoupons[] = Coupon::create([
-                    'user_id' => auth()->id(),
+                    'user_id' => $userId,
                     'store_id' => $store->id,
                     'title' => $offer['title'],
                     'slug' => $this->uniqueCouponSlug($offer['title']),
@@ -217,11 +257,10 @@ class ImportAffiliateController extends Controller
             }
 
             $blog = $contentBuilder->blogPost($store->load('category'), $offers, $merchant, $preGeneratedBlog);
-            $post = Post::create([
-                'user_id' => auth()->id(),
+            $postPayload = [
+                'user_id' => $userId,
                 'store_id' => $store->id,
                 'title' => $blog['title'],
-                'slug' => $this->uniquePostSlug($blog['title']),
                 'excerpt' => $blog['excerpt'],
                 'content' => $blog['content'],
                 'meta_title' => $blog['meta_title'],
@@ -230,9 +269,28 @@ class ImportAffiliateController extends Controller
                 'author_name' => auth()->user()->name,
                 'published_at' => $publish ? now() : null,
                 'is_published' => $publish,
-            ]);
+            ];
 
-            return compact('store', 'createdCoupons', 'post');
+            $existingPost = Post::query()
+                ->where('store_id', $store->id)
+                ->orderByDesc('updated_at')
+                ->first();
+
+            if ($existingPost) {
+                Post::query()
+                    ->where('store_id', $store->id)
+                    ->where('id', '!=', $existingPost->id)
+                    ->delete();
+                $existingPost->update($postPayload);
+                $post = $existingPost->fresh();
+            } else {
+                $post = Post::create([
+                    ...$postPayload,
+                    'slug' => Post::stableReviewPostSlug($store),
+                ]);
+            }
+
+            return compact('store', 'createdCoupons', 'post', 'isUpdate');
         });
 
         $syncResult = $couponSpeak->syncImportedStore(
@@ -252,10 +310,11 @@ class ImportAffiliateController extends Controller
             ],
         );
 
-        $status = $publish ? 'published' : 'saved as drafts';
+        $status = 'published';
         $couponCount = count($result['createdCoupons']);
         $isAdmin = auth()->user()->isAdmin();
-        $successMessage = "Import complete ({$status}): {$storeName} — {$couponCount} offer(s) and 1 blog post created.";
+        $postAction = $result['isUpdate'] ? 'updated' : 'created';
+        $successMessage = "Import complete ({$status}): {$storeName} — {$couponCount} offer(s) and 1 blog post {$postAction}.";
 
         if ($syncResult !== null) {
             $syncedCount = (int) data_get($syncResult, 'stats.active_coupons', $couponCount);
