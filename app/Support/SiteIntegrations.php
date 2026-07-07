@@ -12,9 +12,11 @@ final class SiteIntegrations
 
     private const SCAN_API_URL_KEY = 'scan_api_url';
 
-    private const SCAN_SYNC_URL_KEY = 'scan_sync_url';
+    private const SCAN_AFFILIATE_SIGNUPS_API_URL_KEY = 'scan_affiliate_signups_api_url';
 
     private const SCAN_API_LIMIT_KEY = 'scan_api_limit';
+
+    private const SCAN_DEFAULT_BASE_URL = 'https://scan.thuoc360.com';
 
     public static function geminiApiKey(): string
     {
@@ -27,17 +29,41 @@ final class SiteIntegrations
         return trim((string) env('GEMINI_API_KEY', ''));
     }
 
+    public static function scanSiteStored(): string
+    {
+        return strtolower(trim((string) SiteSetting::get(self::SCAN_SITE_KEY, '')));
+    }
+
     public static function scanSite(): string
     {
-        $stored = trim((string) SiteSetting::get(self::SCAN_SITE_KEY, ''));
+        $stored = self::scanSiteStored();
 
         if ($stored !== '') {
             return $stored;
         }
 
-        $domain = (string) config('site.domain', '');
+        return self::defaultScanSiteFromDomain();
+    }
 
-        return strtolower(explode('.', $domain)[0] ?? $domain);
+    public static function defaultScanSiteFromDomain(): string
+    {
+        $domain = trim((string) config('site.domain', ''));
+
+        if ($domain === '') {
+            $host = parse_url(trim((string) config('site.url', '')), PHP_URL_HOST);
+            $domain = is_string($host) ? $host : '';
+        }
+
+        if ($domain === '' && ! app()->runningInConsole()) {
+            $domain = trim((string) request()->getHost());
+        }
+
+        $domain = strtolower($domain);
+        $domain = (string) preg_replace('/^www\./', '', $domain);
+        $segment = explode('.', $domain)[0] ?? $domain;
+        $slug = strtolower((string) preg_replace('/[^a-z0-9_-]/', '', $segment));
+
+        return $slug !== '' ? $slug : 'site';
     }
 
     public static function scanApiUrl(): string
@@ -47,7 +73,22 @@ final class SiteIntegrations
 
     public static function scanSyncUrl(): string
     {
-        return trim((string) SiteSetting::get(self::SCAN_SYNC_URL_KEY, ''));
+        return rtrim(self::SCAN_DEFAULT_BASE_URL, '/') . '/api/coupons/import';
+    }
+
+    public static function scanAffiliateSignupsApiUrl(): string
+    {
+        $stored = trim((string) SiteSetting::get(self::SCAN_AFFILIATE_SIGNUPS_API_URL_KEY, ''));
+
+        if ($stored === '') {
+            return rtrim(self::SCAN_DEFAULT_BASE_URL, '/') . '/api/affiliate-signups';
+        }
+
+        if (preg_match('#/coupons/?$#i', $stored)) {
+            return (string) preg_replace('#/coupons/?$#i', '/affiliate-signups', $stored);
+        }
+
+        return $stored;
     }
 
     public static function scanApiLimit(): int
@@ -66,9 +107,9 @@ final class SiteIntegrations
         SiteSetting::set(self::SCAN_API_URL_KEY, trim((string) $value));
     }
 
-    public static function setScanSyncUrl(?string $value): void
+    public static function setScanAffiliateSignupsApiUrl(?string $value): void
     {
-        SiteSetting::set(self::SCAN_SYNC_URL_KEY, trim((string) $value));
+        SiteSetting::set(self::SCAN_AFFILIATE_SIGNUPS_API_URL_KEY, trim((string) $value));
     }
 
     public static function setScanApiLimit(?int $value): void

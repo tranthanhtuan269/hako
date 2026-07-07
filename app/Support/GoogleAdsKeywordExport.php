@@ -28,6 +28,9 @@ final class GoogleAdsKeywordExport
     public const STATUSES = ['Enabled', 'Paused'];
 
     /** @var list<string> */
+    public const CPC_CURRENCIES = ['USD', 'VND'];
+
+    /** @var list<string> */
     public const TARGETING_TYPES = ['Location', 'Excluded location', 'Language', 'Network'];
 
     /**
@@ -40,6 +43,7 @@ final class GoogleAdsKeywordExport
      *     all_match_types: bool,
      *     keyword_status: string,
      *     max_cpc: string,
+     *     max_cpc_currency: string,
      *     final_url: string,
      *     target_locations: list<string>,
      *     excluded_locations: list<string>,
@@ -70,6 +74,7 @@ final class GoogleAdsKeywordExport
      *     all_match_types: bool,
      *     keyword_status: string,
      *     max_cpc: string,
+     *     max_cpc_currency: string,
      *     final_url: string,
      *     target_locations: list<string>,
      *     excluded_locations: list<string>,
@@ -91,6 +96,7 @@ final class GoogleAdsKeywordExport
             'all_match_types' => false,
             'keyword_status' => 'Enabled',
             'max_cpc' => '',
+            'max_cpc_currency' => 'USD',
             'final_url' => '',
             'target_locations' => ['United States'],
             'excluded_locations' => [],
@@ -130,6 +136,7 @@ final class GoogleAdsKeywordExport
      *     all_match_types: bool,
      *     keyword_status: string,
      *     max_cpc: string,
+     *     max_cpc_currency: string,
      *     final_url: string,
      *     target_locations: list<string>,
      *     excluded_locations: list<string>,
@@ -152,7 +159,8 @@ final class GoogleAdsKeywordExport
         $allMatchTypes = filter_var($input['all_match_types'] ?? false, FILTER_VALIDATE_BOOL);
         $status = $this->normalizeStatus((string) ($input['keyword_status'] ?? $defaults['keyword_status']));
         $targetingStatus = $this->normalizeStatus((string) ($input['targeting_status'] ?? $defaults['targeting_status']));
-        $maxCpc = $this->normalizeMaxCpc($input['max_cpc'] ?? '');
+        $maxCpc = $this->normalizeMaxCpc($input['max_cpc'] ?? '', $input['max_cpc_currency'] ?? 'USD');
+        $maxCpcCurrency = $this->normalizeMaxCpcCurrency((string) ($input['max_cpc_currency'] ?? 'USD'));
         $finalUrl = trim((string) ($input['final_url'] ?? $defaults['final_url']));
 
         if ($finalUrl === '') {
@@ -170,6 +178,7 @@ final class GoogleAdsKeywordExport
             'all_match_types' => $allMatchTypes,
             'keyword_status' => $status,
             'max_cpc' => $maxCpc,
+            'max_cpc_currency' => $maxCpcCurrency,
             'final_url' => $finalUrl,
             'target_locations' => $this->normalizeLocationList($input['target_locations'] ?? [], $defaults['target_locations']),
             'excluded_locations' => $this->normalizeLocationList($input['excluded_locations'] ?? [], []),
@@ -437,19 +446,31 @@ final class GoogleAdsKeywordExport
         return in_array($value, self::STATUSES, true) ? $value : 'Enabled';
     }
 
-    private function normalizeMaxCpc(mixed $value): string
+    private function normalizeMaxCpc(mixed $value, mixed $currency = 'USD'): string
     {
         if (! filled($value)) {
             return '';
         }
 
+        $currency = $this->normalizeMaxCpcCurrency((string) $currency);
         $normalized = preg_replace('/[^0-9.]/', '', (string) $value) ?? '';
 
         if ($normalized === '' || ! is_numeric($normalized)) {
             return '';
         }
 
+        if ($currency === 'VND') {
+            return (string) max(0, (int) round((float) $normalized));
+        }
+
         return number_format((float) $normalized, 2, '.', '');
+    }
+
+    private function normalizeMaxCpcCurrency(string $value): string
+    {
+        $value = strtoupper(trim($value));
+
+        return in_array($value, self::CPC_CURRENCIES, true) ? $value : 'USD';
     }
 
     /**

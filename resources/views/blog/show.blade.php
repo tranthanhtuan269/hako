@@ -75,13 +75,6 @@
         <div class="container">
             <a href="{{ route('blog.index') }}" class="blog-back">← Back to Blog</a>
             <h1>{{ $post->title }}</h1>
-            <div class="blog-article-meta">
-                @include('blog.partials.author-link', ['post' => $post])
-                <span>·</span>
-                <time datetime="{{ $post->published_at?->toDateString() }}">{{ $post->published_at?->format('F j, Y') }}</time>
-                <span>·</span>
-                <span>{{ $post->readingTime() }} min read</span>
-            </div>
         </div>
     </header>
 

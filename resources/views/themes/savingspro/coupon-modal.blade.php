@@ -28,6 +28,6 @@
         <button type="button" class="btn btn-primary sp-modal-ok" id="sp-modal-ok" data-coupon-modal-close-affiliate>
             OK — Go to Store
         </button>
-        <a href="#" class="btn btn-outline sp-modal-shop" id="sp-modal-shop" target="_blank" rel="noopener sponsored">Shop Now</a>
+        <a href="#" class="btn btn-outline sp-modal-shop" id="sp-modal-shop" rel="noopener sponsored">Shop Now</a>
     </div>
 </div>

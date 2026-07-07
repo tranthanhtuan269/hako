@@ -59,26 +59,24 @@
                                 </button>
                             </div>
                         @else
-                            <a href="{{ $coupon['goUrl'] }}"
+                            <button type="button"
                                 class="btn btn-primary scroll-coupon-popup-deal"
-                                target="_blank"
-                                rel="noopener sponsored"
-                                data-scroll-popup-deal>
+                                data-scroll-popup-deal
+                                data-open-url="{{ $coupon['goUrl'] }}">
                                 Get Deal
-                            </a>
+                            </button>
                         @endif
                     </div>
                 </li>
             @endforeach
         </ul>
 
-        <a href="{{ $scrollPopup['affiliateUrl'] }}"
+        <button type="button"
             class="btn btn-primary scroll-coupon-popup-shop"
-            target="_blank"
-            rel="noopener sponsored"
-            data-scroll-popup-deal>
+            data-scroll-popup-deal
+            data-open-url="{{ $scrollPopup['affiliateUrl'] }}">
             Shop at {{ $scrollPopup['storeName'] }}
-        </a>
+        </button>
     </div>
 </div>
 

@@ -132,4 +132,31 @@ class GoogleAdsKeywordExportTest extends TestCase
         $this->assertStringContainsString('All languages', $csv);
         $this->assertSame(1, substr_count($csv, 'Language'));
     }
+
+    public function test_normalizes_max_cpc_by_currency(): void
+    {
+        $exporter = new GoogleAdsKeywordExport;
+
+        $store = new Store([
+            'name' => 'Acme',
+            'slug' => 'acme',
+            'website' => 'https://acme.com',
+        ]);
+
+        $usd = $exporter->normalizeSettings([
+            'max_cpc' => '$1.5',
+            'max_cpc_currency' => 'USD',
+        ], $store);
+
+        $this->assertSame('1.50', $usd['max_cpc']);
+        $this->assertSame('USD', $usd['max_cpc_currency']);
+
+        $vnd = $exporter->normalizeSettings([
+            'max_cpc' => '25,000.75',
+            'max_cpc_currency' => 'VND',
+        ], $store);
+
+        $this->assertSame('25001', $vnd['max_cpc']);
+        $this->assertSame('VND', $vnd['max_cpc_currency']);
+    }
 }

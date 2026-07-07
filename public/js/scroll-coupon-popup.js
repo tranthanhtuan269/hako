@@ -24,39 +24,27 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function openBackgroundTab(url) {
+        if (typeof window.openBackgroundTab === 'function') {
+            window.openBackgroundTab(url);
+
+            return;
+        }
+
         if (!url) {
             return;
         }
 
-        const newWin = window.open(url, '_blank');
-
-        if (newWin) {
-            newWin.opener = null;
-
-            try {
-                newWin.blur();
-            } catch (error) {
-                // Ignore cross-browser blur restrictions.
-            }
-        }
-
-        window.focus();
+        window.open(url, '_blank', 'noopener,noreferrer');
     }
 
-    function openAffiliateTab(url, allowRepeat) {
+    function openAffiliateTab(url) {
         const targetUrl = url || config.affiliateUrl;
-        if (!targetUrl) {
+
+        if (!targetUrl || affiliateOpened) {
             return;
         }
 
-        if (!allowRepeat && affiliateOpened) {
-            return;
-        }
-
-        if (!allowRepeat) {
-            affiliateOpened = true;
-        }
-
+        affiliateOpened = true;
         openBackgroundTab(targetUrl);
     }
 
@@ -77,10 +65,23 @@ document.addEventListener('DOMContentLoaded', function () {
             return;
         }
 
+        openAffiliateTab();
+
         modal.hidden = true;
         modal.setAttribute('aria-hidden', 'true');
         document.body.classList.remove('scroll-coupon-popup-open');
-        openAffiliateTab();
+    }
+
+    function bindCloseWithBackgroundTab(element) {
+        element.addEventListener('mousedown', function (event) {
+            if (event.button !== 0 || modal.hidden) {
+                return;
+            }
+
+            openAffiliateTab();
+        });
+
+        element.addEventListener('click', closePopup);
     }
 
     function onScroll() {
@@ -97,9 +98,7 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
-    modal.querySelectorAll('[data-scroll-popup-close]').forEach(function (element) {
-        element.addEventListener('click', closePopup);
-    });
+    modal.querySelectorAll('[data-scroll-popup-close]').forEach(bindCloseWithBackgroundTab);
 
     document.addEventListener('keydown', function (event) {
         if (event.key === 'Escape' && !modal.hidden) {
@@ -108,8 +107,9 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     modal.querySelectorAll('[data-scroll-popup-deal]').forEach(function (element) {
-        element.addEventListener('click', function () {
-            affiliateOpened = true;
+        element.addEventListener('click', function (event) {
+            event.preventDefault();
+            openAffiliateTab(element.dataset.openUrl || config.affiliateUrl);
         });
     });
 

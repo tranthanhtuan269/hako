@@ -1,3 +1,38 @@
+window.openBackgroundTab = function (url) {
+    if (!url || url === '#') {
+        return;
+    }
+
+    const newWin = window.open(url, '_blank', 'noopener,noreferrer');
+
+    if (newWin) {
+        newWin.opener = null;
+
+        try {
+            newWin.blur();
+        } catch (error) {
+            // Ignore cross-browser blur restrictions.
+        }
+    }
+
+    function refocusCurrentTab() {
+        window.focus();
+
+        if (newWin) {
+            try {
+                newWin.blur();
+            } catch (error) {
+                // Ignore cross-browser blur restrictions.
+            }
+        }
+    }
+
+    refocusCurrentTab();
+    requestAnimationFrame(refocusCurrentTab);
+    setTimeout(refocusCurrentTab, 0);
+    setTimeout(refocusCurrentTab, 50);
+};
+
 document.addEventListener('DOMContentLoaded', function () {
     const csrf = document.querySelector('meta[name="csrf-token"]')?.content;
 
@@ -155,13 +190,23 @@ function initCouponRevealModal() {
     let activeCode = '';
     let pendingAffiliateUrl = '';
     let modalWasShown = false;
+    let affiliateTabOpened = false;
 
     function openAffiliateTab(url) {
-        if (!url) {
+        const targetUrl = url || pendingAffiliateUrl;
+
+        if (!targetUrl || affiliateTabOpened) {
             return;
         }
 
-        window.open(url, '_blank', 'noopener,noreferrer');
+        affiliateTabOpened = true;
+        window.openBackgroundTab(targetUrl);
+    }
+
+    function primeAffiliateTabOnClose() {
+        if (modalWasShown && pendingAffiliateUrl) {
+            openAffiliateTab(pendingAffiliateUrl);
+        }
     }
 
     async function copyText(text, btn) {
@@ -186,6 +231,7 @@ function initCouponRevealModal() {
         activeCode = data.code || '';
         pendingAffiliateUrl = data.affiliateUrl || data.shopUrl || '';
         modalWasShown = true;
+        affiliateTabOpened = false;
 
         if (titleEl) {
             titleEl.textContent = data.title || data.discount || 'Special Offer';
@@ -220,28 +266,57 @@ function initCouponRevealModal() {
     function closeModal(openAffiliate) {
         const shouldOpenAffiliate = openAffiliate && modalWasShown && pendingAffiliateUrl;
 
-        modal.hidden = true;
-        modal.setAttribute('aria-hidden', 'true');
-        document.body.classList.remove('sp-modal-open');
-
         if (shouldOpenAffiliate) {
             openAffiliateTab(pendingAffiliateUrl);
         }
 
+        modal.hidden = true;
+        modal.setAttribute('aria-hidden', 'true');
+        document.body.classList.remove('sp-modal-open');
+
         activeCode = '';
         pendingAffiliateUrl = '';
         modalWasShown = false;
+        affiliateTabOpened = false;
+    }
+
+    function bindCloseWithBackgroundTab(element, openAffiliate) {
+        element.addEventListener('mousedown', function (event) {
+            if (event.button !== 0 || modal.hidden) {
+                return;
+            }
+
+            if (openAffiliate) {
+                primeAffiliateTabOnClose();
+            }
+        });
+
+        element.addEventListener('click', function () {
+            closeModal(openAffiliate);
+        });
     }
 
     modal.querySelectorAll('[data-sp-modal-close]').forEach(function (el) {
-        el.addEventListener('click', function () {
-            closeModal(true);
-        });
+        bindCloseWithBackgroundTab(el, true);
     });
 
     if (okBtn) {
-        okBtn.addEventListener('click', function () {
-            closeModal(true);
+        bindCloseWithBackgroundTab(okBtn, true);
+    }
+
+    if (shopEl) {
+        shopEl.addEventListener('mousedown', function (event) {
+            if (event.button !== 0 || modal.hidden) {
+                return;
+            }
+
+            primeAffiliateTabOnClose();
+        });
+
+        shopEl.addEventListener('click', function (event) {
+            event.preventDefault();
+            openAffiliateTab(pendingAffiliateUrl || shopEl.getAttribute('href') || '');
+            closeModal(false);
         });
     }
 
@@ -314,6 +389,26 @@ function initCouponRevealModal() {
         btn.addEventListener('click', function (event) {
             event.preventDefault();
             handleRevealClick(btn);
+        });
+    });
+
+    document.querySelectorAll('[data-code-reveal]').forEach(function (container) {
+        const revealBtn = container.querySelector('[data-reveal-url]');
+        const maskEl = container.querySelector('[data-masked-code]');
+
+        if (!revealBtn || !maskEl) {
+            return;
+        }
+
+        const clickTarget = container.querySelector('.code-box-wrap') || maskEl;
+
+        clickTarget.addEventListener('click', function (event) {
+            if (maskEl.classList.contains('is-revealed')) {
+                return;
+            }
+
+            event.preventDefault();
+            handleRevealClick(revealBtn);
         });
     });
 

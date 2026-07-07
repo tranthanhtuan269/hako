@@ -13,9 +13,11 @@ class IntegrationsController extends Controller
     public function index(): View
     {
         return view('admin.integrations.index', [
-            'scanSite' => SiteIntegrations::scanSite(),
+            'scanSite' => SiteIntegrations::scanSiteStored(),
+            'defaultScanSite' => SiteIntegrations::defaultScanSiteFromDomain(),
+            'effectiveScanSite' => SiteIntegrations::scanSite(),
             'scanApiUrl' => SiteIntegrations::scanApiUrl(),
-            'scanSyncUrl' => SiteIntegrations::scanSyncUrl(),
+            'scanAffiliateSignupsApiUrl' => SiteIntegrations::scanAffiliateSignupsApiUrl(),
             'scanApiLimit' => SiteIntegrations::scanApiLimit(),
             'geminiMasked' => SiteIntegrations::maskedGeminiApiKey(),
             'geminiConfigured' => filled(SiteIntegrations::geminiApiKey()),
@@ -27,7 +29,7 @@ class IntegrationsController extends Controller
         $validated = $request->validate([
             'scan_site' => ['nullable', 'string', 'max:80', 'regex:/^[a-zA-Z0-9_-]*$/'],
             'scan_api_url' => ['nullable', 'url', 'max:500'],
-            'scan_sync_url' => ['nullable', 'url', 'max:500'],
+            'scan_affiliate_signups_api_url' => ['nullable', 'url', 'max:500'],
             'scan_api_limit' => ['nullable', 'integer', 'min:1', 'max:200'],
             'gemini_api_key' => ['nullable', 'string', 'max:500'],
             'clear_gemini_api_key' => ['nullable', 'boolean'],
@@ -35,7 +37,7 @@ class IntegrationsController extends Controller
 
         SiteIntegrations::setScanSite($validated['scan_site'] ?? '');
         SiteIntegrations::setScanApiUrl($validated['scan_api_url'] ?? '');
-        SiteIntegrations::setScanSyncUrl($validated['scan_sync_url'] ?? '');
+        SiteIntegrations::setScanAffiliateSignupsApiUrl($validated['scan_affiliate_signups_api_url'] ?? '');
 
         if (filled($validated['scan_api_limit'] ?? null)) {
             SiteIntegrations::setScanApiLimit((int) $validated['scan_api_limit']);

@@ -71,10 +71,22 @@
 
         <div class="form-group">
             <label for="max_cpc">Max CPC (optional)</label>
-            <input type="text" id="max_cpc" name="max_cpc" maxlength="20"
-                value="{{ old('max_cpc', $ads['max_cpc'] ?? '') }}"
-                placeholder="1.50">
-            <p class="form-hint">Leave blank to use the ad group default bid in Google Ads.</p>
+            <div class="keyword-cpc-field">
+                <span class="keyword-cpc-symbol" id="max_cpc_symbol" aria-hidden="true">$</span>
+                <input type="text" id="max_cpc" name="max_cpc" maxlength="20"
+                    value="{{ old('max_cpc', $ads['max_cpc'] ?? '') }}"
+                    placeholder="1.50"
+                    inputmode="decimal"
+                    autocomplete="off">
+                <select id="max_cpc_currency" name="max_cpc_currency" class="keyword-cpc-currency" aria-label="Max CPC currency">
+                    @foreach($adsExport::CPC_CURRENCIES as $currency)
+                        <option value="{{ $currency }}" @selected(old('max_cpc_currency', $ads['max_cpc_currency'] ?? 'USD') === $currency)>
+                            {{ $currency === 'USD' ? 'USD ($)' : 'VND (₫)' }}
+                        </option>
+                    @endforeach
+                </select>
+            </div>
+            <p class="form-hint">Leave blank to use the ad group default bid in Google Ads. CSV exports the numeric bid only (no currency symbol).</p>
         </div>
     </div>
 

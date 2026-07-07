@@ -12,6 +12,107 @@ use Illuminate\Support\Str;
 final class CouponSpeakClient
 {
     /**
+     * Affiliate signup registry from Scan API.
+     *
+     * @return array{
+     *     projects: list<array{id:int,project:?string,domain_link:?string,signup_link:string,category:?string,created_at:string}>,
+     *     pagination: array{page:int,per_page:int,total:int,total_pages:int},
+     *     error: ?string
+     * }
+     */
+    public function fetchAffiliateSignups(int $page = 1, int $limit = 25, ?string $search = null): array
+    {
+        $empty = [
+            'projects' => [],
+            'pagination' => [
+                'page' => max(1, $page),
+                'per_page' => max(1, min(100, $limit)),
+                'total' => 0,
+                'total_pages' => 0,
+            ],
+            'error' => null,
+        ];
+
+        $apiUrl = $this->normalizeApiUrl(SiteIntegrations::scanAffiliateSignupsApiUrl());
+
+        if ($apiUrl === '') {
+            $empty['error'] = 'Affiliate signups API URL is not configured. Set it in Admin → Integrations.';
+
+            return $empty;
+        }
+
+        $page = max(1, $page);
+        $limit = max(1, min(100, $limit));
+        $site = $this->siteSlug();
+
+        if ($site === '') {
+            $empty['error'] = 'Could not determine Scan site slug from domain. Set it in Admin → Integrations.';
+
+            return $empty;
+        }
+
+        $query = [
+            'site' => $site,
+            'page' => $page,
+            'limit' => $limit,
+        ];
+
+        if (filled($search)) {
+            $query['q'] = trim($search);
+        }
+
+        try {
+            $response = $this->jsonClientForUrl($apiUrl)
+                ->timeout(12)
+                ->get($apiUrl, $query);
+
+            if (! $response->successful()) {
+                $empty['error'] = $this->formatScanApiFailure($response, $site);
+
+                return $empty;
+            }
+
+            $body = $response->json();
+
+            if (! is_array($body) || ($body['success'] ?? false) !== true) {
+                $empty['error'] = is_array($body) && filled($body['error'] ?? null)
+                    ? (string) $body['error']
+                    : 'Scan API returned an unexpected response.';
+
+                return $empty;
+            }
+
+            $projects = is_array($body['projects'] ?? null) ? $body['projects'] : [];
+
+            return [
+                'projects' => collect($projects)
+                    ->filter(fn ($row) => is_array($row) && filled($row['signup_link'] ?? null))
+                    ->map(fn (array $row) => [
+                        'id' => (int) ($row['id'] ?? 0),
+                        'project' => filled($row['project'] ?? null) ? trim((string) $row['project']) : null,
+                        'domain_link' => filled($row['domain_link'] ?? null) ? trim((string) $row['domain_link']) : null,
+                        'signup_link' => trim((string) $row['signup_link']),
+                        'category' => filled($row['category'] ?? null) ? trim((string) $row['category']) : null,
+                        'created_at' => filled($row['created_at'] ?? null) ? trim((string) $row['created_at']) : null,
+                    ])
+                    ->values()
+                    ->all(),
+                'pagination' => [
+                    'page' => (int) ($body['page'] ?? $page),
+                    'per_page' => (int) ($body['limit'] ?? $limit),
+                    'total' => (int) ($body['total'] ?? 0),
+                    'total_pages' => (int) ($body['total_pages'] ?? 0),
+                ],
+                'error' => null,
+            ];
+        } catch (\Throwable $exception) {
+            $empty['error'] = 'Could not reach Scan API: ' . $exception->getMessage();
+
+            return $empty;
+        }
+    }
+
+    /**
      * @return list<array{code: ?string, title: string, description: ?string, coupon_type: ?string, discount_label: ?string, expires_at: ?string}>
      */
     public function fetchOffersForAffiliateUrl(string $affiliateUrl): array
@@ -309,19 +410,7 @@ final class CouponSpeakClient
 
     private function syncUrl(): string
     {
-        $syncUrl = SiteIntegrations::scanSyncUrl();
-
-        if ($syncUrl !== '') {
-            return $this->appendSiteQuery($this->normalizeApiUrl($syncUrl));
-        }
-
-        $apiUrl = $this->apiBaseUrl();
-
-        if ($apiUrl === '') {
-            return '';
-        }
-
-        return $this->appendSiteQuery($apiUrl . '/import');
+        return $this->appendSiteQuery($this->normalizeApiUrl(SiteIntegrations::scanSyncUrl()));
     }
 
     private function normalizeApiUrl(string $url): string
@@ -349,9 +438,14 @@ final class CouponSpeakClient
 
     private function jsonClient(): \Illuminate\Http\Client\PendingRequest
     {
+        return $this->jsonClientForUrl($this->apiBaseUrl());
+    }
+
+    private function jsonClientForUrl(string $url): \Illuminate\Http\Client\PendingRequest
+    {
         $client = Http::acceptJson()->asJson();
 
-        if ($this->shouldDisableTlsVerify($this->apiBaseUrl())) {
+        if ($this->shouldDisableTlsVerify($url)) {
             $client = $client->withoutVerifying();
         }
 
@@ -373,11 +467,49 @@ final class CouponSpeakClient
             || str_ends_with($host, '.local');
     }
 
-    private function appendSiteQuery(string $url): string
+    private function appendSiteQuery(string $url, ?string $site = null): string
     {
+        $site = strtolower(trim((string) ($site ?? $this->siteSlug())));
+
+        if ($site === '') {
+            return $url;
+        }
+
         $separator = str_contains($url, '?') ? '&' : '?';
 
-        return $url . $separator . 'site=' . urlencode($this->siteSlug());
+        return $url . $separator . 'site=' . urlencode($site);
+    }
+
+    private function formatScanApiFailure(\Illuminate\Http\Client\Response $response, string $site = ''): string
+    {
+        $status = $response->status();
+        $body = $response->json();
+
+        if (is_array($body) && filled($body['error'] ?? null)) {
+            $message = (string) $body['error'];
+
+            if ($status === 403 && str_contains(strtolower($message), 'not registered') && $site !== '') {
+                $message .= ' Register site "' . $site . '" in Scan sitename table, or change Scan site slug in Integrations.';
+            }
+
+            if ($status === 400 && str_contains(strtolower($message), 'missing store')) {
+                $message .= ' Check Affiliate signups API URL — it must be /api/affiliate-signups, not /api/coupons.';
+            }
+
+            return $message . ' (HTTP ' . $status . ')';
+        }
+
+        if ($status === 404) {
+            return 'Scan API endpoint /api/affiliate-signups not found. Deploy latest Scan code to the server. (HTTP 404)';
+        }
+
+        $snippet = trim(Str::limit(strip_tags($response->body()), 160));
+
+        if ($snippet !== '') {
+            return 'Scan API error (HTTP ' . $status . '): ' . $snippet;
+        }
+
+        return 'Scan API returned HTTP ' . $status . '.';
     }
 
     private function storeDomain(Store $store, string $affiliateUrl): ?string

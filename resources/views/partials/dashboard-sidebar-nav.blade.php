@@ -13,6 +13,7 @@
             <a href="{{ route('admin.themes.index') }}" @class(['active' => request()->routeIs('admin.themes.*')])>Frontend Theme</a>
             <a href="{{ route('admin.branding.index') }}" @class(['active' => request()->routeIs('admin.branding.*')])>Logo &amp; Social</a>
             <a href="{{ route('admin.integrations.index') }}" @class(['active' => request()->routeIs('admin.integrations.*')])>Integrations</a>
+            <a href="{{ route('admin.affiliate-signups.index') }}" @class(['active' => request()->routeIs('admin.affiliate-signups.*')])>Affiliate Signups</a>
             <a href="{{ route('admin.account.edit') }}" @class(['active' => request()->routeIs('admin.account.*')])>Account</a>
             <a href="{{ route('admin.tracking.index') }}" @class(['active' => request()->routeIs('admin.tracking.*')])>Tracking Scripts</a>
             @if(config('affiliate.enabled'))
@@ -25,6 +26,7 @@
                 <a href="{{ route('admin.themes.index') }}" @class(['active' => request()->routeIs('admin.themes.*')])>Frontend Theme</a>
                 <a href="{{ route('admin.branding.index') }}" @class(['active' => request()->routeIs('admin.branding.*')])>Logo &amp; Social</a>
                 <a href="{{ route('admin.integrations.index') }}" @class(['active' => request()->routeIs('admin.integrations.*')])>Integrations</a>
+                <a href="{{ route('admin.affiliate-signups.index') }}" @class(['active' => request()->routeIs('admin.affiliate-signups.*')])>Affiliate Signups</a>
                 <a href="{{ route('admin.tracking.index') }}" @class(['active' => request()->routeIs('admin.tracking.*')])>Tracking Scripts</a>
             @endif
             <a href="{{ route('member.stores.index') }}" @class(['active' => request()->routeIs('member.stores.*')])>Stores</a>

@@ -292,6 +292,41 @@
 .keyword-ads-preview th {
     background: #f8fafc;
 }
+.keyword-cpc-field {
+    display: flex;
+    align-items: stretch;
+    width: 100%;
+    gap: 0;
+}
+.keyword-cpc-symbol {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 2.5rem;
+    padding: 0 .65rem;
+    border: 1px solid var(--border, #e5e7eb);
+    border-right: 0;
+    border-radius: 8px 0 0 8px;
+    background: #f8fafc;
+    color: #475569;
+    font-weight: 600;
+    font-size: .95rem;
+}
+.keyword-cpc-field input {
+    flex: 1;
+    min-width: 0;
+    border-radius: 0;
+    border-left: 0;
+    border-right: 0;
+}
+.keyword-cpc-currency {
+    min-width: 7.5rem;
+    border: 1px solid var(--border, #e5e7eb);
+    border-radius: 0 8px 8px 0;
+    padding: .45rem .55rem;
+    font: inherit;
+    background: #fff;
+}
 .admin-search-field { position: relative; width: 100%; }
 .admin-search-input {
     width: 100%;
@@ -390,9 +425,42 @@
         });
     }
 
+    function selectedTargetLocations() {
+        const target = document.getElementById('target_locations');
+        if (!target) return new Set();
+
+        return new Set(Array.from(target.selectedOptions).map((opt) => opt.value));
+    }
+
+    function applyExcludedLocationVisibility() {
+        const excluded = document.getElementById('excluded_locations');
+        if (!excluded) return;
+
+        const targeted = selectedTargetLocations();
+        const filterInput = document.querySelector('.keyword-multi-filter[data-target="excluded_locations"]');
+        const q = filterInput?.value.trim().toLowerCase() || '';
+
+        Array.from(excluded.options).forEach((opt) => {
+            if (targeted.has(opt.value)) {
+                opt.selected = false;
+                opt.hidden = true;
+
+                return;
+            }
+
+            opt.hidden = q !== '' && !opt.text.toLowerCase().includes(q);
+        });
+    }
+
     function bindMultiSelectTools() {
         document.querySelectorAll('.keyword-multi-filter').forEach((input) => {
             input.addEventListener('input', () => {
+                if (input.dataset.target === 'excluded_locations') {
+                    applyExcludedLocationVisibility();
+
+                    return;
+                }
+
                 const sel = document.getElementById(input.dataset.target);
                 if (!sel) return;
                 const q = input.value.trim().toLowerCase();
@@ -410,7 +478,11 @@
 
                 Array.from(sel.options).forEach((opt) => {
                     if (action === 'all') {
-                        opt.selected = true;
+                        if (sel.id === 'excluded_locations') {
+                            opt.selected = !opt.hidden;
+                        } else {
+                            opt.selected = true;
+                        }
                     } else if (action === 'clear') {
                         opt.selected = false;
                     } else if (action === 'all-languages') {
@@ -419,8 +491,16 @@
                         opt.selected = opt.value !== allLanguagesValue;
                     }
                 });
+
+                if (sel.id === 'target_locations') {
+                    applyExcludedLocationVisibility();
+                }
             });
         });
+    }
+
+    function bindTargetExcludedSync() {
+        document.getElementById('target_locations')?.addEventListener('change', applyExcludedLocationVisibility);
     }
 
     function applyAdsSettings(settings) {
@@ -433,6 +513,7 @@
             match_type: 'match_type',
             keyword_status: 'keyword_status',
             max_cpc: 'max_cpc',
+            max_cpc_currency: 'max_cpc_currency',
             final_url: 'final_url',
             targeting_status: 'targeting_status',
         };
@@ -445,6 +526,7 @@
         setMultiSelect('target_locations', settings.target_locations);
         setMultiSelect('excluded_locations', settings.excluded_locations);
         setMultiSelect('languages', settings.languages);
+        applyExcludedLocationVisibility();
         ['network_search', 'network_search_partners', 'network_display'].forEach((name) => {
             const el = document.querySelector(`input[name="${name}"][type="checkbox"]`);
             if (el) el.checked = !!settings[name];
@@ -452,6 +534,23 @@
         const allMatch = document.querySelector('input[name="all_match_types"]');
         if (allMatch) allMatch.checked = !!settings.all_match_types;
         toggleAdGroupFields();
+        syncMaxCpcCurrencyUi();
+    }
+
+    function syncMaxCpcCurrencyUi() {
+        const currency = document.getElementById('max_cpc_currency');
+        const symbol = document.getElementById('max_cpc_symbol');
+        const input = document.getElementById('max_cpc');
+        if (!currency || !symbol || !input) return;
+
+        const isVnd = currency.value === 'VND';
+        symbol.textContent = isVnd ? '₫' : '$';
+        input.placeholder = isVnd ? '25000' : '1.50';
+        input.inputMode = isVnd ? 'numeric' : 'decimal';
+    }
+
+    function bindMaxCpcCurrencyUi() {
+        document.getElementById('max_cpc_currency')?.addEventListener('change', syncMaxCpcCurrencyUi);
     }
 
     function updateExportCsvLink(storeId) {
@@ -712,9 +811,13 @@
     });
 
     bindStoreCombobox();
+    bindTargetExcludedSync();
+    bindMaxCpcCurrencyUi();
     document.getElementById('ad_group_mode')?.addEventListener('change', toggleAdGroupFields);
     toggleAdGroupFields();
     bindMultiSelectTools();
+    applyExcludedLocationVisibility();
+    syncMaxCpcCurrencyUi();
     bindResultActions(document);
     syncStoreClearButton();
     if (storeIdInput?.value) {

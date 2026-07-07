@@ -840,6 +840,11 @@ a:hover { text-decoration: underline; }
     letter-spacing: .06em;
 }
 
+[data-code-reveal] [data-masked-code]:not(.is-revealed),
+[data-code-reveal] .code-box-wrap:has([data-masked-code]:not(.is-revealed)) {
+    cursor: pointer;
+}
+
 .coupon-code-blur {
     filter: blur(5px);
     opacity: .65;

@@ -264,6 +264,7 @@ class KeywordGeneratorController extends Controller
             'all_match_types' => ['nullable', 'boolean'],
             'keyword_status' => ['nullable', 'string', 'in:'.$statuses],
             'max_cpc' => ['nullable', 'string', 'max:20'],
+            'max_cpc_currency' => ['nullable', 'string', 'in:'.implode(',', GoogleAdsKeywordExport::CPC_CURRENCIES)],
             'final_url' => ['nullable', 'url', 'max:500'],
             'target_locations' => ['nullable', 'array'],
             'target_locations.*' => ['string', Rule::in(GoogleAdsTargetingCatalog::LOCATIONS)],
