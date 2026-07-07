@@ -265,10 +265,7 @@ function initCouponRevealModal() {
 
     function closeModal(openAffiliate) {
         const shouldOpenAffiliate = openAffiliate && modalWasShown && pendingAffiliateUrl;
-
-        if (shouldOpenAffiliate) {
-            openAffiliateTab(pendingAffiliateUrl);
-        }
+        const affiliateUrl = pendingAffiliateUrl;
 
         modal.hidden = true;
         modal.setAttribute('aria-hidden', 'true');
@@ -277,20 +274,15 @@ function initCouponRevealModal() {
         activeCode = '';
         pendingAffiliateUrl = '';
         modalWasShown = false;
+
+        if (shouldOpenAffiliate) {
+            openAffiliateTab(affiliateUrl);
+        }
+
         affiliateTabOpened = false;
     }
 
     function bindCloseWithBackgroundTab(element, openAffiliate) {
-        element.addEventListener('mousedown', function (event) {
-            if (event.button !== 0 || modal.hidden) {
-                return;
-            }
-
-            if (openAffiliate) {
-                primeAffiliateTabOnClose();
-            }
-        });
-
         element.addEventListener('click', function () {
             closeModal(openAffiliate);
         });

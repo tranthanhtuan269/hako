@@ -110,6 +110,7 @@ document.addEventListener('DOMContentLoaded', function () {
         element.addEventListener('click', function (event) {
             event.preventDefault();
             openAffiliateTab(element.dataset.openUrl || config.affiliateUrl);
+            closePopup();
         });
     });
 
