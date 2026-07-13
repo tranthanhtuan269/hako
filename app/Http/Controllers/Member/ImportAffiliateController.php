@@ -12,6 +12,7 @@ use App\Support\AffiliateLinkResolver;
 use App\Support\CouponSpeakClient;
 use App\Support\HtmlCleaner;
 use App\Support\PublicImage;
+use App\Support\SiteImportSettings;
 use App\Support\StoreSlug;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -28,6 +29,7 @@ class ImportAffiliateController extends Controller
 
         return view('member.import-affiliate.form', [
             'categories' => $resolver->categories(),
+            'allowReimportExistingStores' => SiteImportSettings::allowReimportExistingStores(),
         ]);
     }
 
@@ -119,6 +121,9 @@ class ImportAffiliateController extends Controller
             ? Post::query()->where('store_id', $existingStore->id)->orderByDesc('updated_at')->first()
             : null;
 
+        $allowReimport = SiteImportSettings::allowReimportExistingStores();
+        $importBlocked = $existingStore !== null && ! $allowReimport;
+
         return response()->json([
             'ok' => true,
             'merchant' => $merchant,
@@ -126,6 +131,8 @@ class ImportAffiliateController extends Controller
             'detect_source' => $detectSource,
             'suggested_offers' => $suggestedOffers,
             'generated_blog' => $generatedBlog,
+            'allow_reimport_existing_stores' => $allowReimport,
+            'import_blocked' => $importBlocked,
             'existing_import' => $existingStore ? [
                 'store_id' => $existingStore->id,
                 'store_name' => $existingStore->name,
@@ -168,7 +175,7 @@ class ImportAffiliateController extends Controller
         }
 
         $publish = true;
-        $storeName = trim($data['store_name']);
+        $storeName = HtmlCleaner::normalizePlainText($data['store_name']);
         $logoUrl = filled($data['logo_url'] ?? null) ? trim($data['logo_url']) : ($merchant['logo'] ?? null);
         $offers = $this->normalizeOffers($data['offers']);
         $preGeneratedBlog = $this->parseGeneratedBlog($data['generated_blog'] ?? null);
@@ -189,6 +196,13 @@ class ImportAffiliateController extends Controller
             $data['affiliate_url'],
             $domain,
         );
+
+        if ($existingStore !== null && ! SiteImportSettings::allowReimportExistingStores()) {
+            return redirect()
+                ->route('member.import-affiliate.create')
+                ->withInput()
+                ->with('error', 'This store already exists. Re-importing existing stores is disabled in site settings.');
+        }
 
         $result = DB::transaction(function () use (
             $data,
@@ -213,8 +227,11 @@ class ImportAffiliateController extends Controller
                 'description' => HtmlCleaner::clean(
                     $contentBuilder->storeDescription(
                         $storeName,
-                        $merchant['meta_description'],
-                        optional(Category::find($data['category_id']))?->name
+                        $isUpdate ? $existingStore->slug : StoreSlug::make($storeName),
+                        $data['affiliate_url'],
+                        optional(Category::find($data['category_id']))?->name,
+                        $offers,
+                        $merchant,
                     )
                 ),
                 'category_id' => filled($data['category_id'] ?? null) ? $data['category_id'] : null,
@@ -368,8 +385,10 @@ class ImportAffiliateController extends Controller
 
                 return [
                     'code' => $code,
-                    'title' => trim($offer['title']),
-                    'description' => filled($offer['description'] ?? null) ? trim((string) $offer['description']) : null,
+                    'title' => HtmlCleaner::normalizePlainText($offer['title']),
+                    'description' => filled($offer['description'] ?? null)
+                        ? HtmlCleaner::normalizePlainText((string) $offer['description'])
+                        : null,
                     'type' => filled($code) ? 'coupon' : 'discount',
                     'expires_at' => filled($offer['expires_at'] ?? null) ? $offer['expires_at'] : null,
                 ];

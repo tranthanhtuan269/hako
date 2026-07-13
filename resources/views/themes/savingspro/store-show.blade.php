@@ -46,9 +46,7 @@
                 @else
                     <p class="sp-store-hero-desc">Browse verified {{ $store->name }} coupon codes and discount deals updated on {{ config('site.domain') }}.</p>
                 @endif
-                @if($store->publicWebsiteLabel() && $store->shopUrl())
-                    <a href="{{ $store->shopUrl() }}" class="btn btn-outline sp-store-visit" target="_blank" rel="noopener sponsored">Visit {{ $store->name }}</a>
-                @endif
+                @include('partials.store-shop-cta', ['store' => $store])
                 @include('partials.social-share', [
                     'url' => route('stores.show', $store->slug),
                     'title' => $store->seoTitle(),

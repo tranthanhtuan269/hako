@@ -155,7 +155,21 @@ final class HtmlCleaner
             return '';
         }
 
-        return html_entity_decode($text, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        $decoded = $text;
+
+        do {
+            $previous = $decoded;
+            $decoded = html_entity_decode($previous, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        } while ($decoded !== $previous);
+
+        return $decoded;
+    }
+
+    public static function normalizePlainText(?string $text): string
+    {
+        $text = self::decodeEntities($text);
+
+        return trim(preg_replace('/\s+/u', ' ', $text));
     }
 
     public static function textFromHtml(?string $html): string

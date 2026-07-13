@@ -8,7 +8,7 @@
                 @include('partials.coupon-code-masked', ['coupon' => $coupon])
             </div>
         @endif
-        <div class="sp-coupon-row-discount">{{ $coupon->discountLabel() }}</div>
+        <div class="sp-coupon-row-discount">{{ $coupon->discountLabelWithStore() }}</div>
     </div>
     <div class="sp-coupon-row-body">
         <h3 class="sp-coupon-row-title">

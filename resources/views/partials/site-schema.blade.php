@@ -2,7 +2,7 @@
 {
     "@context": "https://schema.org",
     "@type": "Organization",
-    "name": @json(config('site.name')),
+    "name": @json($siteName),
     "url": @json(config('site.url')),
     "description": @json(config('site.default_description')),
     "email": @json(config('site.contact_email'))

@@ -278,6 +278,18 @@
     display: block;
     color: #78350f;
 }
+.preview-existing-import.is-blocked {
+    background: #fef2f2;
+    border-color: #fca5a5;
+    color: #991b1b;
+}
+.preview-existing-import.is-blocked strong {
+    color: #7f1d1d;
+}
+#import-submit-btn:disabled {
+    cursor: not-allowed;
+    opacity: .65;
+}
 .offer-block {
     border: 1px solid var(--border);
     border-radius: 8px;
@@ -373,6 +385,8 @@
 <script>
 (() => {
     const previewUrl = @json(route('member.import-affiliate.preview'));
+    const integrationsUrl = @json(auth()->user()->isAdmin() ? route('admin.integrations.index') : null);
+    const allowReimportExistingStores = @json($allowReimportExistingStores);
     const csrf = document.querySelector('meta[name="csrf-token"]').content;
     const offersList = document.getElementById('offers-list');
     const template = document.getElementById('offer-block-template');
@@ -380,14 +394,63 @@
     const importSubmitBtn = document.getElementById('import-submit-btn');
     let offerIndex = offersList.querySelectorAll('.offer-block').length;
 
-    importForm.addEventListener('submit', () => {
+    importForm.addEventListener('submit', (event) => {
         if (importSubmitBtn.disabled) {
+            event.preventDefault();
             return;
         }
 
         importSubmitBtn.disabled = true;
         importSubmitBtn.textContent = 'Importing…';
     });
+
+    function setImportSubmitEnabled(enabled) {
+        importSubmitBtn.disabled = !enabled;
+        importSubmitBtn.title = enabled
+            ? ''
+            : 'Re-importing existing stores is disabled in site settings.';
+    }
+
+    function updateExistingImportNotice(existing, importBlocked) {
+        const previewExistingImport = document.getElementById('preview-existing-import');
+        const previewExistingImportText = document.getElementById('preview-existing-import-text');
+
+        if (!existing) {
+            previewExistingImport.hidden = true;
+            previewExistingImport.classList.remove('is-blocked');
+            previewExistingImportText.textContent = '';
+            setImportSubmitEnabled(true);
+            return;
+        }
+
+        const postLabel = existing.post_title
+            ? `post “${existing.post_title}”`
+            : 'an existing post';
+
+        if (importBlocked) {
+            let message =
+                `This merchant is already imported as “${existing.store_name}”. `
+                + 'Re-importing existing stores is disabled, so import is blocked.';
+
+            if (integrationsUrl) {
+                message += ` Enable “Allow re-importing existing stores” in Integrations settings to update that store.`;
+            } else {
+                message += ' Ask your site admin to enable re-importing in Integrations settings.';
+            }
+
+            previewExistingImportText.textContent = message;
+            previewExistingImport.classList.add('is-blocked');
+            setImportSubmitEnabled(false);
+        } else {
+            previewExistingImportText.textContent =
+                `This merchant is already imported as “${existing.store_name}”. `
+                + `Submitting will update that store, replace its offers, and refresh ${postLabel} instead of creating duplicates.`;
+            previewExistingImport.classList.remove('is-blocked');
+            setImportSubmitEnabled(true);
+        }
+
+        previewExistingImport.hidden = false;
+    }
 
     document.getElementById('add-offer-btn').addEventListener('click', () => {
         const html = template.innerHTML.replaceAll('__INDEX__', String(offerIndex++));
@@ -489,9 +552,11 @@
                 previewProducts.hidden = true;
                 previewBlog.hidden = true;
                 previewExistingImport.hidden = true;
+                previewExistingImport.classList.remove('is-blocked');
                 generatedBlogInput.value = '';
                 status.textContent = '';
                 status.className = 'form-hint detect-status';
+                setImportSubmitEnabled(true);
             }
         }
 
@@ -549,17 +614,12 @@
             document.getElementById('preview-meta').textContent = merchant.meta_description || merchant.page_title || '';
 
             if (data.existing_import) {
-                const existing = data.existing_import;
-                const postLabel = existing.post_title
-                    ? `post “${existing.post_title}”`
-                    : 'an existing post';
-                previewExistingImportText.textContent =
-                    `This merchant is already imported as “${existing.store_name}”. `
-                    + `Submitting will update that store, replace its offers, and refresh ${postLabel} instead of creating duplicates.`;
-                previewExistingImport.hidden = false;
+                updateExistingImportNotice(
+                    data.existing_import,
+                    !!data.import_blocked,
+                );
             } else {
-                previewExistingImport.hidden = true;
-                previewExistingImportText.textContent = '';
+                updateExistingImportNotice(null, false);
             }
 
             if (Array.isArray(merchant.products) && merchant.products.length) {
@@ -607,8 +667,17 @@
                 statusMessage += ' Blog draft prepared (template fallback).';
             }
 
+            if (data.import_blocked) {
+                statusMessage += ' Import blocked — this store already exists.';
+                status.className = 'form-hint detect-status is-error';
+            } else if (data.existing_import) {
+                statusMessage += ' Existing store will be updated on import.';
+                status.className = 'form-hint detect-status is-success';
+            } else {
+                status.className = 'form-hint detect-status is-success';
+            }
+
             status.textContent = statusMessage;
-            status.className = 'form-hint detect-status is-success';
         } catch (error) {
             status.textContent = 'Network error while detecting store. You can still fill the form manually.';
             status.className = 'form-hint detect-status is-error';

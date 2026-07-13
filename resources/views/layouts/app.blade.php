@@ -62,8 +62,8 @@
     <footer class="site-footer">
         <div class="container footer-grid">
             <div>
-                <strong>{{ config('site.name') }}</strong>
-                <p class="footer-tagline">{{ config('site.tagline') }}</p>
+                <strong>{{ $siteName }}</strong>
+                <p class="footer-tagline">{{ $siteTagline }}</p>
                 <p>Coupon codes and discount deals for U.S. shoppers. Updated daily at {{ config('site.domain') }}.</p>
                 @include('partials.site-affiliate-notice')
             </div>

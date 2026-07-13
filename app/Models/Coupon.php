@@ -2,9 +2,11 @@
 
 namespace App\Models;
 
+use App\Support\HtmlCleaner;
 use App\Support\Seo;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Str;
@@ -192,6 +194,18 @@ class Coupon extends Model
         };
     }
 
+    public function discountLabelWithStore(): string
+    {
+        $label = $this->discountLabel();
+        $storeName = $this->store?->name;
+
+        if (! filled($storeName)) {
+            return $label;
+        }
+
+        return "{$label} at {$storeName}";
+    }
+
     public function typeLabel(): string
     {
         return $this->type === 'coupon' ? 'Coupon Code' : 'Discount Deal';
@@ -250,5 +264,23 @@ class Coupon extends Model
                 'logo' => $this->store->ogImageUrl() ? Seo::absoluteUrl($this->store->ogImageUrl()) : null,
             ], fn ($value) => filled($value)),
         ], fn ($value) => filled($value));
+    }
+
+    protected function title(): Attribute
+    {
+        return Attribute::make(
+            get: fn (?string $value) => HtmlCleaner::normalizePlainText($value),
+            set: fn (?string $value) => HtmlCleaner::normalizePlainText($value),
+        );
+    }
+
+    protected function description(): Attribute
+    {
+        return Attribute::make(
+            get: fn (?string $value) => filled($value) ? HtmlCleaner::decodeEntities($value) : null,
+            set: fn (?string $value) => filled($value)
+                ? HtmlCleaner::clean(HtmlCleaner::decodeEntities($value))
+                : null,
+        );
     }
 }

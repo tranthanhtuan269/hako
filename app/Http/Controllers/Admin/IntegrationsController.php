@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Support\SiteImportSettings;
 use App\Support\SiteIntegrations;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -21,6 +22,7 @@ class IntegrationsController extends Controller
             'scanApiLimit' => SiteIntegrations::scanApiLimit(),
             'geminiMasked' => SiteIntegrations::maskedGeminiApiKey(),
             'geminiConfigured' => filled(SiteIntegrations::geminiApiKey()),
+            'allowReimportExistingStores' => SiteImportSettings::allowReimportExistingStores(),
         ]);
     }
 
@@ -33,6 +35,7 @@ class IntegrationsController extends Controller
             'scan_api_limit' => ['nullable', 'integer', 'min:1', 'max:200'],
             'gemini_api_key' => ['nullable', 'string', 'max:500'],
             'clear_gemini_api_key' => ['nullable', 'boolean'],
+            'import_allow_reimport_existing_stores' => ['nullable', 'boolean'],
         ]);
 
         SiteIntegrations::setScanSite($validated['scan_site'] ?? '');
@@ -48,6 +51,10 @@ class IntegrationsController extends Controller
         } elseif (filled($validated['gemini_api_key'] ?? null)) {
             SiteIntegrations::setGeminiApiKey($validated['gemini_api_key']);
         }
+
+        SiteImportSettings::setAllowReimportExistingStores(
+            $request->boolean('import_allow_reimport_existing_stores')
+        );
 
         return redirect()
             ->route('admin.integrations.index')

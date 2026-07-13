@@ -244,7 +244,7 @@ final class CouponSpeakClient
     private function mergeApiStoreMetaIntoProfile(array $profile, array $body): array
     {
         if (filled($body['store_name'] ?? null)) {
-            $profile['name'] = trim((string) $body['store_name']);
+            $profile['name'] = HtmlCleaner::normalizePlainText((string) $body['store_name']);
         }
 
         if (filled($body['store_slug'] ?? null)) {
@@ -252,7 +252,7 @@ final class CouponSpeakClient
         }
 
         if (filled($body['category_name'] ?? null)) {
-            $profile['category_name'] = trim((string) $body['category_name']);
+            $profile['category_name'] = HtmlCleaner::normalizePlainText((string) $body['category_name']);
         }
 
         if (array_key_exists('logo', $body)) {
@@ -281,12 +281,12 @@ final class CouponSpeakClient
             'affiliate_url' => $affiliateUrl,
             'final_url' => $profile['final_url'] ?? $profile['website'] ?? $affiliateUrl,
             'domain' => $profile['domain'] ?? $this->hostFromUrl($affiliateUrl),
-            'name' => trim((string) ($profile['name'] ?? '')),
+            'name' => HtmlCleaner::normalizePlainText((string) ($profile['name'] ?? '')),
             'logo' => $profile['logo'] ?? null,
             'page_title' => $profile['page_title'] ?? $profile['meta_title'] ?? null,
             'meta_description' => $profile['meta_description'] ?? null,
             'category_name' => filled($profile['category_name'] ?? null)
-                ? trim((string) $profile['category_name'])
+                ? HtmlCleaner::normalizePlainText((string) $profile['category_name'])
                 : null,
             'faqs' => is_array($profile['faqs'] ?? null) ? $profile['faqs'] : [],
             'products' => is_array($profile['products'] ?? null) ? $profile['products'] : [],
@@ -574,8 +574,8 @@ final class CouponSpeakClient
                 continue;
             }
 
-            $discount = trim((string) ($coupon['discount_label'] ?? ''));
-            $title = trim((string) ($coupon['title'] ?? ''));
+            $discount = HtmlCleaner::normalizePlainText((string) ($coupon['discount_label'] ?? ''));
+            $title = HtmlCleaner::normalizePlainText((string) ($coupon['title'] ?? ''));
             $code = filled($coupon['coupon_code'] ?? null) ? trim((string) $coupon['coupon_code']) : null;
             $type = filled($coupon['coupon_type'] ?? null) ? trim((string) $coupon['coupon_type']) : null;
 

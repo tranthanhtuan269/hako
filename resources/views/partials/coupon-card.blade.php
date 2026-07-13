@@ -22,9 +22,9 @@
     </div>
     <h3 class="coupon-title">
         @if($linkCardToDetail ?? false)
-            {{ $coupon->title }}
+            {{ $coupon->title }} at {{ $coupon->store?->name }}
         @else
-            <a href="{{ route('coupons.show', $coupon->slug) }}">{{ $coupon->title }}</a>
+            <a href="{{ route('coupons.show', $coupon->slug) }}">{{ $coupon->title }} at {{ $coupon->store?->name }}</a>
         @endif
     </h3>
     @if($showDescription ?? false)

@@ -1,11 +1,20 @@
-<a href="{{ route('home') }}" class="site-brand">
+<a href="{{ route('home') }}" @class([
+    'site-brand',
+    'site-brand--logo-only' => empty($siteBrandShowText),
+])>
     @if(!empty($siteLogoUrl))
-        <img src="{{ $siteLogoUrl }}" alt="{{ config('site.name') }}" class="site-brand-logo" width="36" height="36">
+        <img src="{{ $siteLogoUrl }}" alt="{{ $siteName }}" class="site-brand-logo">
     @else
         <span class="site-brand-icon">%</span>
     @endif
-    <span class="site-brand-text">
-        <strong>{{ config('site.name') }}</strong>
-        <small>{{ config('site.tagline') }}</small>
-    </span>
+    @if(!empty($siteBrandShowText))
+        <span class="site-brand-text">
+            @if(!empty($siteDisplayName))
+                <strong>{{ $siteDisplayName }}</strong>
+            @endif
+            @if(!empty($siteDisplayTagline))
+                <small>{{ $siteDisplayTagline }}</small>
+            @endif
+        </span>
+    @endif
 </a>

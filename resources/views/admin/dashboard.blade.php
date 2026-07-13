@@ -6,6 +6,7 @@
 <h1 style="margin-bottom:1.5rem;">Dashboard</h1>
 <p style="margin-bottom:1.5rem;display:flex;flex-wrap:wrap;gap:.75rem;">
     <a href="{{ route('member.import-affiliate.create') }}" class="btn btn-primary">Import from Affiliate Link</a>
+    <button type="button" class="btn btn-outline" data-domain-change-open>Change Domain</button>
     <a href="{{ route('admin.categories.index') }}" class="btn btn-outline">Manage Categories</a>
     <a href="{{ route('admin.stores.index') }}" class="btn btn-outline">Manage Stores</a>
     <a href="{{ route('admin.themes.index') }}" class="btn btn-outline">Frontend Theme</a>
@@ -54,4 +55,6 @@
         @endforeach
     </tbody>
 </table>
+
+@include('partials.domain-change-modal')
 @endsection

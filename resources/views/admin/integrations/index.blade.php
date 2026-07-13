@@ -59,6 +59,19 @@
         @endif
     </div>
 
+    <div class="integrations-section">
+        <h2>Affiliate Import</h2>
+        <label class="form-check integrations-clear-key">
+            <input type="hidden" name="import_allow_reimport_existing_stores" value="0">
+            <input type="checkbox" name="import_allow_reimport_existing_stores" value="1" @checked(old('import_allow_reimport_existing_stores', $allowReimportExistingStores))>
+            Allow re-importing existing stores
+        </label>
+        <p class="form-hint" style="margin-top:.5rem;">
+            When enabled, importing the same merchant again updates the store, replaces offers, and refreshes the blog post.
+            When disabled, the import button is blocked if that store already exists on your site.
+        </p>
+    </div>
+
     <button type="submit" class="btn btn-primary">Save settings</button>
 </form>
 @endsection

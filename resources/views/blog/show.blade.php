@@ -89,7 +89,7 @@
     <div class="container">
         <div class="blog-article-layout">
             <div class="article-content legal-content">
-                {!! $post->content !!}
+                {!! $post->renderedContent() !!}
             </div>
             <aside class="blog-sidebar">
                 @include('partials.social-share', [

@@ -11,7 +11,7 @@
             @include('partials.coupon-code-masked', ['coupon' => $coupon])
         </div>
     @endif
-    <div class="sp-coupon-discount">{{ $coupon->discountLabel() }}</div>
+    <div class="sp-coupon-discount">{{ $coupon->discountLabelWithStore() }}</div>
     <h3 class="coupon-title sp-coupon-title">
         @if($linkCardToDetail ?? false)
             {{ $coupon->title }}
@@ -25,9 +25,6 @@
                 {{ \Illuminate\Support\Str::limit(strip_tags($coupon->description), 120) }}
             @endif
         </p>
-    @endif
-    @if($coupon->store)
-        <p class="sp-coupon-store-name">{{ $coupon->store->name }}</p>
     @endif
     @if($coupon->expires_at)
         <p class="coupon-expire sp-coupon-expire">{{ $coupon->expiresLabel() }}</p>

@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Support\PublicImage;
 use App\Support\AuthorProfile;
 use App\Support\HtmlCleaner;
+use App\Support\PostAffiliateContent;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
@@ -88,6 +89,11 @@ class Post extends Model
         }
 
         return Store::query()->active()->where('slug', $matches[1])->first();
+    }
+
+    public function renderedContent(): string
+    {
+        return PostAffiliateContent::embed($this->content, $this->resolveStore());
     }
 
     public function scopeOwnedBy(Builder $query, int $userId): Builder

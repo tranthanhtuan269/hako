@@ -5,7 +5,7 @@
 @section('content')
 <h1 style="margin-bottom:.5rem;">Site Logo &amp; Social</h1>
 <p style="color:#64748b;margin-bottom:2rem;">
-    Manage the public site logo and social profile links shown in the header, footer, and contact page.
+    Manage the public site logo, display name, slogan, and social profile links shown in the header, footer, and contact page.
 </p>
 
 <form action="{{ route('admin.branding.update') }}" method="POST" enctype="multipart/form-data">
@@ -15,8 +15,55 @@
     <div class="branding-section">
         <h2>Site logo</h2>
         <p class="form-hint" style="margin-bottom:1rem;">
-            Replaces the default % icon in the header. Recommended: square PNG or SVG, at least 128×128px.
+            Replaces the default % icon in the header. Recommended: PNG or SVG with a transparent background.
+            Leave site name and slogan blank to show logo only (fixed height, left-aligned — good for wide logos).
         </p>
+
+        <div class="form-group">
+            <label for="site_name">Site name</label>
+            <input
+                type="text"
+                id="site_name"
+                name="site_name"
+                value="{{ old('site_name', $customName) }}"
+                maxlength="120"
+                placeholder="{{ config('site.name') }}"
+            >
+            <p class="form-hint">Shown next to the logo in the header when filled. Also used site-wide when saved.</p>
+            @error('site_name')<p class="form-error">{{ $message }}</p>@enderror
+        </div>
+
+        <div class="form-group">
+            <label for="site_tagline">Slogan</label>
+            <input
+                type="text"
+                id="site_tagline"
+                name="site_tagline"
+                value="{{ old('site_tagline', $customTagline) }}"
+                maxlength="200"
+                placeholder="{{ config('site.tagline') }}"
+            >
+            <p class="form-hint">Short tagline under the site name in the header. Leave both fields blank for logo-only display.</p>
+            @error('site_tagline')<p class="form-error">{{ $message }}</p>@enderror
+        </div>
+
+        <div class="branding-header-preview" id="branding-header-preview">
+            <span class="form-hint branding-preview-label">Header preview</span>
+            <div @class([
+                'branding-preview-brand',
+                'is-logo-only' => !$customName && !$customTagline,
+            ]) id="branding-preview-brand">
+                @if($logoUrl)
+                    <img src="{{ $logoUrl }}" alt="" class="branding-preview-logo" id="branding-preview-logo">
+                @else
+                    <span class="branding-preview-icon" id="branding-preview-icon">%</span>
+                @endif
+                <span class="branding-preview-text" id="branding-preview-text" @if(!$customName && !$customTagline) hidden @endif>
+                    <strong id="branding-preview-name">{{ $customName }}</strong>
+                    <small id="branding-preview-tagline">{{ $customTagline }}</small>
+                </span>
+            </div>
+        </div>
 
         @if($logoUrl)
             <div class="branding-logo-preview">
@@ -73,6 +120,35 @@
 </form>
 @endsection
 
+@push('scripts')
+<script>
+(() => {
+    const nameInput = document.getElementById('site_name');
+    const taglineInput = document.getElementById('site_tagline');
+    const previewBrand = document.getElementById('branding-preview-brand');
+    const previewText = document.getElementById('branding-preview-text');
+    const previewName = document.getElementById('branding-preview-name');
+    const previewTagline = document.getElementById('branding-preview-tagline');
+
+    function syncBrandPreview() {
+        const name = nameInput.value.trim();
+        const tagline = taglineInput.value.trim();
+        const showText = name !== '' || tagline !== '';
+
+        previewBrand.classList.toggle('is-logo-only', !showText);
+        previewText.hidden = !showText;
+        previewName.textContent = name;
+        previewName.hidden = name === '';
+        previewTagline.textContent = tagline;
+        previewTagline.hidden = tagline === '';
+    }
+
+    nameInput?.addEventListener('input', syncBrandPreview);
+    taglineInput?.addEventListener('input', syncBrandPreview);
+})();
+</script>
+@endpush
+
 @push('styles')
 <style>
 .branding-section {
@@ -104,6 +180,62 @@
     gap: .5rem;
     margin-top: .75rem;
     font-size: .92rem;
+}
+.branding-header-preview {
+    margin: 1rem 0;
+    padding: .85rem 1rem;
+    border: 1px dashed var(--border);
+    border-radius: 10px;
+    background: #f8fafc;
+}
+.branding-preview-label {
+    display: block;
+    margin-bottom: .65rem;
+}
+.branding-preview-brand {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    color: var(--secondary);
+}
+.branding-preview-brand.is-logo-only .branding-preview-text {
+    display: none;
+}
+.branding-preview-icon {
+    background: linear-gradient(135deg, var(--primary), var(--accent));
+    color: #fff;
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    flex-shrink: 0;
+}
+.branding-preview-logo {
+    height: 36px;
+    width: auto;
+    max-width: 220px;
+    object-fit: contain;
+    object-position: left center;
+    border-radius: 10px;
+    background: #fff;
+    border: 1px solid var(--border);
+}
+.branding-preview-text {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.2;
+}
+.branding-preview-text strong {
+    font-size: 1.05rem;
+}
+.branding-preview-text small {
+    font-size: .65rem;
+    font-weight: 600;
+    color: #64748b;
+    letter-spacing: .04em;
 }
 </style>
 @endpush

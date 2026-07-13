@@ -47,6 +47,8 @@ return [
 
     'locale' => 'en_US',
 
+    'google_ads_builder_enabled' => (bool) env('GOOGLE_ADS_BUILDER_ENABLED', false),
+
     'bot_user_agent' => env('SITE_BOT_USER_AGENT') ?: (
         'Mozilla/5.0 (compatible; '.preg_replace('/[^a-zA-Z0-9]/', '', $domain).'Bot/1.0; +'.$url.')'
     ),

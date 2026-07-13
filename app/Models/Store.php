@@ -6,6 +6,7 @@ use App\Support\HtmlCleaner;
 use App\Support\PublicImage;
 use App\Support\Seo;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -260,6 +261,11 @@ class Store extends Model
         return $host ? preg_replace('/^www\./', '', $host) : $this->website;
     }
 
+    public function shopLinkLabel(): string
+    {
+        return $this->publicWebsiteLabel() ?? 'Shop at '.$this->name;
+    }
+
     public function hasStoredLogo(): bool
     {
         return PublicImage::isStored($this->logo);
@@ -389,5 +395,13 @@ class Store extends Model
                 'category' => $this->category?->name,
             ], fn ($value) => filled($value)),
         ], fn ($value) => filled($value));
+    }
+
+    protected function name(): Attribute
+    {
+        return Attribute::make(
+            get: fn (?string $value) => HtmlCleaner::normalizePlainText($value),
+            set: fn (?string $value) => HtmlCleaner::normalizePlainText($value),
+        );
     }
 }

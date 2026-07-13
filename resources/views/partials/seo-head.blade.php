@@ -32,7 +32,7 @@
 
 <meta property="og:locale" content="{{ str_replace('_', '-', config('site.locale')) }}">
 <meta property="og:type" content="{{ $ogType }}">
-<meta property="og:site_name" content="{{ config('site.name') }}">
+<meta property="og:site_name" content="{{ $siteName }}">
 <meta property="og:title" content="{{ $ogTitle }}">
 <meta property="og:description" content="{{ $ogDescription }}">
 <meta property="og:url" content="{{ $ogUrl }}">

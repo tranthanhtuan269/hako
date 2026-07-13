@@ -2,29 +2,212 @@
 
 namespace App\Support;
 
+use App\Models\Category;
 use App\Models\Post;
 use App\Models\Store;
+use App\Support\PostAffiliateContent;
 use Illuminate\Support\Str;
 
 final class AffiliateImportContentBuilder
 {
+    private const STORE_DESCRIPTION_MIN_WORDS = 1000;
+
+    private const STORE_DESCRIPTION_MIN_AFFILIATE_LINKS = 2;
+
     public function __construct(
         private readonly GeminiBlogWriter $geminiWriter = new GeminiBlogWriter(),
     ) {}
-    public function storeDescription(string $storeName, ?string $metaDescription, ?string $categoryName): string
+
+    /**
+     * @param  array<int, array{code: ?string, title: string, description: ?string, type: string}>  $offers
+     * @param  array<string, mixed>  $merchant
+     */
+    public function storeDescription(
+        string $storeName,
+        string $storeSlug,
+        ?string $affiliateUrl,
+        ?string $categoryName,
+        array $offers,
+        array $merchant = [],
+    ): string {
+        $store = $this->storeContextModel($storeName, $storeSlug, $affiliateUrl, $categoryName);
+        $context = $this->storeDescriptionContext($store, $offers, $merchant);
+
+        $aiContent = $this->geminiWriter->generateStoreDescription($context);
+
+        $content = filled($aiContent)
+            ? $aiContent
+            : $this->buildStoreDescriptionWithoutAi($store, $offers, $merchant);
+
+        return $this->finalizeStoreDescription($content, $store);
+    }
+
+    /**
+     * @param  array<int, array{code: ?string, title: string, description: ?string, type: string}>  $offers
+     * @param  array<string, mixed>  $merchant
+     * @return array{
+     *     store_name: string,
+     *     category_name: ?string,
+     *     store_slug: string,
+     *     affiliate_url: ?string,
+     *     offers: array<int, array{code: ?string, title: string, description: ?string, type: string}>,
+     *     merchant: array<string, mixed>
+     * }
+     */
+    private function storeDescriptionContext(Store $store, array $offers, array $merchant): array
     {
-        $categoryLine = $categoryName
-            ? "<p>{$storeName} is listed under our <strong>{$categoryName}</strong> deals collection on " . config('site.name') . '.</p>'
-            : '';
+        return [
+            'store_name' => $store->name,
+            'category_name' => $store->category?->name,
+            'store_slug' => $store->slug,
+            'affiliate_url' => $store->affiliate_url,
+            'offers' => $offers,
+            'merchant' => $merchant,
+        ];
+    }
 
-        $intro = $metaDescription
-            ? '<p>' . e($metaDescription) . '</p>'
-            : "<p>{$storeName} is a popular U.S. online retailer featured on " . config('site.name') . '. '
-                . 'We track publicly available coupon codes and promotional deals so shoppers can save at checkout.</p>';
+    private function storeContextModel(
+        string $storeName,
+        string $storeSlug,
+        ?string $affiliateUrl,
+        ?string $categoryName,
+    ): Store {
+        $store = new Store([
+            'name' => $storeName,
+            'slug' => $storeSlug,
+            'affiliate_url' => $affiliateUrl,
+        ]);
 
-        return $intro . $categoryLine
-            . '<p>Click through from our store page to shop with your affiliate tracking link. '
-            . 'Offer terms, exclusions, and expiration dates are set by the merchant and may change without notice.</p>';
+        if (filled($categoryName)) {
+            $store->setRelation('category', new Category(['name' => $categoryName]));
+        }
+
+        return $store;
+    }
+
+    /**
+     * @param  array<int, array{code: ?string, title: string, description: ?string, type: string}>  $offers
+     * @param  array<string, mixed>  $merchant
+     */
+    private function buildStoreDescriptionWithoutAi(Store $store, array $offers, array $merchant): string
+    {
+        $category = $store->category?->name ?? ($merchant['category_name'] ?? 'online retail');
+        $monthYear = now()->format('F Y');
+        $faqs = is_array($merchant['faqs'] ?? null) ? $merchant['faqs'] : [];
+
+        $content = $this->buildLongFormContent(
+            $store,
+            $offers,
+            $category,
+            $merchant['meta_description'] ?? null,
+            $faqs,
+            $monthYear
+        );
+
+        if ($this->wordCount($content) < self::STORE_DESCRIPTION_MIN_WORDS) {
+            $content .= "\n\n".$this->sectionExtendedBuyerGuide($store, $category);
+        }
+
+        return $content;
+    }
+
+    private function finalizeStoreDescription(string $content, Store $store): string
+    {
+        $content = PostAffiliateContent::embed($content, $store);
+        $content = $this->ensureAffiliateLinks($content, $store, self::STORE_DESCRIPTION_MIN_AFFILIATE_LINKS);
+
+        while ($this->wordCount($content) < self::STORE_DESCRIPTION_MIN_WORDS) {
+            $padding = $this->storeDescriptionPadding($store);
+            $nextCount = $this->wordCount($content.$padding);
+
+            if ($nextCount <= $this->wordCount($content)) {
+                break;
+            }
+
+            $content .= $padding;
+        }
+
+        return $content;
+    }
+
+    private function ensureAffiliateLinks(string $html, Store $store, int $minimum): string
+    {
+        if (! filled($store->affiliate_url)) {
+            return $html;
+        }
+
+        $affiliateUrl = (string) $store->affiliate_url;
+        $count = substr_count($html, $affiliateUrl);
+        $name = $store->name;
+
+        if ($count < 1) {
+            $html .= '<p>Ready to place an order? '
+                .'<a href="'.e($affiliateUrl).'" rel="nofollow sponsored" target="_blank">Shop at '.e($name).' through our affiliate link</a> '
+                .'to browse the official catalog with tracking support from '.e(config('site.name')).'.</p>';
+            $count++;
+        }
+
+        if ($count < $minimum) {
+            $html .= '<p>For repeat purchases, bookmark our '
+                .'<a href="'.e($affiliateUrl).'" rel="nofollow sponsored" target="_blank">tracked '.e($name).' shopping link</a> '
+                .'so you can return directly to the merchant while supporting '.e(config('site.name')).'.</p>';
+        }
+
+        return $html;
+    }
+
+    private function storeDescriptionPadding(Store $store): string
+    {
+        $name = $store->name;
+        $category = strtolower($store->category?->name ?? 'online retail');
+        $site = config('site.name');
+
+        return '<h2>More About Shopping at '.e($name).'</h2>'
+            .'<p>'.e($name).' continues to attract U.S. shoppers who want a focused '.e($category).' experience instead of scrolling through unrelated marketplace listings. '
+            .'Product pages typically highlight what is included, how items are meant to be used, and any bundle options that can improve overall value when you are buying more than one item.</p>'
+            .'<p>Before checkout, compare shipping estimates, return policies, and whether the merchant allows coupon stacking. Many brands publish automatic discounts during seasonal events while separate promo codes apply to specific collections — reading the fine print prevents surprises at the payment step.</p>'
+            .'<p>'.e($site).' lists publicly available offers for '.e($name).' so you can copy a code or confirm an automatic deal before you visit the store. '
+            .'Saving the store page and checking back before major holidays is a simple habit that often surfaces new promotions without extra research.</p>'
+            .'<p>If you are buying gifts or higher-ticket items, consider signing up for the brand newsletter when available. Retailers frequently reward subscribers with welcome discounts, early access to sales, or free-shipping thresholds that are not always advertised on deal aggregators.</p>'
+            .'<p>Finally, keep a short checklist: confirm product variant, verify coupon eligibility, note expiration dates, and compare the final cart total with and without the promotion. '
+            .'That disciplined approach helps you get the best outcome from '.e($name).' while shopping with confidence.</p>';
+    }
+
+    private function sectionExtendedBuyerGuide(Store $store, string $category): string
+    {
+        $name = $store->name;
+        $affiliateUrl = $store->affiliate_url;
+        $site = config('site.name');
+        $parts = [];
+
+        $parts[] = '<h2>Extended Shopping Guide for U.S. Buyers</h2>';
+        $parts[] = '<p>Shopping at '.e($name).' online is straightforward when you know what to expect from a '.e(strtolower($category)).' retailer. '
+            .'Most customers start on the homepage or a category landing page, narrow options by feature or price band, then open individual product detail pages to compare specifications side by side.</p>';
+        $parts[] = '<p>Shipping timelines vary by warehouse location and the shipping method you select at checkout. Many U.S. orders ship from domestic fulfillment centers, while specialty items may require additional processing time. '
+            .'Tracking information is usually emailed once the package leaves the facility, which helps you plan deliveries for gifts or project deadlines.</p>';
+        $parts[] = '<p>Returns and exchanges are another practical consideration. Official brand stores often publish clear return windows, condition requirements, and whether return shipping is prepaid. '
+            .'Reading those policies before you buy reduces friction if a size, color, or configuration does not meet your expectations after delivery.</p>';
+
+        if (filled($affiliateUrl)) {
+            $parts[] = '<p>When you are ready to buy, use our '
+                .'<a href="'.e($affiliateUrl).'" rel="nofollow sponsored" target="_blank">affiliate link to '.e($name).'</a> '
+                .'so your visit is tracked through '.e($site).' while you shop on the merchant site.</p>';
+        }
+
+        $parts[] = '<p>Coupon strategy matters as much as product selection. Automatic discounts may already reduce the list price, while separate coupon codes might apply to specific categories or minimum order values. '
+            .'Trying to stack incompatible promotions can remove the better deal, so test one offer at a time if the checkout total looks unexpected.</p>';
+        $parts[] = '<p>Customer support channels — email, chat, or help-center articles — are useful when you need clarification about compatibility, subscription terms, or warranty coverage. '
+            .'Keeping order confirmation numbers handy speeds up support requests if you need post-purchase assistance.</p>';
+        $parts[] = '<p>For budget-conscious shoppers, setting a target price before you browse helps avoid impulse upgrades. Compare bundle pricing against buying components separately, and factor in shipping or handling fees when evaluating whether a promotion truly improves value.</p>';
+        $parts[] = '<p>'.e($name).' remains a practical option when you want a curated '.e(strtolower($category)).' catalog, transparent product pages, and periodic promotional events. '
+            .'Pair that with current offers listed on '.e($site).' and you can make a well-informed purchase decision without spending extra time hunting for codes across unrelated sites.</p>';
+
+        return implode("\n", $parts);
+    }
+
+    private function wordCount(string $html): int
+    {
+        return str_word_count(strip_tags($html));
     }
 
     /**
@@ -35,16 +218,16 @@ final class AffiliateImportContentBuilder
     public function blogPost(Store $store, array $offers, array $merchant = [], ?array $preGenerated = null): array
     {
         if ($preGenerated !== null) {
-            return $this->sanitizeBlogOutput($preGenerated);
+            return $this->sanitizeBlogOutput($preGenerated, $store);
         }
 
         $aiBlog = $this->geminiWriter->generate($this->blogContext($store, $offers, $merchant));
 
         if ($aiBlog !== null) {
-            return $this->sanitizeBlogOutput($aiBlog);
+            return $this->sanitizeBlogOutput($aiBlog, $store);
         }
 
-        return $this->blogPostWithoutAi($store, $offers, $merchant);
+        return $this->sanitizeBlogOutput($this->blogPostWithoutAi($store, $offers, $merchant), $store);
     }
 
     /**
@@ -64,6 +247,7 @@ final class AffiliateImportContentBuilder
             'store_name' => $store->name,
             'category_name' => $store->category?->name ?? ($merchant['category_name'] ?? null),
             'store_slug' => $store->slug,
+            'affiliate_url' => $store->affiliate_url,
             'offers' => $offers,
             'merchant' => $merchant,
         ];
@@ -73,14 +257,20 @@ final class AffiliateImportContentBuilder
      * @param  array<string, mixed>  $blog
      * @return array{title: string, excerpt: string, meta_title: string, meta_description: string, content: string}
      */
-    public function sanitizeBlogOutput(array $blog): array
+    public function sanitizeBlogOutput(array $blog, ?Store $store = null): array
     {
+        $content = trim((string) ($blog['content'] ?? ''));
+
+        if ($store !== null) {
+            $content = PostAffiliateContent::embed($content, $store);
+        }
+
         return [
             'title' => Post::normalizeTitle(trim((string) ($blog['title'] ?? ''))),
             'excerpt' => Str::limit(trim((string) ($blog['excerpt'] ?? '')), 500, ''),
             'meta_title' => Str::limit(trim((string) ($blog['meta_title'] ?? $blog['title'] ?? '')), 70, ''),
             'meta_description' => Str::limit(trim((string) ($blog['meta_description'] ?? $blog['excerpt'] ?? '')), 320, ''),
-            'content' => trim((string) ($blog['content'] ?? '')),
+            'content' => $content,
         ];
     }
 
@@ -94,12 +284,12 @@ final class AffiliateImportContentBuilder
         $aiBlog = $this->geminiWriter->generate($this->blogContext($store, $offers, $merchant));
 
         if ($aiBlog !== null) {
-            return $this->sanitizeBlogOutput($aiBlog) + ['source' => 'gemini'];
+            return $this->sanitizeBlogOutput($aiBlog, $store) + ['source' => 'gemini'];
         }
 
         $fallback = $this->blogPostWithoutAi($store, $offers, $merchant);
 
-        return $this->sanitizeBlogOutput($fallback) + ['source' => 'template'];
+        return $this->sanitizeBlogOutput($fallback, $store) + ['source' => 'template'];
     }
 
     /**
@@ -165,8 +355,8 @@ final class AffiliateImportContentBuilder
         $parts[] = $this->sectionProductDeepDives($name, $products, $storeUrl);
         $parts[] = $this->sectionWhichProductToChoose($name, $products, $category);
         $parts[] = $this->sectionComparison($name, $category);
-        $parts[] = $this->sectionCurrentOffers($name, $offers, $storeUrl, $monthYear);
-        $parts[] = $this->sectionHowToSave($name, $storeUrl);
+        $parts[] = $this->sectionCurrentOffers($name, $offers, $storeUrl, $monthYear, $store->affiliate_url);
+        $parts[] = $this->sectionHowToSave($name, $storeUrl, $store->affiliate_url);
         $parts[] = $this->sectionFaq($name, $faqs, $storeUrl);
 
         $parts[] = '<h2>Final Verdict</h2>';
@@ -220,8 +410,8 @@ final class AffiliateImportContentBuilder
         }
 
         $parts[] = $this->sectionSingleProductProsCons($productName, $product);
-        $parts[] = $this->sectionCurrentOffers($name, $offers, $storeUrl, $monthYear);
-        $parts[] = $this->sectionHowToSave($name, $storeUrl);
+        $parts[] = $this->sectionCurrentOffers($name, $offers, $storeUrl, $monthYear, $store->affiliate_url);
+        $parts[] = $this->sectionHowToSave($name, $storeUrl, $store->affiliate_url);
         $parts[] = $this->sectionFaq($name, $faqs, $storeUrl);
 
         return [
@@ -421,8 +611,8 @@ final class AffiliateImportContentBuilder
         $parts[] = $this->sectionBestSellers($name, $offers, $monthYear, $storeUrl);
         $parts[] = $this->sectionComparison($name, $category);
         $parts[] = $this->sectionShopperFeedback($name, $offers, $metaDescription);
-        $parts[] = $this->sectionCurrentOffers($name, $offers, $storeUrl, $monthYear);
-        $parts[] = $this->sectionHowToSave($name, $storeUrl);
+        $parts[] = $this->sectionCurrentOffers($name, $offers, $storeUrl, $monthYear, $store->affiliate_url);
+        $parts[] = $this->sectionHowToSave($name, $storeUrl, $store->affiliate_url);
         $parts[] = $this->sectionFaq($name, $merchantFaqs, $storeUrl);
 
         $parts[] = '<h2>Final Thoughts</h2>';
@@ -652,7 +842,7 @@ final class AffiliateImportContentBuilder
     /**
      * @param  array<int, array{code: ?string, title: string, description: ?string, type: string}>  $offers
      */
-    private function sectionCurrentOffers(string $name, array $offers, string $storeUrl, string $monthYear): string
+    private function sectionCurrentOffers(string $name, array $offers, string $storeUrl, string $monthYear, ?string $affiliateUrl = null): string
     {
         $parts = [];
         $parts[] = '<h2>Current ' . e($name) . ' Coupon Codes &amp; Deals (' . e($monthYear) . ')</h2>';
@@ -674,15 +864,24 @@ final class AffiliateImportContentBuilder
 
         $parts[] = '<p><a href="' . e($storeUrl) . '">View all ' . e($name) . ' offers →</a></p>';
 
+        if (filled($affiliateUrl)) {
+            $parts[] = '<p><a href="' . e($affiliateUrl) . '" rel="nofollow sponsored">Shop at ' . e($name) . ' with our affiliate link →</a></p>';
+        }
+
         return implode("\n", $parts);
     }
 
-    private function sectionHowToSave(string $name, string $storeUrl): string
+    private function sectionHowToSave(string $name, string $storeUrl, ?string $affiliateUrl = null): string
     {
         $parts = [];
         $parts[] = '<h2>How to Maximize Savings at ' . e($name) . '</h2>';
         $parts[] = '<ol>';
         $parts[] = '<li>Start on our <a href="' . e($storeUrl) . '">' . e($name) . ' deals page</a> to see coupon vs automatic offers.</li>';
+
+        if (filled($affiliateUrl)) {
+            $parts[] = '<li>Use our <a href="' . e($affiliateUrl) . '" rel="nofollow sponsored">affiliate shop link</a> so your order is tracked through ' . e(config('site.name')) . '.</li>';
+        }
+
         $parts[] = '<li>Copy the promo code before you open the merchant site if a code is required.</li>';
         $parts[] = '<li>Check minimum spend rules, excluded categories, and expiration dates on the merchant checkout page.</li>';
         $parts[] = '<li>Compare the final total with and without the code — some sitewide sales cannot stack with additional coupons.</li>';

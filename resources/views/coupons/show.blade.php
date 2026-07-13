@@ -44,7 +44,7 @@
                 </div>
             </div>
         @endif
-        <div class="badge-lg">{{ $coupon->discountLabel() }}</div>
+        <div class="badge-lg">{{ $coupon->discountLabelWithStore() }}</div>
         <h1>{{ $coupon->title }}</h1>
         <p class="coupon-detail-meta">
             @if($coupon->store?->category)

@@ -9,6 +9,10 @@ final class SiteBranding
 {
     private const LOGO_KEY = 'site_logo';
 
+    private const NAME_KEY = 'site_display_name';
+
+    private const TAGLINE_KEY = 'site_display_tagline';
+
     private const SOCIAL_KEY = 'site_social_links';
 
     /** @var array<string, array{label: string, placeholder: string}> */
@@ -59,6 +63,45 @@ final class SiteBranding
         }
 
         return PublicImage::url($path);
+    }
+
+    public static function customName(): ?string
+    {
+        $value = trim((string) SiteSetting::get(self::NAME_KEY, ''));
+
+        return $value !== '' ? $value : null;
+    }
+
+    public static function customTagline(): ?string
+    {
+        $value = trim((string) SiteSetting::get(self::TAGLINE_KEY, ''));
+
+        return $value !== '' ? $value : null;
+    }
+
+    public static function hasCustomBrandText(): bool
+    {
+        return self::customName() !== null || self::customTagline() !== null;
+    }
+
+    public static function resolvedName(): string
+    {
+        return self::customName() ?? (string) config('site.name');
+    }
+
+    public static function resolvedTagline(): string
+    {
+        return self::customTagline() ?? (string) config('site.tagline');
+    }
+
+    public static function setCustomName(?string $name): void
+    {
+        SiteSetting::set(self::NAME_KEY, trim((string) $name));
+    }
+
+    public static function setCustomTagline(?string $tagline): void
+    {
+        SiteSetting::set(self::TAGLINE_KEY, trim((string) $tagline));
     }
 
     /**

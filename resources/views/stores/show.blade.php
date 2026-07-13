@@ -42,11 +42,6 @@
             <div>
                 <h1>{{ $store->name }}</h1>
                 <span class="store-page-verified">Coupons listed on {{ config('site.name') }}</span>
-                @if($store->publicWebsiteLabel() && $store->shopUrl())
-                    <p class="store-page-website">
-                        <a href="{{ $store->shopUrl() }}" target="_blank" rel="noopener sponsored">{{ $store->publicWebsiteLabel() }}</a>
-                    </p>
-                @endif
             </div>
             @include('partials.social-share', [
                 'url' => route('stores.show', $store->slug),

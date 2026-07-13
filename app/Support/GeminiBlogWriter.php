@@ -20,12 +20,56 @@ final class GeminiBlogWriter
      *     store_name: string,
      *     category_name: ?string,
      *     store_slug: string,
+     *     affiliate_url: ?string,
      *     offers: array<int, array{code: ?string, title: string, description: ?string, type: string}>,
      *     merchant: array<string, mixed>
      * }  $context
      * @return array{title: string, excerpt: string, meta_title: string, meta_description: string, content: string, source: string}|null
      */
     public function generate(array $context): ?array
+    {
+        $parsed = $this->requestJson($this->buildPrompt($context), 'Gemini blog generation');
+
+        if ($parsed === null) {
+            return null;
+        }
+
+        $blog = $this->normalizeOutput($parsed);
+
+        if ($blog === null) {
+            return null;
+        }
+
+        $blog['source'] = 'gemini';
+
+        return $blog;
+    }
+
+    /**
+     * @param  array{
+     *     store_name: string,
+     *     category_name: ?string,
+     *     store_slug: string,
+     *     affiliate_url: ?string,
+     *     offers: array<int, array{code: ?string, title: string, description: ?string, type: string}>,
+     *     merchant: array<string, mixed>
+     * }  $context
+     */
+    public function generateStoreDescription(array $context): ?string
+    {
+        $parsed = $this->requestJson($this->buildStoreDescriptionPrompt($context), 'Gemini store description generation');
+
+        if ($parsed === null) {
+            return null;
+        }
+
+        $content = trim((string) ($parsed['content'] ?? ''));
+
+        return $content !== '' ? $content : null;
+    }
+
+    /** @return array<string, mixed>|null */
+    private function requestJson(string $prompt, string $logContext): ?array
     {
         if (! $this->isEnabled()) {
             return null;
@@ -34,7 +78,6 @@ final class GeminiBlogWriter
         $apiKey = SiteIntegrations::geminiApiKey();
         $model = (string) config('ai.gemini.model', 'gemini-2.0-flash');
         $timeout = (int) config('ai.gemini.timeout', 90);
-        $prompt = $this->buildPrompt($context);
 
         try {
             $response = Http::timeout($timeout)
@@ -57,7 +100,7 @@ final class GeminiBlogWriter
                 );
 
             if (! $response->successful()) {
-                Log::warning('Gemini blog generation failed', [
+                Log::warning("{$logContext} failed", [
                     'status' => $response->status(),
                     'body' => Str::limit($response->body(), 500),
                 ]);
@@ -73,21 +116,9 @@ final class GeminiBlogWriter
 
             $parsed = json_decode($text, true);
 
-            if (! is_array($parsed)) {
-                return null;
-            }
-
-            $blog = $this->normalizeOutput($parsed);
-
-            if ($blog === null) {
-                return null;
-            }
-
-            $blog['source'] = 'gemini';
-
-            return $blog;
+            return is_array($parsed) ? $parsed : null;
         } catch (\Throwable $exception) {
-            Log::warning('Gemini blog generation exception', [
+            Log::warning("{$logContext} exception", [
                 'message' => $exception->getMessage(),
             ]);
 
@@ -100,6 +131,7 @@ final class GeminiBlogWriter
      *     store_name: string,
      *     category_name: ?string,
      *     store_slug: string,
+     *     affiliate_url: ?string,
      *     offers: array<int, array{code: ?string, title: string, description: ?string, type: string}>,
      *     merchant: array<string, mixed>
      * }  $context
@@ -111,6 +143,7 @@ final class GeminiBlogWriter
         $storeName = $context['store_name'];
         $category = $context['category_name'] ?? 'online retail';
         $storeUrl = url('/stores/' . $context['store_slug']);
+        $affiliateUrl = filled($context['affiliate_url'] ?? null) ? (string) $context['affiliate_url'] : null;
         $merchant = $context['merchant'];
         $products = is_array($merchant['products'] ?? null) ? $merchant['products'] : [];
         $faqs = is_array($merchant['faqs'] ?? null) ? $merchant['faqs'] : [];
@@ -121,6 +154,7 @@ final class GeminiBlogWriter
             'month_year' => $monthYear,
             'store_name' => $storeName,
             'store_url' => $storeUrl,
+            'affiliate_url' => $affiliateUrl,
             'category' => $category,
             'domain' => $merchant['domain'] ?? null,
             'meta_description' => $merchant['meta_description'] ?? null,
@@ -153,7 +187,8 @@ Article rules:
 - If 1 product: product spotlight/review style.
 - If 0 products: store/brand review with category context.
 - Include sections: intro, product comparison or highlights, pros/cons, how to save with coupons, FAQ, final verdict.
-- Mention {$siteName} naturally and link to the store deals page: {$storeUrl}
+- Mention {$siteName} naturally and link to our store deals page (store_url) when sending readers to browse coupons on our site.
+- When affiliate_url is provided in the JSON, include at least 2 in-article links to affiliate_url with rel="nofollow sponsored" and target="_blank" when directing readers to shop at the merchant. Do not use store_url for outbound shopping CTAs when affiliate_url exists.
 - Use merchant FAQs when provided; add 2–3 generic coupon-shopping FAQs if needed.
 - List every offer from the JSON with codes in <code> tags when type is coupon.
 - HTML only in content: <h2>, <h3>, <p>, <ul>, <li>, <ol>, <table>, <strong>, <em>, <a>, <code>. No <h1>, no markdown.
@@ -166,6 +201,77 @@ Return valid JSON with exactly these keys:
   "meta_title": "string, max 70 chars",
   "meta_description": "string, max 160 chars",
   "content": "string, full HTML article body"
+}
+PROMPT;
+    }
+
+    /**
+     * @param  array{
+     *     store_name: string,
+     *     category_name: ?string,
+     *     store_slug: string,
+     *     affiliate_url: ?string,
+     *     offers: array<int, array{code: ?string, title: string, description: ?string, type: string}>,
+     *     merchant: array<string, mixed>
+     * }  $context
+     */
+    private function buildStoreDescriptionPrompt(array $context): string
+    {
+        $siteName = (string) config('site.name');
+        $monthYear = now()->format('F Y');
+        $storeName = $context['store_name'];
+        $category = $context['category_name'] ?? 'online retail';
+        $storeUrl = url('/stores/'.$context['store_slug']);
+        $affiliateUrl = filled($context['affiliate_url'] ?? null) ? (string) $context['affiliate_url'] : null;
+        $merchant = $context['merchant'];
+        $products = is_array($merchant['products'] ?? null) ? $merchant['products'] : [];
+        $faqs = is_array($merchant['faqs'] ?? null) ? $merchant['faqs'] : [];
+        $offers = $context['offers'];
+
+        $payload = [
+            'site_name' => $siteName,
+            'month_year' => $monthYear,
+            'store_name' => $storeName,
+            'store_url' => $storeUrl,
+            'affiliate_url' => $affiliateUrl,
+            'category' => $category,
+            'domain' => $merchant['domain'] ?? null,
+            'meta_description' => $merchant['meta_description'] ?? null,
+            'page_title' => $merchant['page_title'] ?? null,
+            'products' => $products,
+            'faqs' => $faqs,
+            'offers' => collect($offers)->map(fn (array $offer) => [
+                'title' => $offer['title'],
+                'code' => $offer['code'] ?? null,
+                'type' => $offer['type'] ?? (filled($offer['code'] ?? null) ? 'coupon' : 'discount'),
+                'description' => $offer['description'] ?? null,
+            ])->values()->all(),
+        ];
+
+        $factsJson = json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT);
+
+        return <<<PROMPT
+You are an expert U.S. e-commerce SEO copywriter for {$siteName}.
+
+Write ONE long-form English store description for a retailer profile page using ONLY the facts in the JSON below. Do not invent product specs, prices, reviews, or coupon codes that are not in the data.
+
+JSON facts:
+{$factsJson}
+
+Description rules:
+- Audience: U.S. online shoppers researching the brand before they buy.
+- Tone: helpful, specific, trustworthy — not hype or fake testimonials.
+- Length: 950–1,100 words in HTML (minimum 1,000 words).
+- Include sections: brand overview, what shoppers buy here, key advantages, how to save with coupons, shopping tips, FAQ, summary.
+- Mention {$siteName} naturally and link to store_url when pointing readers to browse coupons on our site.
+- When affiliate_url is provided, include at least 2 natural in-text links to affiliate_url with rel="nofollow sponsored" and target="_blank" when directing readers to shop at the merchant.
+- List current offers from the JSON when relevant; use <code> tags for coupon codes.
+- HTML only: <h2>, <h3>, <p>, <ul>, <li>, <ol>, <strong>, <em>, <a>, <code>. No <h1>, no markdown.
+- Do not claim star ratings or verified customer reviews unless explicitly in the JSON.
+
+Return valid JSON with exactly this key:
+{
+  "content": "string, full HTML store description body"
 }
 PROMPT;
     }

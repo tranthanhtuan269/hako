@@ -28,13 +28,27 @@ class AppServiceProvider extends ServiceProvider
         try {
             $siteLogoUrl = SiteBranding::logoUrl();
             $siteSocialLinks = SiteBranding::socialLinks();
+            $siteBrandShowText = SiteBranding::hasCustomBrandText();
+            $siteName = SiteBranding::resolvedName();
+            $siteTagline = SiteBranding::resolvedTagline();
+            $siteDisplayName = SiteBranding::customName();
+            $siteDisplayTagline = SiteBranding::customTagline();
         } catch (\Throwable) {
             $siteLogoUrl = null;
             $siteSocialLinks = [];
+            $siteBrandShowText = false;
+            $siteName = config('site.name');
+            $siteTagline = config('site.tagline');
+            $siteDisplayName = null;
+            $siteDisplayTagline = null;
         }
 
         View::share([
-            'siteName' => config('site.name'),
+            'siteName' => $siteName,
+            'siteTagline' => $siteTagline,
+            'siteBrandShowText' => $siteBrandShowText,
+            'siteDisplayName' => $siteDisplayName,
+            'siteDisplayTagline' => $siteDisplayTagline,
             'siteUrl' => rtrim(config('site.url'), '/'),
             'siteDomain' => config('site.domain'),
             'contactEmail' => config('site.contact_email'),

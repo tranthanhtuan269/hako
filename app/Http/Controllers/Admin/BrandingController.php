@@ -14,6 +14,8 @@ class BrandingController extends Controller
     {
         return view('admin.branding.index', [
             'logoUrl' => SiteBranding::logoUrl(),
+            'customName' => SiteBranding::customName(),
+            'customTagline' => SiteBranding::customTagline(),
             'socialUrls' => SiteBranding::socialUrls(),
             'networks' => SiteBranding::networks(),
         ]);
@@ -27,6 +29,8 @@ class BrandingController extends Controller
             'logo_file' => ['nullable', 'image', 'max:2048'],
             'logo_url' => ['nullable', 'url', 'max:500'],
             'remove_logo' => ['nullable', 'boolean'],
+            'site_name' => ['nullable', 'string', 'max:120'],
+            'site_tagline' => ['nullable', 'string', 'max:200'],
         ];
 
         foreach ($networkKeys as $key) {
@@ -44,9 +48,11 @@ class BrandingController extends Controller
         }
 
         SiteBranding::setSocialUrls($validated['social'] ?? []);
+        SiteBranding::setCustomName($validated['site_name'] ?? '');
+        SiteBranding::setCustomTagline($validated['site_tagline'] ?? '');
 
         return redirect()
             ->route('admin.branding.index')
-            ->with('success', 'Site logo and social links saved.');
+            ->with('success', 'Site logo, name, slogan, and social links saved.');
     }
 }
