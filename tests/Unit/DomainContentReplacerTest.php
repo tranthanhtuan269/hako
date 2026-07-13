@@ -18,15 +18,26 @@ class DomainContentReplacerTest extends TestCase
         $this->assertStringContainsString('http://www.new.example.com/sale', $result['text']);
     }
 
+    public function test_replace_updates_plain_text_domain_mentions(): void
+    {
+        $text = 'Shop deals on old.example.com and www.old.example.com today.';
+
+        $result = DomainContentReplacer::replace($text, 'old.example.com', 'new.example.com');
+
+        $this->assertSame(2, $result['count']);
+        $this->assertSame('Shop deals on new.example.com and www.new.example.com today.', $result['text']);
+    }
+
     public function test_replace_preserves_unrelated_domains(): void
     {
-        $text = 'Visit https://amazon.com and https://old.example.com/page';
+        $text = 'Visit https://amazon.com and https://old.example.com/page plus notold.example.com';
 
         $result = DomainContentReplacer::replace($text, 'old.example.com', 'new.example.com');
 
         $this->assertSame(1, $result['count']);
         $this->assertStringContainsString('https://amazon.com', $result['text']);
         $this->assertStringContainsString('https://new.example.com/page', $result['text']);
+        $this->assertStringContainsString('notold.example.com', $result['text']);
     }
 
     public function test_normalize_host_strips_protocol_and_www(): void

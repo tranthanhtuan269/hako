@@ -6,6 +6,7 @@
     $siteConfigOpen = request()->routeIs(
         'admin.branding.*',
         'admin.integrations.*',
+        'admin.domain-change.*',
         'admin.account.*',
         'admin.tracking.*',
         'admin.themes.*',
@@ -49,6 +50,8 @@
                     @class(['sidebar-nav-sublink', 'active' => request()->routeIs('admin.branding.*')])>Logo &amp; Social</a>
                 <a href="{{ route('admin.integrations.index') }}"
                     @class(['sidebar-nav-sublink', 'active' => request()->routeIs('admin.integrations.*')])>Integrations</a>
+                <a href="{{ route('admin.domain-change.index') }}"
+                    @class(['sidebar-nav-sublink', 'active' => request()->routeIs('admin.domain-change.*')])>Change Domain</a>
                 <a href="{{ route('admin.account.edit') }}"
                     @class(['sidebar-nav-sublink', 'active' => request()->routeIs('admin.account.*')])>Account</a>
                 <a href="{{ route('admin.tracking.index') }}"
@@ -107,6 +110,8 @@
                         @class(['sidebar-nav-sublink', 'active' => request()->routeIs('admin.branding.*')])>Logo &amp; Social</a>
                     <a href="{{ route('admin.integrations.index') }}"
                         @class(['sidebar-nav-sublink', 'active' => request()->routeIs('admin.integrations.*')])>Integrations</a>
+                    <a href="{{ route('admin.domain-change.index') }}"
+                        @class(['sidebar-nav-sublink', 'active' => request()->routeIs('admin.domain-change.*')])>Change Domain</a>
                     <a href="{{ route('admin.tracking.index') }}"
                         @class(['sidebar-nav-sublink', 'active' => request()->routeIs('admin.tracking.*')])>Tracking Scripts</a>
                     <a href="{{ route('admin.themes.index') }}"

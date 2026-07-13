@@ -5,6 +5,8 @@ namespace App\Support;
 final class DomainContentReplacer
 {
     /**
+     * Replace the old domain everywhere in text: full URLs and plain mentions.
+     *
      * @return array{text: string, count: int}
      */
     public static function replace(string $text, string $oldDomain, string $newDomain): array
@@ -12,20 +14,35 @@ final class DomainContentReplacer
         $oldHost = self::normalizeHost($oldDomain);
         $newHost = self::normalizeHost($newDomain);
 
-        if ($oldHost === '' || $newHost === '' || $oldHost === $newHost) {
+        if ($oldHost === '' || $newHost === '' || $oldHost === $newHost || $text === '') {
             return ['text' => $text, 'count' => 0];
         }
 
         $count = 0;
-        $pattern = '~(https?://|//)(www\.)?'.preg_quote($oldHost, '~').'(?=/|\?|\#|:|\s|"|\'|<|>|$)~i';
+        $quoted = preg_quote($oldHost, '~');
 
+        // 1) URL forms: https://old.com, http://www.old.com, //old.com
+        $urlPattern = '~(https?://|//)(www\.)?'.$quoted.'(?=/|\?|\#|:|\s|"|\'|<|>|$)~i';
         $text = preg_replace_callback(
-            $pattern,
+            $urlPattern,
             static function (array $matches) use ($newHost, &$count): string {
                 $count++;
                 $www = ! empty($matches[2]) ? 'www.' : '';
 
                 return $matches[1].$www.$newHost;
+            },
+            $text
+        ) ?? $text;
+
+        // 2) Bare domain mentions (non-link text), e.g. "Visit old.com today"
+        $barePattern = '~(?<![a-z0-9.-])(www\.)?'.$quoted.'(?![a-z0-9.-])~i';
+        $text = preg_replace_callback(
+            $barePattern,
+            static function (array $matches) use ($newHost, &$count): string {
+                $count++;
+                $www = ! empty($matches[1]) ? 'www.' : '';
+
+                return $www.$newHost;
             },
             $text
         ) ?? $text;
@@ -52,7 +69,7 @@ final class DomainContentReplacer
             $host = preg_replace('#[?#].*$#', '', $host);
         }
 
-        $host = strtolower(trim($host, " \t\n\r\0\x0B./"));
+        $host = strtolower(trim((string) $host, " \t\n\r\0\x0B./"));
 
         return preg_replace('/^www\./', '', $host) ?? $host;
     }

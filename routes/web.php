@@ -102,6 +102,7 @@ Route::middleware(['auth', 'noindex'])->prefix('dashboard')->name('member.')->gr
 
 Route::middleware(['auth', 'admin', 'noindex'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('domain-change', [DomainChangeController::class, 'index'])->name('domain-change.index');
     Route::post('domain-change', [DomainChangeController::class, 'store'])->name('domain-change.store');
     Route::get('account', [AccountController::class, 'edit'])->name('account.edit');
     Route::put('account/profile', [AccountController::class, 'updateProfile'])->name('account.profile');
