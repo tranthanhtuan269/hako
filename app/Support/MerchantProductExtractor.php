@@ -20,14 +20,14 @@ final class MerchantProductExtractor
         $products = array_merge($products, $this->fromJsonLd($html, $baseUrl));
         $products = array_merge($products, $this->fromProductLinks($html, $baseUrl));
 
-        return $this->uniqueTake($products, 3);
+        return $this->uniqueTake($products, 5);
     }
 
     /**
      * @param  array<int, array{name: string, description: ?string, price: ?string, image: ?string, url: ?string}>  $products
      * @return array<int, array{name: string, description: ?string, price: ?string, image: ?string, url: ?string}>
      */
-    public function uniqueTake(array $products, int $limit = 3): array
+    public function uniqueTake(array $products, int $limit = 5): array
     {
         $seen = [];
         $unique = [];
@@ -154,6 +154,18 @@ final class MerchantProductExtractor
         }
 
         foreach ($candidates as $url) {
+            $url = preg_replace('#^http://#i', 'https://', $url) ?: $url;
+
+            if ($this->looksLikeProductImageUrl($url)) {
+                return $url;
+            }
+        }
+
+        // Shopify / theme JSON blobs often expose featured_image without og tags in some themes.
+        if (preg_match('/"featured_image"\s*:\s*"(\\/[^"]+)"/i', $html, $match)
+            || preg_match('/"featured_image"\s*:\s*"(https?:\\/\\/[^"]+)"/i', $html, $match)
+            || preg_match('/"src"\s*:\s*"(https?:\\/\\/[^"]+cdn\\/shop\\/[^"]+\.(?:jpg|jpeg|png|webp)[^"]*)"/i', $html, $match)) {
+            $url = $this->absolutizeUrl($baseUrl, stripcslashes($match[1]));
             $url = preg_replace('#^http://#i', 'https://', $url) ?: $url;
 
             if ($this->looksLikeProductImageUrl($url)) {
@@ -357,7 +369,31 @@ final class MerchantProductExtractor
 
         foreach ($matches as $match) {
             $href = html_entity_decode($match[1]);
-            $text = HtmlCleaner::textFromHtml($match[2]);
+            $inner = $match[2];
+            $text = HtmlCleaner::textFromHtml($inner);
+            $image = null;
+            $alt = null;
+
+            if (preg_match('/<img[^>]+>/i', $inner, $imgTag)) {
+                if (preg_match('/(?:src|data-src)=["\']([^"\']+)["\']/i', $imgTag[0], $srcMatch)) {
+                    $src = html_entity_decode($srcMatch[1]);
+                    if (str_contains($src, ' ')) {
+                        $src = trim(explode(',', explode(' ', $src)[0])[0]);
+                    }
+                    $candidate = $this->absolutizeUrl($baseUrl, $src);
+                    if ($this->looksLikeProductImageUrl($candidate)) {
+                        $image = preg_replace('#^http://#i', 'https://', $candidate) ?: $candidate;
+                    }
+                }
+
+                if (preg_match('/alt=["\']([^"\']*)["\']/i', $imgTag[0], $altMatch)) {
+                    $alt = HtmlCleaner::decodeEntities(trim($altMatch[1]));
+                }
+            }
+
+            if ($text === '' && filled($alt) && strlen($alt) >= 3) {
+                $text = $alt;
+            }
 
             if ($text === '' || strlen($text) < 3 || strlen($text) > 120) {
                 continue;
@@ -375,7 +411,7 @@ final class MerchantProductExtractor
                 'name' => $text,
                 'description' => null,
                 'price' => null,
-                'image' => null,
+                'image' => $image,
                 'url' => $this->absolutizeUrl($baseUrl, $href),
             ];
         }

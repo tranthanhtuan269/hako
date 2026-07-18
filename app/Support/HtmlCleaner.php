@@ -10,7 +10,8 @@ final class HtmlCleaner
 {
     private const ALLOWED_TAGS = [
         'p', 'br', 'strong', 'b', 'em', 'i', 'u', 'ul', 'ol', 'li',
-        'h2', 'h3', 'h4', 'h5', 'blockquote', 'a', 'img', 'div', 'span', 'hr',
+        'h2', 'h3', 'h4', 'h5', 'blockquote', 'a', 'img', 'figure', 'figcaption',
+        'div', 'span', 'hr', 'table', 'thead', 'tbody', 'tr', 'th', 'td', 'code',
     ];
 
     public static function clean(?string $html): ?string
@@ -91,7 +92,13 @@ final class HtmlCleaner
         $tag = strtolower($element->tagName);
         $allowed = match ($tag) {
             'a' => ['href', 'title', 'target', 'rel'],
-            'img' => ['src', 'alt', 'title', 'width', 'height', 'loading'],
+            'img' => ['src', 'alt', 'title', 'width', 'height', 'loading', 'class'],
+            'figure' => ['class'],
+            'figcaption' => [],
+            'table' => ['class'],
+            'th' => [],
+            'td' => [],
+            'code' => [],
             default => [],
         };
 

@@ -13,7 +13,7 @@ final class MerchantProductEnricher
      * @param  callable(string): ?string  $fetchHtml
      * @return array<int, array{name: string, description: ?string, price: ?string, image: ?string, url: ?string, features: list<string>}>
      */
-    public function enrich(array $products, callable $fetchHtml, int $maxFetches = 3): array
+    public function enrich(array $products, callable $fetchHtml, int $maxFetches = 5): array
     {
         $enriched = [];
         $fetches = 0;

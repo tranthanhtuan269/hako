@@ -161,6 +161,7 @@ final class GeminiBlogWriter
             'page_title' => $merchant['page_title'] ?? null,
             'product_focus' => (bool) ($merchant['product_focus'] ?? false),
             'banner' => $merchant['banner'] ?? null,
+            'logo' => $merchant['logo'] ?? null,
             'products' => $products,
             'faqs' => $faqs,
             'offers' => collect($offers)->map(fn (array $offer) => [
@@ -180,32 +181,46 @@ final class GeminiBlogWriter
 - Title and excerpt must center on that product name, not a brand-wide comparison.
 FOCUS
             : <<<FOCUS
-- If 2+ products: comparison article with a <table class="comparison-table"> (Product, Price, Best for).
-- If 1 product: product spotlight/review style.
-- If 0 products: store/brand review with category context.
+- If 2+ products: comparison article with a store at-a-glance <table class="comparison-table"> plus a product comparison table (Feature | each product).
+- If 1 product: product spotlight/review style with an at-a-glance Feature | brand table and a product specs table when features/price exist.
+- If 0 products: store/brand review grounded in offers, meta_description, FAQs, and domain — still include an at-a-glance Feature | brand table.
 FOCUS;
+        $antiAiRules = $this->antiGenericAiWritingRules($storeName);
 
         return <<<PROMPT
-You are an expert U.S. e-commerce SEO copywriter for {$siteName}.
+You are a senior deal editor at {$siteName} writing for U.S. shoppers. Write like a human researcher summarizing THIS merchant's public facts — not like a marketing brochure.
 
-Write ONE long-form English blog article using ONLY the facts in the JSON below. Do not invent product specs, prices, reviews, or coupon codes that are not in the data.
+Write ONE English blog article using ONLY the facts in the JSON below. Do not invent product specs, prices, reviews, awards, founding stories, or coupon codes that are not in the data.
 
 JSON facts:
 {$factsJson}
 
+{$antiAiRules}
+
 Article rules:
-- Audience: U.S. online shoppers looking for deals and buying advice.
-- Tone: helpful, specific, trustworthy — not hype or fake testimonials.
-- Length: 1,400–2,200 words in HTML.
+- Audience: U.S. online shoppers comparing products and coupons before checkout.
+- Length: 1,000–1,600 words preferred. Prefer a shorter, specific article over padded filler. Never invent content just to hit a word count.
 {$productFocusRules}
-- Include sections: intro, product comparison or highlights, pros/cons, how to save with coupons, FAQ, final verdict.
-- If banner URL is provided, place it as the FIRST element in content: <p><img src="BANNER_URL" alt="{$storeName} store banner" loading="lazy"></p>
-- For each product that has an image URL, include <p><img src="IMAGE_URL" alt="PRODUCT_NAME" loading="lazy"></p> near that product's section to build trust. Use only image URLs from the JSON — never invent image URLs.
+- Include sections: intro, Why Trust Us (EEAT), at-a-glance comparison table, product comparison or highlights, pros/cons, how to save with coupons, FAQ, final verdict.
+- REQUIRED: include at least one HTML <table class="comparison-table">. First table should be "{$storeName} at a glance" with columns Feature | {$storeName}. Example rows grounded in JSON only: Category, Wallet/Bags/Belt/Leather (Yes only if product names/descriptions support it), Featured products, Sample listed price, Offers tracked, Shipping, Returns. If shipping/returns are unknown, write "Confirm on merchant site" — never invent policies.
+- If 2+ products exist, also include a second product comparison table (Feature | Product A | Product B …) with listed price and best-for columns using only JSON facts.
+- Place a <h2>Why Trust Us</h2> section near the top (right after the intro). Example tone: "We researched {$storeName} products, customer reviews, pricing and verified coupon availability before publishing this guide." Explain product research, coupon verification, and transparent affiliate disclosure for {$siteName}. Do not invent lab tests, awards, or fake reviewer credentials.
+- If banner URL is provided, place it FIRST: <figure class="article-media article-media--banner"><img src="BANNER_URL" alt="{$storeName} official store banner" loading="lazy"><figcaption>{$storeName} store banner</figcaption></figure>
+- If logo URL is provided, place it right after the banner: <figure class="article-media article-media--logo"><img src="LOGO_URL" alt="{$storeName} brand logo" width="160" height="160" loading="lazy"><figcaption>{$storeName} logo</figcaption></figure>
+- For each product that has an image URL, place a product photo under that product heading: <figure class="article-media article-media--product"><img src="IMAGE_URL" alt="PRODUCT_NAME product photo from {$storeName}" loading="lazy"><figcaption>PRODUCT_NAME</figcaption></figure>. Use only image URLs from the JSON — never invent image URLs. Prefer real product photos (wallet, bag, backpack, device, etc.) over decorative graphics.
+- Quote or paraphrase product descriptions, features, prices, offer titles/codes, and merchant FAQs from the JSON. Name products and codes explicitly.
 - Mention {$siteName} naturally and link to our store deals page (store_url) when sending readers to browse coupons on our site.
 - When affiliate_url is provided in the JSON, include at least 2 in-article links to affiliate_url with rel="nofollow sponsored" and target="_blank" when directing readers to shop at the merchant. Do not use store_url for outbound shopping CTAs when affiliate_url exists.
-- Use merchant FAQs when provided; add 2–3 generic coupon-shopping FAQs if needed.
+- Use merchant FAQs when provided. Also include high-intent search FAQs shoppers type into Google, using ONLY facts from the JSON (or honest "not stated / confirm on merchant site" when unknown). Required question patterns:
+  - "Is {$storeName} genuine leather?" (only if leather appears in product/meta data; otherwise skip)
+  - "Where is {$storeName} made?"
+  - "Does {$storeName} ship internationally?"
+  - "Is {$storeName} worth buying?"
+  - "Does {$storeName} offer student discounts?"
+  - "How often does {$storeName} release coupon codes?"
+  Plus practical coupon FAQs (promo code required?, code not working?). Do not invent materials, origin, shipping policy, or student discounts.
 - List every offer from the JSON with codes in <code> tags when type is coupon.
-- HTML only in content: <h2>, <h3>, <p>, <ul>, <li>, <ol>, <table>, <strong>, <em>, <a>, <code>, <img>. No <h1>, no markdown.
+- HTML only in content: <h2>, <h3>, <p>, <ul>, <li>, <ol>, <table>, <strong>, <em>, <a>, <code>, <img>, <figure>, <figcaption>. No <h1>, no markdown.
 - Do not claim star ratings or verified customer reviews unless explicitly in the JSON.
 
 Return valid JSON with exactly these keys:
@@ -254,6 +269,7 @@ PROMPT;
             'page_title' => $merchant['page_title'] ?? null,
             'product_focus' => (bool) ($merchant['product_focus'] ?? false),
             'banner' => $merchant['banner'] ?? null,
+            'logo' => $merchant['logo'] ?? null,
             'products' => ! empty($merchant['product_focus']) ? array_slice($products, 0, 1) : $products,
             'faqs' => $faqs,
             'offers' => collect($offers)->map(fn (array $offer) => [
@@ -268,26 +284,41 @@ PROMPT;
         $focusNote = ! empty($merchant['product_focus'])
             ? "- product_focus is true: center the description on the single linked product (not the whole marketplace catalog).\n"
             : '';
+        $antiAiRules = $this->antiGenericAiWritingRules($storeName);
 
         return <<<PROMPT
-You are an expert U.S. e-commerce SEO copywriter for {$siteName}.
+You are a senior deal editor at {$siteName} writing a retailer profile for U.S. shoppers. Write like a human researcher — specific, useful, and grounded in the JSON facts.
 
-Write ONE long-form English store description for a retailer profile page using ONLY the facts in the JSON below. Do not invent product specs, prices, reviews, or coupon codes that are not in the data.
+Write ONE English store description using ONLY the facts in the JSON below. Do not invent product specs, prices, reviews, awards, founding stories, or coupon codes that are not in the data.
 
 JSON facts:
 {$factsJson}
 
+{$antiAiRules}
+
 Description rules:
-- Audience: U.S. online shoppers researching the brand before they buy.
-- Tone: helpful, specific, trustworthy — not hype or fake testimonials.
-- Length: 950–1,100 words in HTML (minimum 1,000 words).
-{$focusNote}- Include sections: brand overview, what shoppers buy here (with product headings when products exist), key advantages, how to save with coupons, shopping tips, FAQ, summary.
-- If banner URL is provided, place it as the FIRST element in content: <p><img src="BANNER_URL" alt="{$storeName} store banner" loading="lazy"></p>
-- When products are provided, create an <h2> for featured products and an <h3> for EACH product name. Immediately under each product <h3>, include <p><img src="IMAGE_URL" alt="PRODUCT_NAME" loading="lazy"></p> when that product has an image URL. Use only image URLs from the JSON — never invent image URLs.
+- Audience: U.S. online shoppers researching this merchant before they buy.
+- Length: 700–1,000 words preferred. Prefer specific, useful copy over padded filler. Never invent content just to hit a word count.
+{$focusNote}- Include sections: Why Trust Us (EEAT), at-a-glance comparison table, what this store sells (with product headings when products exist), current savings, shopping tips tied to the listed offers, FAQ, short summary.
+- REQUIRED: include at least one HTML <table class="comparison-table"> titled like "{$storeName} at a glance" with columns Feature | {$storeName}. Rows must be grounded in JSON (Category, product types such as Wallet/Bags/Belt only if supported by product names, Featured products, Sample listed price, Offers tracked, Shipping, Returns). Unknown shipping/returns => "Confirm on merchant site".
+- If 2+ products exist, also include a product comparison table (Feature | each product).
+- Place a <h2>Why Trust Us</h2> section near the top (right after the intro). Example tone: "We researched {$storeName} products, customer reviews, pricing and verified coupon availability before publishing this guide." Cover product research, coupon verification, and transparent affiliate disclosure for {$siteName}. Do not invent lab tests, awards, or fake reviewer credentials.
+- If banner URL is provided, place it FIRST: <figure class="article-media article-media--banner"><img src="BANNER_URL" alt="{$storeName} official store banner" loading="lazy"><figcaption>{$storeName} store banner</figcaption></figure>
+- If logo URL is provided, place it right after the banner: <figure class="article-media article-media--logo"><img src="LOGO_URL" alt="{$storeName} brand logo" width="160" height="160" loading="lazy"><figcaption>{$storeName} logo</figcaption></figure>
+- When products are provided, create an <h2> for featured products and an <h3> for EACH product name. Immediately under each product <h3>, include <figure class="article-media article-media--product"><img src="IMAGE_URL" alt="PRODUCT_NAME product photo from {$storeName}" loading="lazy"><figcaption>PRODUCT_NAME</figcaption></figure> when that product has an image URL. Use only image URLs from the JSON — never invent image URLs.
+- Include a strong FAQ section with high-intent search questions shoppers type into Google. Required patterns when relevant to the brand/category:
+  - "Is {$storeName} genuine leather?" (include only if leather appears in JSON; otherwise skip)
+  - "Where is {$storeName} made?"
+  - "Does {$storeName} ship internationally?"
+  - "Is {$storeName} worth buying?"
+  - "Does {$storeName} offer student discounts?"
+  - "How often does {$storeName} release coupon codes?"
+  Answer from JSON facts or say the detail is not stated publicly and should be confirmed on the merchant site — never invent origin, shipping coverage, or student discounts.
+- Ground every major section in named products, prices, features, offer titles/codes, meta_description, or FAQs from the JSON.
 - Mention {$siteName} naturally and link to store_url when pointing readers to browse coupons on our site.
 - When affiliate_url is provided, include at least 2 natural in-text links to affiliate_url with rel="nofollow sponsored" and target="_blank" when directing readers to shop at the merchant.
 - List current offers from the JSON when relevant; use <code> tags for coupon codes.
-- HTML only: <h2>, <h3>, <p>, <ul>, <li>, <ol>, <strong>, <em>, <a>, <code>, <img>. No <h1>, no markdown.
+- HTML only: <h2>, <h3>, <p>, <ul>, <li>, <ol>, <table>, <thead>, <tbody>, <tr>, <th>, <td>, <strong>, <em>, <a>, <code>, <img>, <figure>, <figcaption>. No <h1>, no markdown.
 - Do not claim star ratings or verified customer reviews unless explicitly in the JSON.
 
 Return valid JSON with exactly this key:
@@ -295,6 +326,18 @@ Return valid JSON with exactly this key:
   "content": "string, full HTML store description body"
 }
 PROMPT;
+    }
+
+    private function antiGenericAiWritingRules(string $storeName): string
+    {
+        return <<<RULES
+Anti-generic writing rules (critical for Google EEAT):
+- Do NOT write interchangeable brand fluff. Ban patterns like: "{$storeName} offers quality…", "{$storeName} focuses on craftsmanship…", "{$storeName} is known for…", "stands out for", "perfect for every occasion", "elevate your", "seamlessly", "in today's fast-paced world", "whether you're a beginner or a pro".
+- Do NOT start multiple consecutive sentences or paragraphs with "{$storeName}".
+- Every paragraph must include at least one concrete fact from the JSON (a product name, price, feature, offer title/code, FAQ answer, domain, or meta_description phrase). If a fact is missing, omit the claim instead of generalizing.
+- Prefer concrete shopping advice: which listed product fits which need, how a listed coupon/discount works, what to verify at checkout.
+- Vary sentence openings and keep prose concise. Sound like a deal site editor, not a product brochure.
+RULES;
     }
 
     /**

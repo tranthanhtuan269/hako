@@ -1942,6 +1942,32 @@ div.pagination > nav.paginator-nav .pagination {
 .store-description-content ol { margin: 0 0 1rem 1.25rem; }
 .store-description-content a { color: var(--primary); }
 .store-description-content img { max-width: 100%; height: auto; border-radius: 8px; }
+.store-description-content .article-media { margin: 1rem 0 1.25rem; }
+.store-description-content .article-media img { display: block; margin: 0; }
+.store-description-content .article-media--logo { max-width: 160px; }
+.store-description-content .article-media--logo img { width: 160px; height: auto; object-fit: contain; }
+.store-description-content .article-media figcaption {
+    margin-top: .4rem;
+    font-size: .875rem;
+    color: #64748b;
+}
+.store-description-content table.comparison-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1rem 0 1.5rem;
+    font-size: .95rem;
+}
+.store-description-content table.comparison-table th,
+.store-description-content table.comparison-table td {
+    border: 1px solid var(--border, #e5e7eb);
+    padding: .65rem .75rem;
+    text-align: left;
+    vertical-align: top;
+}
+.store-description-content table.comparison-table th {
+    background: #f8fafc;
+    font-weight: 600;
+}
 
 .social-share {
     margin: 1rem 0 1.25rem;

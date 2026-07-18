@@ -28,6 +28,37 @@ final class PublicImage
         return asset('storage/' . ltrim($path, '/'));
     }
 
+    /**
+     * Download remote <img src> URLs in HTML into local storage and rewrite src attributes.
+     */
+    public static function localizeHtmlImages(?string $html, string $directory): ?string
+    {
+        if ($html === null || trim($html) === '') {
+            return $html;
+        }
+
+        return preg_replace_callback(
+            '/(<img\b[^>]*\bsrc=["\'])([^"\']+)(["\'][^>]*>)/i',
+            function (array $matches) use ($directory): string {
+                $src = html_entity_decode($matches[2], ENT_QUOTES | ENT_HTML5);
+
+                if (! self::isRemote($src)) {
+                    return $matches[0];
+                }
+
+                $stored = self::ingestRemote($src, $directory);
+                $publicUrl = $stored ? self::url($stored) : null;
+
+                if (! $publicUrl) {
+                    return $matches[0];
+                }
+
+                return $matches[1].e($publicUrl).$matches[3];
+            },
+            $html
+        ) ?? $html;
+    }
+
     public static function isStored(?string $path): bool
     {
         return $path

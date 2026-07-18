@@ -21,6 +21,15 @@
     .article-content li { margin-bottom: .4rem; }
     .article-content a { color: var(--primary); }
     .article-content img { max-width: 100%; height: auto; border-radius: 8px; display: block; margin: .75rem 0 1rem; }
+    .article-content .article-media { margin: 1rem 0 1.25rem; }
+    .article-content .article-media img { margin: 0; }
+    .article-content .article-media--logo { max-width: 160px; }
+    .article-content .article-media--logo img { width: 160px; height: auto; object-fit: contain; }
+    .article-content .article-media figcaption {
+        margin-top: .4rem;
+        font-size: .875rem;
+        color: #64748b;
+    }
     .article-content table.comparison-table {
         width: 100%;
         border-collapse: collapse;

@@ -276,7 +276,7 @@ final class AffiliateLinkResolver
 
                 $products = $this->productExtractor->uniqueTake(
                     array_merge($products, $this->productExtractor->extract($shopHtml, $shopUrl)),
-                    3
+                    5
                 );
 
                 if (count($products) >= 2) {
@@ -287,7 +287,8 @@ final class AffiliateLinkResolver
 
         return $this->productEnricher->enrich(
             $products,
-            fn (string $url) => $this->fetchHtml($url)
+            fn (string $url) => $this->fetchHtml($url),
+            5
         );
     }
 

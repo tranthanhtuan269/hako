@@ -220,6 +220,11 @@ class ImportAffiliateController extends Controller
         }
         $storedLogo = PublicImage::ingestStoreLogo($logoUrl, $domain, $userId);
 
+        // Prefer the locally hosted logo URL inside generated article HTML.
+        if ($storedLogo && ($localLogoUrl = PublicImage::url($storedLogo))) {
+            $merchant['logo'] = $localLogoUrl;
+        }
+
         $featuredCandidate = filled($merchant['banner'] ?? null)
             ? (string) $merchant['banner']
             : (filled($merchant['products'][0]['image'] ?? null) ? (string) $merchant['products'][0]['image'] : null);
@@ -271,13 +276,16 @@ class ImportAffiliateController extends Controller
                 'website' => filled($data['website'] ?? null) ? trim($data['website']) : null,
                 'affiliate_url' => $data['affiliate_url'],
                 'description' => HtmlCleaner::clean(
-                    $contentBuilder->storeDescription(
-                        $storeName,
-                        $isUpdate ? $existingStore->slug : StoreSlug::make($storeName),
-                        $data['affiliate_url'],
-                        optional(Category::find($data['category_id']))?->name,
-                        $offers,
-                        $merchant,
+                    PublicImage::localizeHtmlImages(
+                        $contentBuilder->storeDescription(
+                            $storeName,
+                            $isUpdate ? $existingStore->slug : StoreSlug::make($storeName),
+                            $data['affiliate_url'],
+                            optional(Category::find($data['category_id']))?->name,
+                            $offers,
+                            $merchant,
+                        ),
+                        "stores/{$userId}/content"
                     )
                 ),
                 'category_id' => filled($data['category_id'] ?? null) ? $data['category_id'] : null,
@@ -320,6 +328,9 @@ class ImportAffiliateController extends Controller
             }
 
             $blog = $contentBuilder->blogPost($store->load('category'), $offers, $merchant, $preGeneratedBlog);
+            $blog['content'] = HtmlCleaner::clean(
+                PublicImage::localizeHtmlImages($blog['content'] ?? '', "blogs/{$userId}/content")
+            ) ?? ($blog['content'] ?? '');
             $postPayload = [
                 'user_id' => $userId,
                 'store_id' => $store->id,
