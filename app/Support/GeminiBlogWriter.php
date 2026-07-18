@@ -160,6 +160,7 @@ final class GeminiBlogWriter
             'meta_description' => $merchant['meta_description'] ?? null,
             'page_title' => $merchant['page_title'] ?? null,
             'product_focus' => (bool) ($merchant['product_focus'] ?? false),
+            'banner' => $merchant['banner'] ?? null,
             'products' => $products,
             'faqs' => $faqs,
             'offers' => collect($offers)->map(fn (array $offer) => [
@@ -198,11 +199,13 @@ Article rules:
 - Length: 1,400–2,200 words in HTML.
 {$productFocusRules}
 - Include sections: intro, product comparison or highlights, pros/cons, how to save with coupons, FAQ, final verdict.
+- If banner URL is provided, place it as the FIRST element in content: <p><img src="BANNER_URL" alt="{$storeName} store banner" loading="lazy"></p>
+- For each product that has an image URL, include <p><img src="IMAGE_URL" alt="PRODUCT_NAME" loading="lazy"></p> near that product's section to build trust. Use only image URLs from the JSON — never invent image URLs.
 - Mention {$siteName} naturally and link to our store deals page (store_url) when sending readers to browse coupons on our site.
 - When affiliate_url is provided in the JSON, include at least 2 in-article links to affiliate_url with rel="nofollow sponsored" and target="_blank" when directing readers to shop at the merchant. Do not use store_url for outbound shopping CTAs when affiliate_url exists.
 - Use merchant FAQs when provided; add 2–3 generic coupon-shopping FAQs if needed.
 - List every offer from the JSON with codes in <code> tags when type is coupon.
-- HTML only in content: <h2>, <h3>, <p>, <ul>, <li>, <ol>, <table>, <strong>, <em>, <a>, <code>. No <h1>, no markdown.
+- HTML only in content: <h2>, <h3>, <p>, <ul>, <li>, <ol>, <table>, <strong>, <em>, <a>, <code>, <img>. No <h1>, no markdown.
 - Do not claim star ratings or verified customer reviews unless explicitly in the JSON.
 
 Return valid JSON with exactly these keys:
@@ -250,6 +253,7 @@ PROMPT;
             'meta_description' => $merchant['meta_description'] ?? null,
             'page_title' => $merchant['page_title'] ?? null,
             'product_focus' => (bool) ($merchant['product_focus'] ?? false),
+            'banner' => $merchant['banner'] ?? null,
             'products' => ! empty($merchant['product_focus']) ? array_slice($products, 0, 1) : $products,
             'faqs' => $faqs,
             'offers' => collect($offers)->map(fn (array $offer) => [
@@ -277,11 +281,13 @@ Description rules:
 - Audience: U.S. online shoppers researching the brand before they buy.
 - Tone: helpful, specific, trustworthy — not hype or fake testimonials.
 - Length: 950–1,100 words in HTML (minimum 1,000 words).
-{$focusNote}- Include sections: brand overview, what shoppers buy here, key advantages, how to save with coupons, shopping tips, FAQ, summary.
+{$focusNote}- Include sections: brand overview, what shoppers buy here (with product headings when products exist), key advantages, how to save with coupons, shopping tips, FAQ, summary.
+- If banner URL is provided, place it as the FIRST element in content: <p><img src="BANNER_URL" alt="{$storeName} store banner" loading="lazy"></p>
+- When products are provided, create an <h2> for featured products and an <h3> for EACH product name. Immediately under each product <h3>, include <p><img src="IMAGE_URL" alt="PRODUCT_NAME" loading="lazy"></p> when that product has an image URL. Use only image URLs from the JSON — never invent image URLs.
 - Mention {$siteName} naturally and link to store_url when pointing readers to browse coupons on our site.
 - When affiliate_url is provided, include at least 2 natural in-text links to affiliate_url with rel="nofollow sponsored" and target="_blank" when directing readers to shop at the merchant.
 - List current offers from the JSON when relevant; use <code> tags for coupon codes.
-- HTML only: <h2>, <h3>, <p>, <ul>, <li>, <ol>, <strong>, <em>, <a>, <code>. No <h1>, no markdown.
+- HTML only: <h2>, <h3>, <p>, <ul>, <li>, <ol>, <strong>, <em>, <a>, <code>, <img>. No <h1>, no markdown.
 - Do not claim star ratings or verified customer reviews unless explicitly in the JSON.
 
 Return valid JSON with exactly this key:

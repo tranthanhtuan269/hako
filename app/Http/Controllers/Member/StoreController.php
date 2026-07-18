@@ -17,17 +17,24 @@ class StoreController extends Controller
     use ValidatesStoreInput;
     use SyncsStoreCouponDisplay;
 
-    public function index(): View
+    public function index(Request $request): View
     {
         $this->authorize('viewAny', Store::class);
 
-        $stores = Store::ownedBy(auth()->id())
+        $q = trim((string) $request->query('q', ''));
+
+        $query = Store::ownedBy(auth()->id())
             ->with('category')
             ->withCount('coupons')
-            ->latest()
-            ->paginate(20);
+            ->latest();
 
-        return view('member.stores.index', compact('stores'));
+        if ($q !== '') {
+            $query->where('name', 'like', '%'.$q.'%');
+        }
+
+        $stores = $query->paginate(20)->withQueryString();
+
+        return view('member.stores.index', compact('stores', 'q'));
     }
 
     public function create(): View

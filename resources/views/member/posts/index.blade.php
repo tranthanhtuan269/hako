@@ -7,6 +7,14 @@
     <h1>My Blog Posts</h1>
     <a href="{{ route('member.posts.create') }}" class="btn btn-primary">+ New Post</a>
 </div>
+
+@include('partials.admin-list-search', [
+    'action' => route('member.posts.index'),
+    'value' => $q ?? '',
+    'placeholder' => 'Search by title…',
+    'clearUrl' => route('member.posts.index'),
+])
+
 <table class="admin-table">
     <thead>
         <tr>
@@ -38,7 +46,13 @@
             </tr>
         @empty
             <tr>
-                <td colspan="6">No blog posts yet. <a href="{{ route('member.posts.create') }}">Write your first post</a>.</td>
+                <td colspan="6">
+                    @if(filled($q ?? null))
+                        No blog posts match your search.
+                    @else
+                        No blog posts yet. <a href="{{ route('member.posts.create') }}">Write your first post</a>.
+                    @endif
+                </td>
             </tr>
         @endforelse
     </tbody>

@@ -20,6 +20,7 @@
     .article-content ul, .article-content ol { margin: 0 0 1rem 1.25rem; color: #374151; }
     .article-content li { margin-bottom: .4rem; }
     .article-content a { color: var(--primary); }
+    .article-content img { max-width: 100%; height: auto; border-radius: 8px; display: block; margin: .75rem 0 1rem; }
     .article-content table.comparison-table {
         width: 100%;
         border-collapse: collapse;

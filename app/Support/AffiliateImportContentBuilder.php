@@ -39,7 +39,7 @@ final class AffiliateImportContentBuilder
             ? $aiContent
             : $this->buildStoreDescriptionWithoutAi($store, $offers, $merchant);
 
-        return $this->finalizeStoreDescription($content, $store);
+        return $this->finalizeStoreDescription($content, $store, $merchant);
     }
 
     /**
@@ -101,7 +101,8 @@ final class AffiliateImportContentBuilder
             $category,
             $merchant['meta_description'] ?? null,
             $faqs,
-            $monthYear
+            $monthYear,
+            $merchant
         );
 
         if ($this->wordCount($content) < self::STORE_DESCRIPTION_MIN_WORDS) {
@@ -111,8 +112,9 @@ final class AffiliateImportContentBuilder
         return $content;
     }
 
-    private function finalizeStoreDescription(string $content, Store $store): string
+    private function finalizeStoreDescription(string $content, Store $store, array $merchant = []): string
     {
+        $content = $this->ensureArticleImages($content, $merchant, $store->name);
         $content = PostAffiliateContent::embed($content, $store);
         $content = $this->ensureAffiliateLinks($content, $store, self::STORE_DESCRIPTION_MIN_AFFILIATE_LINKS);
 
@@ -218,16 +220,16 @@ final class AffiliateImportContentBuilder
     public function blogPost(Store $store, array $offers, array $merchant = [], ?array $preGenerated = null): array
     {
         if ($preGenerated !== null) {
-            return $this->sanitizeBlogOutput($preGenerated, $store);
+            return $this->sanitizeBlogOutput($preGenerated, $store, $merchant);
         }
 
         $aiBlog = $this->geminiWriter->generate($this->blogContext($store, $offers, $merchant));
 
         if ($aiBlog !== null) {
-            return $this->sanitizeBlogOutput($aiBlog, $store);
+            return $this->sanitizeBlogOutput($aiBlog, $store, $merchant);
         }
 
-        return $this->sanitizeBlogOutput($this->blogPostWithoutAi($store, $offers, $merchant), $store);
+        return $this->sanitizeBlogOutput($this->blogPostWithoutAi($store, $offers, $merchant), $store, $merchant);
     }
 
     /**
@@ -257,9 +259,14 @@ final class AffiliateImportContentBuilder
      * @param  array<string, mixed>  $blog
      * @return array{title: string, excerpt: string, meta_title: string, meta_description: string, content: string}
      */
-    public function sanitizeBlogOutput(array $blog, ?Store $store = null): array
+    public function sanitizeBlogOutput(array $blog, ?Store $store = null, array $merchant = []): array
     {
         $content = trim((string) ($blog['content'] ?? ''));
+        $content = $this->ensureArticleImages(
+            $content,
+            $merchant,
+            $store?->name ?? (string) ($merchant['name'] ?? 'Store')
+        );
 
         if ($store !== null) {
             $content = PostAffiliateContent::embed($content, $store);
@@ -284,12 +291,12 @@ final class AffiliateImportContentBuilder
         $aiBlog = $this->geminiWriter->generate($this->blogContext($store, $offers, $merchant));
 
         if ($aiBlog !== null) {
-            return $this->sanitizeBlogOutput($aiBlog, $store) + ['source' => 'gemini'];
+            return $this->sanitizeBlogOutput($aiBlog, $store, $merchant) + ['source' => 'gemini'];
         }
 
         $fallback = $this->blogPostWithoutAi($store, $offers, $merchant);
 
-        return $this->sanitizeBlogOutput($fallback, $store) + ['source' => 'template'];
+        return $this->sanitizeBlogOutput($fallback, $store, $merchant) + ['source' => 'template'];
     }
 
     /**
@@ -347,6 +354,7 @@ final class AffiliateImportContentBuilder
         );
 
         $parts = [];
+        $parts[] = $this->storeBannerHtml($merchant, $name);
         $parts[] = '<p>Choosing between multiple products from <strong>' . e($name) . '</strong> can be confusing when every listing promises similar benefits. '
             . 'This guide compares ' . e($comparisonTitle) . ' using publicly available product information from the brand\'s website, then shows how to lower your total with current offers on '
             . e(config('site.name')) . '.</p>';
@@ -401,9 +409,12 @@ final class AffiliateImportContentBuilder
         );
 
         $parts = [];
+        $parts[] = $this->storeBannerHtml($merchant, $name);
         $parts[] = '<p><strong>' . e($productName) . '</strong> is one of the flagship items shoppers research before buying from '
             . e($name) . '. Below is a practical overview based on the merchant\'s public product listing, followed by current promo codes on '
             . e(config('site.name')) . '.</p>';
+
+        $parts[] = $this->productImageHtml($product);
 
         if (filled($product['description'])) {
             $parts[] = '<p>' . e($product['description']) . '</p>';
@@ -459,7 +470,8 @@ final class AffiliateImportContentBuilder
             $category,
             $metaDescription,
             is_array($faqs) ? $faqs : [],
-            $monthYear
+            $monthYear,
+            $merchant
         );
 
         return [
@@ -507,6 +519,7 @@ final class AffiliateImportContentBuilder
 
         foreach ($products as $index => $product) {
             $parts[] = '<h3>' . ($index + 1) . '. ' . e($product['name']) . '</h3>';
+            $parts[] = $this->productImageHtml($product);
 
             if (filled($product['description'])) {
                 $parts[] = '<p>' . e($product['description']) . '</p>';
@@ -583,6 +596,7 @@ final class AffiliateImportContentBuilder
     /**
      * @param  array<int, array{code: ?string, title: string, description: ?string, type: string}>  $offers
      * @param  array<int, array{question: string, answer: string}>  $merchantFaqs
+     * @param  array<string, mixed>  $merchant
      */
     private function buildLongFormContent(
         Store $store,
@@ -590,11 +604,14 @@ final class AffiliateImportContentBuilder
         string $category,
         ?string $metaDescription,
         array $merchantFaqs,
-        string $monthYear
+        string $monthYear,
+        array $merchant = []
     ): string {
         $name = $store->name;
         $storeUrl = route('stores.show', $store->slug);
         $parts = [];
+
+        $parts[] = $this->storeBannerHtml($merchant, $name);
 
         $parts[] = '<p>' . e($name) . ' has become a recognizable name among U.S. online shoppers browsing the '
             . e($category) . ' space. Whether you are comparing features, hunting for a promo code, or deciding if this '
@@ -612,7 +629,23 @@ final class AffiliateImportContentBuilder
 
         $parts[] = $this->sectionBrandStory($name, $category, $metaDescription);
         $parts[] = $this->sectionAdvantages($name, $category, $offers, $metaDescription);
-        $parts[] = $this->sectionBestSellers($name, $offers, $monthYear, $storeUrl);
+
+        $products = is_array($merchant['products'] ?? null) ? $merchant['products'] : [];
+        if (! empty($merchant['product_focus'])) {
+            $products = array_slice($products, 0, 1);
+        }
+
+        if (count($products) >= 2) {
+            $parts[] = $this->sectionProductComparisonTable($name, $products, $category);
+            $parts[] = $this->sectionProductDeepDives($name, $products, $storeUrl);
+            $parts[] = $this->sectionWhichProductToChoose($name, $products, $category);
+        } elseif (count($products) === 1) {
+            $parts[] = $this->sectionProductDeepDives($name, $products, $storeUrl);
+            $parts[] = $this->sectionSingleProductProsCons($products[0]['name'], $products[0]);
+        } else {
+            $parts[] = $this->sectionBestSellers($name, $offers, $monthYear, $storeUrl);
+        }
+
         $parts[] = $this->sectionComparison($name, $category);
         $parts[] = $this->sectionShopperFeedback($name, $offers, $metaDescription);
         $parts[] = $this->sectionCurrentOffers($name, $offers, $storeUrl, $monthYear, $store->affiliate_url);
@@ -958,5 +991,162 @@ final class AffiliateImportContentBuilder
             'Food & Dining' => 'convenient delivery, menu variety, and first-order savings',
             default => 'focused selection, trustworthy checkout, and competitive promotions',
         };
+    }
+
+    /**
+     * @param  array<string, mixed>  $merchant
+     */
+    private function storeBannerHtml(array $merchant, string $storeName): string
+    {
+        $banner = $merchant['banner'] ?? null;
+
+        if (! filled($banner)) {
+            return '';
+        }
+
+        return '<p><img src="'.e((string) $banner).'" alt="'.e($storeName).' store banner" loading="lazy"></p>';
+    }
+
+    /**
+     * @param  array{name?: string, image?: ?string}  $product
+     */
+    private function productImageHtml(array $product): string
+    {
+        $image = $product['image'] ?? null;
+
+        if (! filled($image)) {
+            return '';
+        }
+
+        $alt = filled($product['name'] ?? null) ? (string) $product['name'] : 'Product image';
+
+        return '<p><img src="'.e((string) $image).'" alt="'.e($alt).'" loading="lazy"></p>';
+    }
+
+    /**
+     * Ensure banner sits at the top and product images appear near product headings when missing.
+     *
+     * @param  array<string, mixed>  $merchant
+     */
+    private function ensureArticleImages(string $content, array $merchant, string $storeName): string
+    {
+        $content = trim($content);
+        $banner = filled($merchant['banner'] ?? null) ? (string) $merchant['banner'] : null;
+
+        // One store banner only, at the very top.
+        if ($banner) {
+            $content = preg_replace(
+                '/(?:<p>\s*)?<img[^>]+alt=["\'][^"\']*store banner[^"\']*["\'][^>]*>\s*(?:<\/p>\s*)*/i',
+                '',
+                $content
+            ) ?? $content;
+
+            $bannerNeedle = preg_quote($banner, '/');
+            $bannerNeedleAmp = preg_quote(e($banner), '/');
+            $content = preg_replace(
+                '/(?:<p>\s*)?<img[^>]+src=["\'](?:'.$bannerNeedle.'|'.$bannerNeedleAmp.')["\'][^>]*>\s*(?:<\/p>\s*)*/i',
+                '',
+                $content
+            ) ?? $content;
+
+            $content = trim($content);
+            $content = $this->storeBannerHtml($merchant, $storeName)."\n\n".$content;
+        }
+
+        $products = is_array($merchant['products'] ?? null) ? $merchant['products'] : [];
+
+        foreach ($products as $product) {
+            if (! is_array($product)) {
+                continue;
+            }
+
+            $image = filled($product['image'] ?? null) ? (string) $product['image'] : null;
+            $name = filled($product['name'] ?? null) ? (string) $product['name'] : null;
+
+            if (! $image || ! $name) {
+                continue;
+            }
+
+            $figure = $this->productImageHtml($product);
+            $headingMatch = $this->findProductHeadingMatch($content, $name);
+
+            if ($headingMatch === null) {
+                if (! str_contains($content, $image)) {
+                    $content .= "\n\n".$figure;
+                }
+
+                continue;
+            }
+
+            // Already has an image right under this heading.
+            if (preg_match('/'.preg_quote($headingMatch, '/').'\s*(?:<p>\s*)?<img\b/i', $content)) {
+                continue;
+            }
+
+            $content = preg_replace(
+                '/(?:<p>\s*)?<img[^>]+src=["\']'.preg_quote($image, '/').'["\'][^>]*>\s*(?:<\/p>\s*)*/i',
+                '',
+                $content
+            ) ?? $content;
+
+            $content = preg_replace(
+                '/('.preg_quote($headingMatch, '/').')/i',
+                '$1'."\n".$figure,
+                $content,
+                1
+            ) ?? $content;
+        }
+
+        return trim($content);
+    }
+
+    /**
+     * Find the full <h3>...</h3> markup for a product, allowing shortened Gemini titles.
+     */
+    private function findProductHeadingMatch(string $content, string $productName): ?string
+    {
+        if (! preg_match_all('/<h3[^>]*>.*?<\/h3>/is', $content, $matches)) {
+            return null;
+        }
+
+        $normalizedProduct = Str::lower(HtmlCleaner::textFromHtml($productName));
+        $productTokens = array_values(array_filter(
+            preg_split('/[^a-z0-9]+/i', $normalizedProduct) ?: [],
+            fn (string $t) => strlen($t) >= 3
+        ));
+
+        $best = null;
+        $bestScore = 0;
+
+        foreach ($matches[0] as $headingHtml) {
+            $headingText = Str::lower(HtmlCleaner::textFromHtml($headingHtml));
+
+            if ($headingText === '' || strlen($headingText) < 3) {
+                continue;
+            }
+
+            if (str_contains($headingText, $normalizedProduct) || str_contains($normalizedProduct, $headingText)) {
+                return $headingHtml;
+            }
+
+            $headingTokens = array_values(array_filter(
+                preg_split('/[^a-z0-9]+/i', $headingText) ?: [],
+                fn (string $t) => strlen($t) >= 3
+            ));
+
+            if ($productTokens === [] || $headingTokens === []) {
+                continue;
+            }
+
+            $overlap = count(array_intersect($productTokens, $headingTokens));
+            $score = $overlap / max(count($headingTokens), 1);
+
+            if ($overlap >= 2 && $score > $bestScore) {
+                $bestScore = $score;
+                $best = $headingHtml;
+            }
+        }
+
+        return $bestScore >= 0.4 ? $best : null;
     }
 }

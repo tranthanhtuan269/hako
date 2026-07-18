@@ -98,7 +98,13 @@
             </tr>
         @empty
             <tr>
-                <td colspan="11">No stores yet. <a href="{{ route('admin.stores.create') }}">Add a store</a>.</td>
+                <td colspan="11">
+                    @if(filled($q ?? null))
+                        No stores match your search.
+                    @else
+                        No stores yet. <a href="{{ route('admin.stores.create') }}">Add a store</a>.
+                    @endif
+                </td>
             </tr>
         @endforelse
     </tbody>

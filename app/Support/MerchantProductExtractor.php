@@ -94,6 +94,10 @@ final class MerchantProductExtractor
             }
         }
 
+        if (empty($product['image'])) {
+            $product['image'] = $this->extractPrimaryProductImage($html, $baseUrl);
+        }
+
         $features = $this->extractFeatures($html);
 
         if ($features !== []) {
@@ -103,6 +107,78 @@ final class MerchantProductExtractor
         }
 
         return $product;
+    }
+
+    /**
+     * Prefer Open Graph / Twitter / product gallery images from a product detail page.
+     */
+    public function extractPrimaryProductImage(string $html, string $baseUrl): ?string
+    {
+        $candidates = [];
+
+        // Prefer HTTPS Open Graph first (Shopify often emits http og:image + https secure_url).
+        foreach ([
+            '/<meta[^>]+property=["\']og:image:secure_url["\'][^>]+content=["\']([^"\']+)["\']/i',
+            '/<meta[^>]+content=["\']([^"\']+)["\'][^>]+property=["\']og:image:secure_url["\']/i',
+            '/<meta[^>]+property=["\']og:image["\'][^>]+content=["\']([^"\']+)["\']/i',
+            '/<meta[^>]+content=["\']([^"\']+)["\'][^>]+property=["\']og:image["\']/i',
+            '/<meta[^>]+name=["\']twitter:image(?::src)?["\'][^>]+content=["\']([^"\']+)["\']/i',
+            '/<meta[^>]+content=["\']([^"\']+)["\'][^>]+name=["\']twitter:image(?::src)?["\']/i',
+        ] as $pattern) {
+            if (preg_match($pattern, $html, $match)) {
+                $candidates[] = $this->absolutizeUrl($baseUrl, html_entity_decode($match[1]));
+            }
+        }
+
+        if (preg_match_all('/<img[^>]+>/i', $html, $imgTags)) {
+            foreach ($imgTags[0] as $tag) {
+                $haystack = strtolower($tag);
+
+                if (! preg_match('/(?:product|gallery|main|featured|primary|zoom|media)/i', $haystack)) {
+                    continue;
+                }
+
+                if (! preg_match('/(?:src|data-src|data-zoom-image|data-srcset)=["\']([^"\']+)["\']/i', $tag, $srcMatch)) {
+                    continue;
+                }
+
+                $src = html_entity_decode($srcMatch[1]);
+
+                // data-srcset may list multiple URLs — take the first.
+                if (str_contains($src, ' ')) {
+                    $src = trim(explode(' ', $src)[0]);
+                }
+
+                $candidates[] = $this->absolutizeUrl($baseUrl, $src);
+            }
+        }
+
+        foreach ($candidates as $url) {
+            $url = preg_replace('#^http://#i', 'https://', $url) ?: $url;
+
+            if ($this->looksLikeProductImageUrl($url)) {
+                return $url;
+            }
+        }
+
+        return null;
+    }
+
+    private function looksLikeProductImageUrl(string $url): bool
+    {
+        if ($url === '' || ! preg_match('#^https?://#i', $url)) {
+            return false;
+        }
+
+        if (preg_match('/(logo|icon|favicon|sprite|avatar|badge|payment|pixel|1x1|spacer|blank)/i', $url)) {
+            return false;
+        }
+
+        if (preg_match('/\.(svg)(\?|$)/i', $url)) {
+            return false;
+        }
+
+        return true;
     }
 
     /** @return list<string> */

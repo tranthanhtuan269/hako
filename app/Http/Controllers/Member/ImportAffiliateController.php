@@ -79,6 +79,13 @@ class ImportAffiliateController extends Controller
             $merchant['product_focus'] = false;
         }
 
+        if (empty($merchant['banner'])) {
+            $bannerSource = filled($data['website'] ?? null)
+                ? trim((string) $data['website'])
+                : (filled($merchant['domain'] ?? null) ? 'https://'.$merchant['domain'] : $finalUrl);
+            $merchant = $resolver->enrichFromWebsite($merchant, $bannerSource, $productFocus);
+        }
+
         if ($bundle['scan_logo'] !== null) {
             $merchant['logo'] = $bundle['scan_logo'];
         } elseif (
@@ -212,9 +219,22 @@ class ImportAffiliateController extends Controller
             $domain = $domain ? preg_replace('/^www\./', '', $domain) : null;
         }
         $storedLogo = PublicImage::ingestStoreLogo($logoUrl, $domain, $userId);
-        $storedFeatured = PublicImage::isScanAssetUrl($logoUrl)
-            ? $storedLogo
-            : (PublicImage::storeBlogFeaturedFromRemote($logoUrl, $userId) ?? $storedLogo);
+
+        $featuredCandidate = filled($merchant['banner'] ?? null)
+            ? (string) $merchant['banner']
+            : (filled($merchant['products'][0]['image'] ?? null) ? (string) $merchant['products'][0]['image'] : null);
+
+        $storedFeatured = null;
+
+        if ($featuredCandidate) {
+            $storedFeatured = PublicImage::ingestRemote($featuredCandidate, "blogs/{$userId}/featured");
+        }
+
+        if (! $storedFeatured) {
+            $storedFeatured = PublicImage::isScanAssetUrl($logoUrl)
+                ? $storedLogo
+                : (PublicImage::storeBlogFeaturedFromRemote($logoUrl, $userId) ?? $storedLogo);
+        }
 
         $existingStore = Store::findForMerchantImport(
             $userId,

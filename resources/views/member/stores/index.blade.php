@@ -7,6 +7,14 @@
     <h1>My Stores</h1>
     <a href="{{ route('member.stores.create') }}" class="btn btn-primary">+ Add Store</a>
 </div>
+
+@include('partials.admin-list-search', [
+    'action' => route('member.stores.index'),
+    'value' => $q ?? '',
+    'placeholder' => 'Search by store name…',
+    'clearUrl' => route('member.stores.index'),
+])
+
 <table class="admin-table">
     <thead>
         <tr>
@@ -46,7 +54,13 @@
             </tr>
         @empty
             <tr>
-                <td colspan="7">No stores yet. <a href="{{ route('member.stores.create') }}">Add your first store</a>.</td>
+                <td colspan="7">
+                    @if(filled($q ?? null))
+                        No stores match your search.
+                    @else
+                        No stores yet. <a href="{{ route('member.stores.create') }}">Add your first store</a>.
+                    @endif
+                </td>
             </tr>
         @endforelse
     </tbody>

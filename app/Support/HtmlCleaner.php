@@ -91,7 +91,7 @@ final class HtmlCleaner
         $tag = strtolower($element->tagName);
         $allowed = match ($tag) {
             'a' => ['href', 'title', 'target', 'rel'],
-            'img' => ['src', 'alt', 'title', 'width', 'height'],
+            'img' => ['src', 'alt', 'title', 'width', 'height', 'loading'],
             default => [],
         };
 

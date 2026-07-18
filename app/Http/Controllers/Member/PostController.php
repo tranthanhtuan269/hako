@@ -12,15 +12,22 @@ use Illuminate\View\View;
 
 class PostController extends Controller
 {
-    public function index(): View
+    public function index(Request $request): View
     {
         $this->authorize('viewAny', Post::class);
 
-        $posts = Post::ownedBy(auth()->id())
-            ->orderByDesc('created_at')
-            ->paginate(20);
+        $q = trim((string) $request->query('q', ''));
 
-        return view('member.posts.index', compact('posts'));
+        $query = Post::ownedBy(auth()->id())
+            ->orderByDesc('created_at');
+
+        if ($q !== '') {
+            $query->where('title', 'like', '%'.$q.'%');
+        }
+
+        $posts = $query->paginate(20)->withQueryString();
+
+        return view('member.posts.index', compact('posts', 'q'));
     }
 
     public function create(): View

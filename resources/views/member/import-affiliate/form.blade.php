@@ -654,7 +654,10 @@
                 previewProductsList.innerHTML = merchant.products
                     .map((product) => {
                         const price = product.price ? ` — ${product.price}` : '';
-                        return `<li>${product.name}${price}</li>`;
+                        const image = product.image
+                            ? `<img src="${product.image}" alt="" style="width:36px;height:36px;object-fit:contain;border-radius:6px;border:1px solid var(--border);vertical-align:middle;margin-right:.4rem;background:#fff;">`
+                            : '';
+                        return `<li style="display:flex;align-items:center;gap:.35rem;margin-bottom:.35rem;">${image}<span>${product.name}${price}</span></li>`;
                     })
                     .join('');
                 previewProducts.querySelector('strong').textContent = data.product_focus

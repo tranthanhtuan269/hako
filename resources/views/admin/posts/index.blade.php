@@ -60,7 +60,7 @@
             </tr>
         @empty
             <tr>
-                <td colspan="7">No blog posts yet.</td>
+                <td colspan="7">{{ filled($q ?? null) ? 'No blog posts match your search.' : 'No blog posts yet.' }}</td>
             </tr>
         @endforelse
     </tbody>

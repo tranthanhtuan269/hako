@@ -1364,6 +1364,32 @@ div.pagination > nav.paginator-nav .pagination {
     color: #fff;
 }
 .admin-main { flex: 1; padding: 2rem; background: var(--bg); }
+.admin-list-search { margin-bottom: 1rem; width: 100%; }
+.admin-search-field { position: relative; width: 100%; }
+.admin-search-input {
+    width: 100%;
+    box-sizing: border-box;
+    padding: .55rem 2.25rem .55rem .75rem;
+    border: 1px solid var(--border, #e5e7eb);
+    border-radius: 8px;
+    font: inherit;
+    background: #fff;
+}
+.admin-search-clear {
+    position: absolute;
+    top: 50%;
+    right: .45rem;
+    transform: translateY(-50%);
+    border: 0;
+    background: transparent;
+    color: #64748b;
+    font-size: 1.35rem;
+    line-height: 1;
+    padding: .15rem .35rem;
+    cursor: pointer;
+    border-radius: 4px;
+}
+.admin-search-clear:hover { color: #0f172a; background: #f1f5f9; }
 .admin-table { width: 100%; border-collapse: collapse; background: var(--card); border-radius: var(--radius); overflow: hidden; }
 .admin-table th, .admin-table td { padding: .75rem 1rem; text-align: left; border-bottom: 1px solid var(--border); }
 .admin-table th { background: #f1f5f9; font-weight: 600; }

@@ -60,6 +60,7 @@ final class AffiliateLinkResolver
         $products = $productFocus
             ? $this->discoverFocusedProduct($finalUrl, $html)
             : $this->discoverProducts($finalUrl, $html);
+        $banner = $this->extractBannerImage($html, $finalUrl);
 
         if ($productFocus && $products !== [] && filled($products[0]['name'] ?? null)) {
             $name = Str::limit((string) $products[0]['name'], 100, '');
@@ -71,6 +72,7 @@ final class AffiliateLinkResolver
             'domain' => $host,
             'name' => $name,
             'logo' => $logo,
+            'banner' => $banner,
             'page_title' => $pageTitle,
             'meta_description' => $metaDescription,
             'category_id' => $category?->id,
@@ -109,6 +111,12 @@ final class AffiliateLinkResolver
                 $merchant['logo'] = $logo;
             }
 
+            $banner = $this->extractBannerImage($html, $websiteUrl);
+
+            if ($banner && empty($merchant['banner'])) {
+                $merchant['banner'] = $banner;
+            }
+
             // Product-focus mode keeps only the affiliate landing product — do not crawl the wider catalog.
             if (! $productFocus) {
                 $websiteProducts = $this->discoverProducts($websiteUrl, $html);
@@ -120,6 +128,88 @@ final class AffiliateLinkResolver
         }
 
         return $merchant;
+    }
+
+    /**
+     * Latest store hero / banner image from homepage HTML (not logos/icons).
+     */
+    public function extractBannerImage(?string $html, string $baseUrl): ?string
+    {
+        if (! $html) {
+            return null;
+        }
+
+        $candidates = [];
+
+        if (preg_match_all('/<img[^>]+>/i', $html, $imgTags)) {
+            foreach ($imgTags[0] as $tag) {
+                $haystack = strtolower($tag);
+
+                if (! preg_match('/(?:banner|hero|slider|carousel|swiper|masthead|promo|cover|jumbotron|slideshow)/i', $haystack)) {
+                    continue;
+                }
+
+                if (! preg_match('/(?:src|data-src|data-lazy-src|data-bg)=["\']([^"\']+)["\']/i', $tag, $srcMatch)) {
+                    continue;
+                }
+
+                $url = $this->absolutizeUrl($baseUrl, html_entity_decode($srcMatch[1]));
+
+                if ($this->looksLikeBannerUrl($url)) {
+                    $candidates[] = $url;
+                }
+            }
+        }
+
+        // CSS background-image on hero/banner containers
+        if (preg_match_all(
+            '/<(?:div|section|header|a)[^>]*(?:banner|hero|slider|carousel|masthead)[^>]*style=["\'][^"\']*background(?:-image)?:\s*url\((["\']?)([^"\')]+)\1\)/i',
+            $html,
+            $bgMatches,
+            PREG_SET_ORDER
+        )) {
+            foreach ($bgMatches as $match) {
+                $url = $this->absolutizeUrl($baseUrl, html_entity_decode(trim($match[2])));
+
+                if ($this->looksLikeBannerUrl($url)) {
+                    $candidates[] = $url;
+                }
+            }
+        }
+
+        foreach ([
+            '/<meta[^>]+property=["\']og:image(?::secure_url)?["\'][^>]+content=["\']([^"\']+)["\']/i',
+            '/<meta[^>]+content=["\']([^"\']+)["\'][^>]+property=["\']og:image(?::secure_url)?["\']/i',
+            '/<meta[^>]+name=["\']twitter:image(?::src)?["\'][^>]+content=["\']([^"\']+)["\']/i',
+            '/<meta[^>]+content=["\']([^"\']+)["\'][^>]+name=["\']twitter:image(?::src)?["\']/i',
+        ] as $pattern) {
+            if (preg_match($pattern, $html, $match)) {
+                $url = $this->absolutizeUrl($baseUrl, html_entity_decode($match[1]));
+
+                if ($this->looksLikeBannerUrl($url)) {
+                    $candidates[] = $url;
+                }
+            }
+        }
+
+        return $candidates[0] ?? null;
+    }
+
+    private function looksLikeBannerUrl(string $url): bool
+    {
+        if ($url === '' || ! preg_match('#^https?://#i', $url)) {
+            return false;
+        }
+
+        if (preg_match('/(logo|icon|favicon|sprite|avatar|badge|payment|pixel|1x1|spacer|blank|apple-touch)/i', $url)) {
+            return false;
+        }
+
+        if (preg_match('/\.(svg)(\?|$)/i', $url)) {
+            return false;
+        }
+
+        return true;
     }
 
     /**
@@ -151,7 +241,7 @@ final class AffiliateLinkResolver
                         ? Str::limit(HtmlCleaner::textFromHtml($description), 500)
                         : null,
                     'price' => null,
-                    'image' => null,
+                    'image' => $this->productExtractor->extractPrimaryProductImage($html, $pageUrl),
                     'url' => $pageUrl,
                     'features' => [],
                 ]];
@@ -171,27 +261,27 @@ final class AffiliateLinkResolver
     {
         $products = $this->productExtractor->extract($html, $baseUrl);
 
-        if (count($products) >= 2) {
-            return $products;
-        }
+        // Always enrich PDP pages for images/prices — even when the homepage
+        // already listed 2+ product links (those listings often omit images).
+        if (count($products) < 2) {
+            $paths = ['/collections/all', '/shop', '/products', '/catalog', '/store'];
 
-        $paths = ['/collections/all', '/shop', '/products', '/catalog', '/store'];
+            foreach ($paths as $path) {
+                $shopUrl = rtrim($baseUrl, '/') . $path;
+                $shopHtml = $this->fetchHtml($shopUrl);
 
-        foreach ($paths as $path) {
-            $shopUrl = rtrim($baseUrl, '/') . $path;
-            $shopHtml = $this->fetchHtml($shopUrl);
+                if (! $shopHtml) {
+                    continue;
+                }
 
-            if (! $shopHtml) {
-                continue;
-            }
+                $products = $this->productExtractor->uniqueTake(
+                    array_merge($products, $this->productExtractor->extract($shopHtml, $shopUrl)),
+                    3
+                );
 
-            $products = $this->productExtractor->uniqueTake(
-                array_merge($products, $this->productExtractor->extract($shopHtml, $shopUrl)),
-                3
-            );
-
-            if (count($products) >= 2) {
-                break;
+                if (count($products) >= 2) {
+                    break;
+                }
             }
         }
 

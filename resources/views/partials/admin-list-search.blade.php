@@ -32,35 +32,6 @@
 </form>
 
 @once
-@push('styles')
-<style>
-.admin-list-search { margin-bottom: 1rem; width: 100%; }
-.admin-search-field { position: relative; width: 100%; }
-.admin-search-input {
-    width: 100%;
-    box-sizing: border-box;
-    padding: .55rem 2.25rem .55rem .75rem;
-    border: 1px solid var(--border, #e5e7eb);
-    border-radius: 8px;
-    font: inherit;
-}
-.admin-search-clear {
-    position: absolute;
-    top: 50%;
-    right: .45rem;
-    transform: translateY(-50%);
-    border: 0;
-    background: transparent;
-    color: #64748b;
-    font-size: 1.35rem;
-    line-height: 1;
-    padding: .15rem .35rem;
-    cursor: pointer;
-    border-radius: 4px;
-}
-.admin-search-clear:hover { color: #0f172a; background: #f1f5f9; }
-</style>
-@endpush
 @push('scripts')
 <script src="{{ asset('js/admin-list-search.js') }}?v={{ filemtime(public_path('js/admin-list-search.js')) }}" defer></script>
 @endpush
