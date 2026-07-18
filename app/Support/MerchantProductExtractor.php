@@ -155,11 +155,15 @@ final class MerchantProductExtractor
 
         $features = $this->extractFeatures($html);
 
-        if ($features !== []) {
-            $product['features'] = $features;
-        } elseif (! isset($product['features'])) {
-            $product['features'] = [];
+        if ($features === [] && filled($product['description'] ?? null)) {
+            $features = $this->featuresFromDescription((string) $product['description']);
         }
+
+        if ($features === [] && is_array($detail) && filled($detail['description'] ?? null)) {
+            $features = $this->featuresFromDescription((string) $detail['description']);
+        }
+
+        $product['features'] = $features;
 
         return $product;
     }
@@ -299,34 +303,110 @@ final class MerchantProductExtractor
     /** @return list<string> */
     private function extractFeatures(string $html): array
     {
+        $scopes = [];
+
+        // Prefer product-description / accordion regions so sitewide USP lists are not reused on every SKU.
+        if (preg_match_all(
+            '/<(?:div|section|aside)[^>]*(?:class|id)=["\'][^"\']*(?:product[-_\s]?(?:description|single|info|details|accordion|tabs|content)|rte|prose|metafield|accordion)[^"\']*["\'][^>]*>(.*?)<\/(?:div|section|aside)>/is',
+            $html,
+            $scoped
+        )) {
+            $scopes = array_slice($scoped[1], 0, 4);
+        }
+
+        $candidates = $this->featuresFromListItems($scopes !== [] ? implode("\n", $scopes) : $html);
+
+        // If scoped scrape found nothing useful, try the full page with the same junk filters.
+        if ($candidates === [] && $scopes !== []) {
+            $candidates = $this->featuresFromListItems($html);
+        }
+
+        return $candidates;
+    }
+
+    /**
+     * Turn a long product description into short bullets when the PDP has no useful <li> list.
+     *
+     * @return list<string>
+     */
+    public function featuresFromDescription(?string $description): array
+    {
+        if (! filled($description)) {
+            return [];
+        }
+
+        $text = HtmlCleaner::textFromHtml((string) $description);
+        $chunks = preg_split('/[\r\n•●▪]+|(?<=[.!?])\s+/u', $text) ?: [];
         $features = [];
 
-        if (preg_match_all('/<li[^>]*>(.*?)<\/li>/is', $html, $matches)) {
-            foreach ($matches[1] as $item) {
-                $text = HtmlCleaner::textFromHtml($item);
+        foreach ($chunks as $chunk) {
+            $chunk = trim(preg_replace('/\s+/u', ' ', $chunk) ?? '');
 
-                if ($text === '' || strlen($text) < 12 || strlen($text) > 160) {
-                    continue;
-                }
+            if ($chunk === '' || $this->isJunkFeature($chunk)) {
+                continue;
+            }
 
-                if (preg_match('/^(home|shop|cart|login|sign in|subscribe|menu|search|affiliates?|instructions?|account|faq|contact|about|blog|privacy|terms)$/i', $text)) {
-                    continue;
-                }
+            if (strlen($chunk) < 24 || strlen($chunk) > 160) {
+                continue;
+            }
 
-                // Skip promo / nav junk that often pollutes Shopify themes.
-                if (preg_match('/\b(use code|promo code|% off|ends friday|free shipping \$|newsletter|subscribe|add to cart|quick view)\b/i', $text)) {
-                    continue;
-                }
+            $features[] = $chunk;
 
-                $features[] = $text;
-
-                if (count($features) >= 6) {
-                    break;
-                }
+            if (count($features) >= 4) {
+                break;
             }
         }
 
         return array_values(array_unique($features));
+    }
+
+    /** @return list<string> */
+    private function featuresFromListItems(string $html): array
+    {
+        $features = [];
+
+        if (! preg_match_all('/<li[^>]*>(.*?)<\/li>/is', $html, $matches)) {
+            return [];
+        }
+
+        foreach ($matches[1] as $item) {
+            $text = HtmlCleaner::textFromHtml($item);
+
+            if ($text === '' || $this->isJunkFeature($text)) {
+                continue;
+            }
+
+            $features[] = $text;
+
+            if (count($features) >= 6) {
+                break;
+            }
+        }
+
+        return array_values(array_unique($features));
+    }
+
+    private function isJunkFeature(string $text): bool
+    {
+        $text = trim($text);
+
+        if ($text === '' || strlen($text) < 12 || strlen($text) > 160) {
+            return true;
+        }
+
+        if (preg_match(
+            '/^(home|shop|cart|login|sign in|subscribe|menu|search|affiliates?|instructions?|account|faq|contact|about|blog|privacy|terms|individual products?|full ingredient list|fast delivery|free shipping|shipping|returns?|size guide|reviews?)$/i',
+            $text
+        )) {
+            return true;
+        }
+
+        // Sitewide Shopify promo / trust-bar junk that is identical on every PDP.
+        if (preg_match('/\b(use code|promo code|% off|ends friday|free shipping \$|free shipping on over|newsletter|subscribe|add to cart|quick view|clinically studied peptide formulas)\b/i', $text)) {
+            return true;
+        }
+
+        return false;
     }
 
     private function isJunkProductName(string $name): bool
@@ -340,12 +420,46 @@ final class MerchantProductExtractor
             return true;
         }
 
-        // Generic placeholder alts / link text that are not real SKUs.
+        // CTA labels masquerading as products ("View Ritual", "Shop Collection").
+        if (preg_match('/^(view|shop|explore|discover|see|buy|open)\s+.+$/i', $name) && str_word_count($name) <= 3) {
+            return true;
+        }
+
+        // Generic placeholder alts / SEO keyword blobs that are not real SKUs.
         if (preg_match('/^(skin care product|beauty product|product image|item|untitled)$/i', $name)) {
             return true;
         }
 
+        if (preg_match('/\bskin care product\b/i', $name)) {
+            return true;
+        }
+
+        if (preg_match('/^best\s+.+\s+for\s+.+$/i', $name)) {
+            return true;
+        }
+
+        // Ingredient-only keyword titles without a product form factor.
+        if (preg_match('/^(hyaluronic acid|retinol|collagen|peptides?|vitamin [a-cde])(\s+and\s+.+)?$/i', $name)) {
+            return true;
+        }
+
         return false;
+    }
+
+    public function nameFromProductUrl(string $url): ?string
+    {
+        if (! preg_match('#/(?:products?|p)/([^/?]+)#i', $url, $match)) {
+            return null;
+        }
+
+        $slug = urldecode(str_replace(['-', '_'], ' ', $match[1]));
+        $name = trim(preg_replace('/\s+/', ' ', $slug) ?? '');
+
+        if ($name === '' || strlen($name) < 3 || $this->isJunkProductName($name)) {
+            return null;
+        }
+
+        return Str::title($name);
     }
 
     /**
@@ -492,6 +606,7 @@ final class MerchantProductExtractor
             $text = HtmlCleaner::textFromHtml($inner);
             $image = null;
             $alt = null;
+            $url = $this->absolutizeUrl($baseUrl, $href);
 
             if (preg_match('/<img[^>]+>/i', $inner, $imgTag)) {
                 if (preg_match('/(?:src|data-src)=["\']([^"\']+)["\']/i', $imgTag[0], $srcMatch)) {
@@ -514,16 +629,12 @@ final class MerchantProductExtractor
                 $text = $alt;
             }
 
-            if ($text === '' || strlen($text) < 3 || strlen($text) > 120) {
-                continue;
-            }
-
-            if (preg_match('/^(shop|products|buy|learn more|view all|add to cart|sale)$/i', $text)) {
-                continue;
-            }
-
-            if ($this->isJunkProductName($text)) {
-                continue;
+            if ($text === '' || strlen($text) < 3 || strlen($text) > 120 || $this->isJunkProductName($text)) {
+                $fromUrl = $this->nameFromProductUrl($url);
+                if ($fromUrl === null) {
+                    continue;
+                }
+                $text = $fromUrl;
             }
 
             $products[] = [
@@ -531,7 +642,7 @@ final class MerchantProductExtractor
                 'description' => null,
                 'price' => null,
                 'image' => $image,
-                'url' => $this->absolutizeUrl($baseUrl, $href),
+                'url' => $url,
             ];
         }
 

@@ -570,9 +570,9 @@ final class AffiliateImportContentBuilder
             $rows[] = ['Leather type', 'Faux / vegan leather (per product copy)'];
         }
 
-        $named = collect($products)->pluck('name')->filter()->take(3)->values()->all();
-        if ($named !== []) {
-            $rows[] = ['Featured products', implode('; ', $named).(count($products) > 3 ? '…' : '')];
+        $namedCount = collect($products)->pluck('name')->filter()->count();
+        if ($namedCount > 0) {
+            $rows[] = ['Featured products', $namedCount.' listing'.($namedCount === 1 ? '' : 's').' compared below'];
         }
 
         $priced = collect($products)->first(fn (array $p) => filled($p['price'] ?? null));
@@ -596,8 +596,9 @@ final class AffiliateImportContentBuilder
 
     /**
      * @param  array<int, array{question?: string, answer?: string}>  $faqs
+     * @param  list<string>  $extraTexts  Extra haystacks (meta, product descriptions/features).
      */
-    private function faqAnswerMatching(array $faqs, string $pattern): ?string
+    private function faqAnswerMatching(array $faqs, string $pattern, array $extraTexts = []): ?string
     {
         foreach ($faqs as $faq) {
             $question = (string) ($faq['question'] ?? '');
@@ -607,11 +608,63 @@ final class AffiliateImportContentBuilder
             }
 
             if (preg_match($pattern, $question) || preg_match($pattern, $answer)) {
-                return Str::limit(HtmlCleaner::textFromHtml($answer), 140);
+                return Str::limit(HtmlCleaner::textFromHtml($answer), 180);
             }
         }
 
+        foreach ($extraTexts as $text) {
+            $text = HtmlCleaner::textFromHtml((string) $text);
+            if ($text === '' || ! preg_match($pattern, $text)) {
+                continue;
+            }
+
+            foreach (preg_split('/(?<=[.!?])\s+/', $text) ?: [] as $sentence) {
+                $sentence = trim($sentence);
+                if ($sentence !== '' && preg_match($pattern, $sentence)) {
+                    return Str::limit($sentence, 180);
+                }
+            }
+
+            return Str::limit($text, 180);
+        }
+
         return null;
+    }
+
+    /**
+     * Prefer merchant FAQ, then product/meta copy that mentions Made in / manufactured in.
+     *
+     * @param  array<int, array{question?: string, answer?: string}>  $merchantFaqs
+     * @param  array<int, array{name?: string, description?: ?string, features?: list<string>}>  $products
+     */
+    private function originFaqAnswer(string $name, array $merchantFaqs, array $products, ?string $metaDescription): string
+    {
+        $extra = [(string) $metaDescription];
+        foreach ($products as $product) {
+            $extra[] = (string) ($product['description'] ?? '');
+            $extra[] = implode(' ', is_array($product['features'] ?? null) ? $product['features'] : []);
+        }
+
+        $fromFaq = $this->faqAnswerMatching($merchantFaqs, '/made|manufactur|origin|where.*made|country|formulated in|crafted in/i', $extra);
+        if ($fromFaq) {
+            return e($fromFaq).(str_contains(Str::lower($fromFaq), 'confirm') ? '' : ' Confirm on the specific product page if you need origin for one SKU.');
+        }
+
+        $haystack = implode(' ', array_filter($extra));
+
+        if (preg_match('/\bmade in ([A-Za-z][A-Za-z .-]{1,40}?)(?:\.|,|;|\n|$)/i', $haystack, $match)) {
+            return e('Product copy we reviewed mentions Made in '.trim($match[1]).'. Origin can vary by SKU — verify on the listing or packaging for the item you buy.');
+        }
+
+        if (preg_match('/\b(manufactured|formulated|crafted|produced)\s+in\s+([A-Za-z][A-Za-z .-]{1,40}?)(?:\.|,|;|\n|$)/i', $haystack, $match)) {
+            return e('Merchant copy references products '.trim($match[1]).' in '.trim($match[2]).'. Treat that as SKU-level evidence and re-check the product page before buying.');
+        }
+
+        if (preg_match('/\b(USA|U\.S\.A\.|United States)-?\s*(made|formulated|crafted)\b|\b(made|formulated|crafted)\s+in\s+the\s+(USA|U\.S\.A\.|United States)\b/i', $haystack)) {
+            return e('Some '.$name.' product or brand copy references U.S. made/formulated language. Confirm whether that applies to the exact SKU in your cart.');
+        }
+
+        return e('We did not find a clear, brand-wide country-of-origin statement on the public pages collected for this guide. That is common for multi-SKU catalogs — check the product page, ingredient/label section, or help center for the SKU you want rather than assuming one origin for every item.');
     }
 
     /**
@@ -908,12 +961,12 @@ final class AffiliateImportContentBuilder
         $parts[] = $this->storeBannerHtml($merchant, $name);
         $parts[] = $this->storeLogoHtml($merchant, $name);
 
-        $productLabel = collect($products)->pluck('name')->filter()->take(2)->implode(' and ');
+        $productCount = collect($products)->pluck('name')->filter()->count();
         $offerLabel = collect($offers)->pluck('title')->filter()->take(2)->implode(', ');
 
         $intro = 'This '.e($monthYear).' guide covers shopping at <strong>'.e($name).'</strong>';
-        if ($productLabel !== '') {
-            $intro .= ', including '.e($productLabel).(count($products) > 2 ? ' and related listings' : '');
+        if ($productCount > 0) {
+            $intro .= ', with '.$productCount.' featured product'.($productCount === 1 ? '' : 's').' researched from the merchant catalog';
         }
         $intro .= ', plus the current deals tracked on '.e(config('site.name'));
         if ($offerLabel !== '') {
@@ -985,9 +1038,9 @@ final class AffiliateImportContentBuilder
         }
         $opening .= ' place '.e($name).' in the '.e(strtolower($category)).' category';
 
-        $named = collect($products)->pluck('name')->filter()->take(3)->values()->all();
-        if ($named !== []) {
-            $opening .= ', with featured items such as '.e(implode(', ', $named));
+        $productCount = collect($products)->pluck('name')->filter()->count();
+        if ($productCount > 0) {
+            $opening .= ', with '.$productCount.' featured listing'.($productCount === 1 ? '' : 's').' broken down below';
         }
         $opening .= '.';
         $parts[] = '<p>'.$opening.'</p>';
@@ -1063,7 +1116,20 @@ final class AffiliateImportContentBuilder
             }
 
             $features = is_array($product['features'] ?? null) ? array_slice($product['features'], 0, 2) : [];
-            if ($features !== []) {
+            if ($features !== [] && filled($product['description'] ?? null)) {
+                // Prefer description; only append unique features that add new detail.
+                $descLower = Str::lower(strip_tags((string) $product['description']));
+                $extra = [];
+                foreach ($features as $feature) {
+                    $feature = (string) $feature;
+                    if (! str_contains($descLower, Str::lower(Str::limit($feature, 40, '')))) {
+                        $extra[] = $feature;
+                    }
+                }
+                if ($extra !== []) {
+                    $body .= ' Notable details from the product page: '.implode('; ', $extra).'.';
+                }
+            } elseif ($features !== []) {
                 $body .= ' Notable details from the product page: '.implode('; ', $features).'.';
             }
 
@@ -1264,16 +1330,15 @@ final class AffiliateImportContentBuilder
         }
 
         // Country of origin
-        $madeAnswer = $this->faqAnswerMatching($merchantFaqs, '/made|manufactur|origin|where.*made|country/i');
         $faqs[] = [
             'Where is '.$name.' made?',
-            $madeAnswer
-                ? e($madeAnswer)
-                : e('The public pages we collected do not clearly state a single country of origin for every '.$name.' product. Check the product page, packaging, or merchant help center for origin details on the SKU you want.'),
+            $this->originFaqAnswer($name, $merchantFaqs, $products, $merchant['meta_description'] ?? null),
         ];
 
         // International shipping
-        $shipAnswer = $this->faqAnswerMatching($merchantFaqs, '/ship|deliver|worldwide|international|postage|shipping/i');
+        $shipAnswer = $this->faqAnswerMatching($merchantFaqs, '/ship|deliver|worldwide|international|postage|shipping/i', [
+            (string) ($merchant['meta_description'] ?? ''),
+        ]);
         $faqs[] = [
             'Does '.$name.' ship internationally?',
             $shipAnswer
@@ -1281,12 +1346,12 @@ final class AffiliateImportContentBuilder
                 : e('International availability depends on the merchant checkout options and your address. Confirm shipping countries, rates, and any duties on the '.$name.' checkout page before paying.'),
         ];
 
-        // Worth buying
-        $productNames = collect($products)->pluck('name')->filter()->take(2)->values()->all();
+        // Worth buying — avoid stuffing the same product-name list again.
         $offerTitles = collect($offers)->pluck('title')->filter()->take(2)->values()->all();
-        $worth = e($name).' can be worth buying if the listed products match what you need';
-        if ($productNames !== []) {
-            $worth .= ' (for example '.e(implode(' or ', $productNames)).')';
+        $leadProduct = collect($products)->pluck('name')->filter()->first();
+        $worth = e($name).' can be worth buying if a featured listing matches what you need';
+        if (is_string($leadProduct) && $leadProduct !== '') {
+            $worth .= ' (start with '.e($leadProduct).' if that is your use case)';
         }
         $worth .= ' and the final cart total looks fair after shipping.';
         if ($offerTitles !== []) {
@@ -1413,18 +1478,16 @@ final class AffiliateImportContentBuilder
     private function sectionWhyTrustUs(string $storeName, array $products = [], array $offers = []): string
     {
         $site = (string) config('site.name');
-        $productNames = collect($products)
+        $productCount = collect($products)
             ->pluck('name')
             ->filter(fn ($name) => filled($name))
-            ->take(3)
-            ->values()
-            ->all();
+            ->count();
         $offerCount = count($offers);
         $monthYear = now()->format('F Y');
 
-        $researchLine = $productNames !== []
+        $researchLine = $productCount > 0
             ? 'We researched '.e($storeName).' products'
-                .(count($productNames) === 1 ? ' (including '.e($productNames[0]).')' : '')
+                .($productCount === 1 ? ' (the featured listing in this guide)' : ' ('.$productCount.' featured listings in this guide)')
                 .', customer reviews, pricing, and verified coupon availability before publishing this guide.'
             : 'We researched '.e($storeName).' brand details, public product information, pricing cues, and verified coupon availability before publishing this guide.';
 
@@ -1434,7 +1497,7 @@ final class AffiliateImportContentBuilder
         $parts[] = '<p>'.e($site).' publishes independent shopping guides for U.S. readers. Our editorial process focuses on facts shoppers can check themselves — not unverified ratings or invented testimonials.</p>';
         $parts[] = '<ul>';
         $parts[] = '<li><strong>Product research:</strong> Details come from the merchant\'s public product pages and publicly available listing information'
-            .($productNames !== [] ? ' for items such as '.e(implode(', ', $productNames)).'.' : '.');
+            .($productCount > 0 ? ' for the products compared below.' : '.');
         $parts[] = '</li>';
         $parts[] = '<li><strong>Coupon verification:</strong> Featured offers on this page are reviewed for format and availability when we publish'
             .($offerCount > 0 ? ' ('.$offerCount.' offer'.($offerCount === 1 ? '' : 's').' listed for '.$monthYear.')' : '')

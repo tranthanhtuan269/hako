@@ -126,7 +126,11 @@ final class GeminiBlogWriter
                 continue;
             }
 
-            if (preg_match('/^(choose option|select option|select|options?|quick view|default title|product image)$/i', $name)) {
+            if (preg_match('/^(choose option|select option|select|options?|quick view|default title|product image|view ritual|shop now)$/i', $name)) {
+                continue;
+            }
+
+            if (preg_match('/\bskin care product\b|^best\s+.+\s+for\s+/i', $name)) {
                 continue;
             }
 
@@ -429,12 +433,13 @@ Article rules:
 - If banner URL is provided, place it FIRST: <figure class="article-media article-media--banner"><img src="BANNER_URL" alt="{$storeName} official store banner" loading="lazy"><figcaption>{$storeName} store banner</figcaption></figure>
 - If logo URL is provided, place it right after the banner: <figure class="article-media article-media--logo"><img src="LOGO_URL" alt="{$storeName} brand logo" width="160" height="160" loading="lazy"><figcaption>{$storeName} logo</figcaption></figure>
 - For each product that has an image URL, place a product photo under that product heading: <figure class="article-media article-media--product"><img src="IMAGE_URL" alt="PRODUCT_NAME product photo from {$storeName}" loading="lazy"><figcaption>PRODUCT_NAME</figcaption></figure>. Use only image URLs from the JSON — never invent image URLs. Prefer real product photos (wallet, bag, backpack, device, etc.) over decorative graphics.
-- Quote or paraphrase product descriptions, features, prices, offer titles/codes, and merchant FAQs from the JSON. Name products and codes explicitly.
+- Quote or paraphrase product descriptions, features, prices, offer titles/codes, and merchant FAQs from the JSON. Name products and codes explicitly in product sections — do not repeat the full product-name list in intro, Why Trust Us, and what-sells.
+- CRITICAL: each product heading must use that product's OWN description/features only. Never copy-paste the same bullet list across products. If features are missing or identical sitewide USPs, paraphrase the product description instead or omit bullets.
 - Mention {$siteName} naturally and link to our store deals page (store_url) when sending readers to browse coupons on our site.
 - When affiliate_url is provided in the JSON, include at least 2 in-article links to affiliate_url with rel="nofollow sponsored" and target="_blank" when directing readers to shop at the merchant. Do not use store_url for outbound shopping CTAs when affiliate_url exists.
-- Use merchant FAQs when provided. Also include high-intent search FAQs shoppers type into Google, using ONLY facts from the JSON (or honest "not stated / confirm on merchant site" when unknown). Required question patterns:
+- Use merchant FAQs when provided. Also include high-intent search FAQs shoppers type into Google, using ONLY facts from the JSON (or an honest research note when unknown). Required question patterns:
   - "Is {$storeName} genuine leather?" (only if leather appears in product/meta data; otherwise skip)
-  - "Where is {$storeName} made?"
+  - "Where is {$storeName} made?" — mine products[].description, products[].features, meta_description, and faqs for Made in / manufactured / formulated / country-of-origin clues before saying it is not stated. Prefer SKU-level notes over a vague "check packaging" default.
   - "Does {$storeName} ship internationally?"
   - "Is {$storeName} worth buying?"
   - "Does {$storeName} offer student discounts?"
@@ -527,15 +532,17 @@ Description rules:
 - If banner URL is provided, place it FIRST: <figure class="article-media article-media--banner"><img src="BANNER_URL" alt="{$storeName} official store banner" loading="lazy"><figcaption>{$storeName} store banner</figcaption></figure>
 - If logo URL is provided, place it right after the banner: <figure class="article-media article-media--logo"><img src="LOGO_URL" alt="{$storeName} brand logo" width="160" height="160" loading="lazy"><figcaption>{$storeName} logo</figcaption></figure>
 - When products are provided, create an <h2> for featured products and an <h3> for EACH product name. Immediately under each product <h3>, include <figure class="article-media article-media--product"><img src="IMAGE_URL" alt="PRODUCT_NAME product photo from {$storeName}" loading="lazy"><figcaption>PRODUCT_NAME</figcaption></figure> when that product has an image URL. Use only image URLs from the JSON — never invent image URLs.
+- CRITICAL: under each product <h3>, use that product's OWN description/features/price only. Never reuse the same feature bullets across products. If features look like shared theme USPs (shipping bars, "Individual Products", ingredient-list links), paraphrase the product description instead or omit the list.
+- Do NOT keyword-stuff. Mention the full product-name list at most once (preferably only as <h3> headings). Intro, Why Trust Us, and at-a-glance may use product counts instead of repeating every name.
 - Include a strong FAQ section with high-intent search questions shoppers type into Google. Required patterns when relevant to the brand/category:
   - "Is {$storeName} genuine leather?" (include only if leather appears in JSON; otherwise skip)
-  - "Where is {$storeName} made?"
+  - "Where is {$storeName} made?" — first mine products[].description, products[].features, meta_description, and faqs for Made in / manufactured / formulated / origin clues. Only if none exist, say a brand-wide origin is not stated publicly and shoppers should check the SKU label — do not invent a country.
   - "Does {$storeName} ship internationally?"
   - "Is {$storeName} worth buying?"
   - "Does {$storeName} offer student discounts?"
   - "How often does {$storeName} release coupon codes?"
-  Answer from JSON facts or say the detail is not stated publicly and should be confirmed on the merchant site — never invent origin, shipping coverage, or student discounts.
-- Ground every major section in named products, prices, features, offer titles/codes, meta_description, or FAQs from the JSON.
+  Answer from JSON facts or give a precise research note — never invent origin, shipping coverage, or student discounts.
+- Ground major sections in prices, distinct product facts, offer titles/codes, meta_description, or FAQs from the JSON — not by repeating the same product-name string in every paragraph.
 - Mention {$siteName} naturally and link to store_url when pointing readers to browse coupons on our site.
 - When affiliate_url is provided, include at least 2 natural in-text links to affiliate_url with rel="nofollow sponsored" and target="_blank" when directing readers to shop at the merchant.
 - List current offers from the JSON when relevant; use <code> tags for coupon codes.
@@ -555,8 +562,9 @@ PROMPT;
 Anti-generic writing rules (critical for Google EEAT):
 - Do NOT write interchangeable brand fluff. Ban patterns like: "{$storeName} offers quality…", "{$storeName} focuses on craftsmanship…", "{$storeName} is known for…", "stands out for", "perfect for every occasion", "elevate your", "seamlessly", "in today's fast-paced world", "whether you're a beginner or a pro".
 - Do NOT start multiple consecutive sentences or paragraphs with "{$storeName}".
-- Every paragraph must include at least one concrete fact from the JSON (a product name, price, feature, offer title/code, FAQ answer, domain, or meta_description phrase). If a fact is missing, omit the claim instead of generalizing.
+- Do NOT keyword-stuff by repeating the same product-name list across intro, Why Trust Us, what-sells, comparison, and FAQ. Name products mainly under their own headings; elsewhere prefer counts, category, offers, or one lead example.
 - Prefer concrete shopping advice: which listed product fits which need, how a listed coupon/discount works, what to verify at checkout.
+- Each product section must use distinct facts for that SKU. Never paste identical feature bullets under every product.
 - Vary sentence openings and keep prose concise. Sound like a deal site editor, not a product brochure.
 RULES;
     }
