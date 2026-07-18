@@ -68,6 +68,192 @@ final class GeminiBlogWriter
         return $content !== '' ? $content : null;
     }
 
+    /**
+     * Ask Gemini to pick the best products + product photos for a review/deals article.
+     *
+     * @param  array{
+     *     store_name: string,
+     *     domain: ?string,
+     *     category_name: ?string,
+     *     meta_description: ?string,
+     *     page_title: ?string,
+     *     base_url: string,
+     *     candidates: array<int, array{name: string, description: ?string, price: ?string, image: ?string, url: ?string}>,
+     *     html_excerpt: ?string
+     * }  $context
+     * @return array<int, array{name: string, description: ?string, price: ?string, image: ?string, url: ?string, features: list<string>}>|null
+     */
+    public function pickBestProducts(array $context): ?array
+    {
+        $parsed = $this->requestJson($this->buildProductPickerPrompt($context), 'Gemini product picker');
+
+        if ($parsed === null) {
+            return null;
+        }
+
+        $items = $parsed['products'] ?? null;
+
+        if (! is_array($items) || $items === []) {
+            return null;
+        }
+
+        $domain = strtolower(preg_replace('/^www\./', '', (string) ($context['domain'] ?? '')));
+        $baseUrl = (string) ($context['base_url'] ?? '');
+        $candidatesByUrl = [];
+
+        foreach ($context['candidates'] ?? [] as $candidate) {
+            if (! is_array($candidate) || empty($candidate['url'])) {
+                continue;
+            }
+
+            $candidatesByUrl[strtolower(rtrim((string) $candidate['url'], '/'))] = $candidate;
+        }
+
+        $products = [];
+
+        foreach ($items as $item) {
+            if (! is_array($item)) {
+                continue;
+            }
+
+            $name = trim((string) ($item['name'] ?? ''));
+            $url = trim((string) ($item['url'] ?? ''));
+            $image = trim((string) ($item['image'] ?? ''));
+
+            if ($name === '' || strlen($name) < 3 || $url === '' || ! preg_match('#^https?://#i', $url)) {
+                continue;
+            }
+
+            $urlHost = strtolower(preg_replace('/^www\./', '', (string) parse_url($url, PHP_URL_HOST)));
+
+            if ($domain !== '' && $urlHost !== '' && $urlHost !== $domain && ! str_ends_with($urlHost, '.'.$domain)) {
+                continue;
+            }
+
+            $urlKey = strtolower(rtrim($url, '/'));
+            $matchedCandidate = $candidatesByUrl[$urlKey] ?? null;
+
+            if ($candidatesByUrl !== [] && $matchedCandidate === null) {
+                // Allow same-domain PDP URLs even if the model slightly rewrote the link.
+                if (! preg_match('#/(products?|product|p)/#i', $url)) {
+                    continue;
+                }
+            }
+
+            if ($image === '' && is_array($matchedCandidate) && filled($matchedCandidate['image'] ?? null)) {
+                $image = (string) $matchedCandidate['image'];
+            }
+
+            if ($image !== '' && ! preg_match('#^https?://#i', $image)) {
+                if (str_starts_with($image, '//')) {
+                    $image = 'https:'.$image;
+                } elseif (str_starts_with($image, '/') && $baseUrl !== '') {
+                    $parts = parse_url($baseUrl);
+                    $image = ($parts['scheme'] ?? 'https').'://'.($parts['host'] ?? '').$image;
+                } else {
+                    $image = '';
+                }
+            }
+
+            if ($image !== '' && preg_match('/(logo|icon|favicon|sprite|avatar|badge|pixel|1x1|spacer|blank)/i', $image)) {
+                $image = '';
+            }
+
+            if ($name === '' && is_array($matchedCandidate)) {
+                $name = (string) ($matchedCandidate['name'] ?? '');
+            }
+
+            $products[] = [
+                'name' => Str::limit(HtmlCleaner::decodeEntities($name), 120),
+                'description' => filled($item['description'] ?? null)
+                    ? Str::limit(HtmlCleaner::textFromHtml((string) $item['description']), 500)
+                    : (is_array($matchedCandidate) ? ($matchedCandidate['description'] ?? null) : null),
+                'price' => filled($item['price'] ?? null)
+                    ? Str::limit(strip_tags((string) $item['price']), 40)
+                    : (is_array($matchedCandidate) ? ($matchedCandidate['price'] ?? null) : null),
+                'image' => $image !== '' ? $image : null,
+                'url' => $url,
+                'features' => [],
+            ];
+
+            if (count($products) >= 5) {
+                break;
+            }
+        }
+
+        return $products !== [] ? $products : null;
+    }
+
+    /**
+     * @param  array{
+     *     store_name: string,
+     *     domain: ?string,
+     *     category_name: ?string,
+     *     meta_description: ?string,
+     *     page_title: ?string,
+     *     base_url: string,
+     *     candidates: array<int, array{name: string, description: ?string, price: ?string, image: ?string, url: ?string}>,
+     *     html_excerpt: ?string
+     * }  $context
+     */
+    private function buildProductPickerPrompt(array $context): string
+    {
+        $storeName = (string) ($context['store_name'] ?? 'Store');
+        $domain = (string) ($context['domain'] ?? '');
+        $candidates = array_slice($context['candidates'] ?? [], 0, 24);
+        $htmlExcerpt = Str::limit(preg_replace('/\s+/', ' ', (string) ($context['html_excerpt'] ?? '')) ?? '', 12000, '');
+
+        $payload = [
+            'store_name' => $storeName,
+            'domain' => $domain,
+            'category' => $context['category_name'] ?? null,
+            'meta_description' => $context['meta_description'] ?? null,
+            'page_title' => $context['page_title'] ?? null,
+            'base_url' => $context['base_url'] ?? null,
+            'candidate_products' => collect($candidates)->map(fn (array $p) => [
+                'name' => $p['name'] ?? null,
+                'url' => $p['url'] ?? null,
+                'image' => $p['image'] ?? null,
+                'price' => $p['price'] ?? null,
+                'description' => filled($p['description'] ?? null) ? Str::limit((string) $p['description'], 180) : null,
+            ])->values()->all(),
+            'html_excerpt' => $htmlExcerpt !== '' ? $htmlExcerpt : null,
+        ];
+
+        $factsJson = json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT);
+
+        return <<<PROMPT
+You are a senior affiliate merchandiser picking products for a U.S. coupon/review article about {$storeName}.
+
+From the JSON below, select the 3–5 BEST products to feature (bestsellers, flagship items, or clearly distinct hero SKUs). Also pick the BEST product photo URL for each — a real product image (wallet, bag, backpack, device, etc.), never a logo, icon, badge, or banner.
+
+JSON:
+{$factsJson}
+
+Rules:
+- Prefer items from candidate_products. You may use html_excerpt only to refine names/images/prices already implied by candidates.
+- Every product MUST include a product page url on domain "{$domain}" (or from candidate_products).
+- Every product SHOULD include an image URL of the actual product. Prefer high-quality CDN/product gallery images from candidates or html_excerpt. Do not invent image URLs that are not present in the JSON.
+- Do not invent product names or URLs that are not supported by candidates/html_excerpt.
+- Prefer variety across the catalog when candidates allow it (e.g. wallet + bag + belt) instead of near-duplicates.
+- Rank by usefulness for shoppers researching deals: popular, clearly named, with price/image when available.
+
+Return valid JSON only:
+{
+  "products": [
+    {
+      "name": "string",
+      "url": "https://...",
+      "image": "https://... or null",
+      "price": "string or null",
+      "description": "short string or null",
+      "why_selected": "one short reason"
+    }
+  ]
+}
+PROMPT;
+    }
+
     /** @return array<string, mixed>|null */
     private function requestJson(string $prompt, string $logContext): ?array
     {

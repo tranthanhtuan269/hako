@@ -9,7 +9,7 @@ final class MerchantProductExtractor
     /**
      * @return array<int, array{name: string, description: ?string, price: ?string, image: ?string, url: ?string}>
      */
-    public function extract(?string $html, string $baseUrl): array
+    public function extract(?string $html, string $baseUrl, int $limit = 5): array
     {
         if (! $html) {
             return [];
@@ -20,7 +20,7 @@ final class MerchantProductExtractor
         $products = array_merge($products, $this->fromJsonLd($html, $baseUrl));
         $products = array_merge($products, $this->fromProductLinks($html, $baseUrl));
 
-        return $this->uniqueTake($products, 5);
+        return $this->uniqueTake($products, $limit);
     }
 
     /**

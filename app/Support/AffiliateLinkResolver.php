@@ -12,6 +12,7 @@ final class AffiliateLinkResolver
     public function __construct(
         private readonly MerchantProductExtractor $productExtractor = new MerchantProductExtractor(),
         private readonly MerchantProductEnricher $productEnricher = new MerchantProductEnricher(),
+        private readonly GeminiBlogWriter $geminiWriter = new GeminiBlogWriter(),
     ) {}
 
     public function finalUrl(string $affiliateUrl): string
@@ -59,7 +60,13 @@ final class AffiliateLinkResolver
         $faqs = $this->extractFaqs($html);
         $products = $productFocus
             ? $this->discoverFocusedProduct($finalUrl, $html)
-            : $this->discoverProducts($finalUrl, $html);
+            : $this->discoverProducts($finalUrl, $html, [
+                'store_name' => $name,
+                'category_name' => $category?->name,
+                'meta_description' => $metaDescription,
+                'page_title' => $pageTitle,
+                'domain' => $host,
+            ]);
         $banner = $this->extractBannerImage($html, $finalUrl);
 
         if ($productFocus && $products !== [] && filled($products[0]['name'] ?? null)) {
@@ -119,7 +126,13 @@ final class AffiliateLinkResolver
 
             // Product-focus mode keeps only the affiliate landing product — do not crawl the wider catalog.
             if (! $productFocus) {
-                $websiteProducts = $this->discoverProducts($websiteUrl, $html);
+                $websiteProducts = $this->discoverProducts($websiteUrl, $html, [
+                    'store_name' => $merchant['name'] ?? null,
+                    'category_name' => $merchant['category_name'] ?? null,
+                    'meta_description' => $merchant['meta_description'] ?? null,
+                    'page_title' => $merchant['page_title'] ?? null,
+                    'domain' => $host,
+                ]);
 
                 if (count($websiteProducts) >= count($merchant['products'] ?? [])) {
                     $merchant['products'] = $websiteProducts;
@@ -255,19 +268,99 @@ final class AffiliateLinkResolver
     }
 
     /**
+     * Discover featured products: AI picks best SKUs + images when Gemini is enabled,
+     * otherwise fall back to homepage/catalog scrape ranking.
+     *
+     * @param  array{store_name?: ?string, category_name?: ?string, meta_description?: ?string, page_title?: ?string, domain?: ?string}  $context
      * @return array<int, array{name: string, description: ?string, price: ?string, image: ?string, url: ?string}>
      */
-    private function discoverProducts(string $baseUrl, ?string $html): array
+    private function discoverProducts(string $baseUrl, ?string $html, array $context = []): array
     {
-        $products = $this->productExtractor->extract($html, $baseUrl);
+        $candidates = $this->collectProductCandidates($baseUrl, $html);
+        $domain = preg_replace(
+            '/^www\./',
+            '',
+            strtolower((string) ($context['domain'] ?? parse_url($baseUrl, PHP_URL_HOST) ?? ''))
+        );
 
-        // Always enrich PDP pages for images/prices — even when the homepage
-        // already listed 2+ product links (those listings often omit images).
+        if ($this->geminiWriter->isEnabled() && $candidates !== []) {
+            $storeName = filled($context['store_name'] ?? null)
+                ? (string) $context['store_name']
+                : $this->guessStoreName($domain, $this->extractTitle($html));
+
+            $aiProducts = $this->geminiWriter->pickBestProducts([
+                'store_name' => $storeName,
+                'domain' => $domain,
+                'category_name' => $context['category_name'] ?? null,
+                'meta_description' => $context['meta_description'] ?? $this->extractMetaDescription($html),
+                'page_title' => $context['page_title'] ?? $this->extractTitle($html),
+                'base_url' => $baseUrl,
+                'candidates' => $candidates,
+                'html_excerpt' => $this->htmlExcerptForAi($html),
+            ]);
+
+            if (is_array($aiProducts) && $aiProducts !== []) {
+                return $this->productEnricher->enrich(
+                    $aiProducts,
+                    fn (string $url) => $this->fetchHtml($url),
+                    5
+                );
+            }
+        }
+
+        return $this->discoverProductsByScrape($baseUrl, $html, $candidates);
+    }
+
+    /**
+     * Broad candidate pool for AI ranking (and scrape fallback).
+     *
+     * @return array<int, array{name: string, description: ?string, price: ?string, image: ?string, url: ?string}>
+     */
+    private function collectProductCandidates(string $baseUrl, ?string $html): array
+    {
+        $products = $this->productExtractor->extract($html, $baseUrl, 24);
+        $products = $this->productExtractor->uniqueTake($products, 24);
+
+        $paths = ['/collections/all', '/collections/frontpage', '/shop', '/products', '/catalog', '/store'];
+
+        foreach ($paths as $path) {
+            if (count($products) >= 12) {
+                break;
+            }
+
+            $shopUrl = rtrim($baseUrl, '/').$path;
+            $shopHtml = $this->fetchHtml($shopUrl);
+
+            if (! $shopHtml) {
+                continue;
+            }
+
+            $products = $this->productExtractor->uniqueTake(
+                array_merge($products, $this->productExtractor->extract($shopHtml, $shopUrl, 24)),
+                24
+            );
+        }
+
+        return $products;
+    }
+
+    /**
+     * Legacy homepage/catalog ranking used when AI is unavailable or returns nothing.
+     *
+     * @param  array<int, array{name: string, description: ?string, price: ?string, image: ?string, url: ?string}>  $candidates
+     * @return array<int, array{name: string, description: ?string, price: ?string, image: ?string, url: ?string}>
+     */
+    private function discoverProductsByScrape(string $baseUrl, ?string $html, array $candidates = []): array
+    {
+        $products = $candidates !== []
+            ? $this->productExtractor->uniqueTake($candidates, 5)
+            : $this->productExtractor->extract($html, $baseUrl, 5);
+
         if (count($products) < 2) {
             $paths = ['/collections/all', '/shop', '/products', '/catalog', '/store'];
 
             foreach ($paths as $path) {
-                $shopUrl = rtrim($baseUrl, '/') . $path;
+                $shopUrl = rtrim($baseUrl, '/').$path;
                 $shopHtml = $this->fetchHtml($shopUrl);
 
                 if (! $shopHtml) {
@@ -275,7 +368,7 @@ final class AffiliateLinkResolver
                 }
 
                 $products = $this->productExtractor->uniqueTake(
-                    array_merge($products, $this->productExtractor->extract($shopHtml, $shopUrl)),
+                    array_merge($products, $this->productExtractor->extract($shopHtml, $shopUrl, 5)),
                     5
                 );
 
@@ -290,6 +383,19 @@ final class AffiliateLinkResolver
             fn (string $url) => $this->fetchHtml($url),
             5
         );
+    }
+
+    private function htmlExcerptForAi(?string $html): ?string
+    {
+        if (! $html) {
+            return null;
+        }
+
+        $stripped = preg_replace('/<script\b[^>]*>.*?<\/script>/is', ' ', $html) ?? $html;
+        $stripped = preg_replace('/<style\b[^>]*>.*?<\/style>/is', ' ', $stripped) ?? $stripped;
+        $stripped = preg_replace('/<!--.*?-->/s', ' ', $stripped) ?? $stripped;
+
+        return Str::limit(trim(html_entity_decode(strip_tags($stripped), ENT_QUOTES | ENT_HTML5)), 10000, '');
     }
 
     private function unwrapAffiliateUrl(string $url): string
