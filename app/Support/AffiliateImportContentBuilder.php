@@ -301,6 +301,10 @@ final class AffiliateImportContentBuilder
     {
         $products = is_array($merchant['products'] ?? null) ? $merchant['products'] : [];
 
+        if (! empty($merchant['product_focus'])) {
+            $products = array_slice($products, 0, 1);
+        }
+
         if (count($products) >= 2) {
             return $this->comparisonBlogPost($store, $offers, $merchant, $products);
         }

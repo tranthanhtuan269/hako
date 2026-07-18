@@ -159,6 +159,7 @@ final class GeminiBlogWriter
             'domain' => $merchant['domain'] ?? null,
             'meta_description' => $merchant['meta_description'] ?? null,
             'page_title' => $merchant['page_title'] ?? null,
+            'product_focus' => (bool) ($merchant['product_focus'] ?? false),
             'products' => $products,
             'faqs' => $faqs,
             'offers' => collect($offers)->map(fn (array $offer) => [
@@ -170,6 +171,18 @@ final class GeminiBlogWriter
         ];
 
         $factsJson = json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT);
+        $productFocusRules = ! empty($merchant['product_focus'])
+            ? <<<FOCUS
+- CRITICAL: product_focus is true. Write ONLY about the single product in the JSON products array (the linked product page).
+- Do NOT invent, compare, or list other catalog products from the same domain (e.g. other Amazon ASINs).
+- Structure as a deep product review/spotlight of that one product: features, who it is for, pros/cons, pricing if available, how to buy via affiliate_url, FAQs, verdict.
+- Title and excerpt must center on that product name, not a brand-wide comparison.
+FOCUS
+            : <<<FOCUS
+- If 2+ products: comparison article with a <table class="comparison-table"> (Product, Price, Best for).
+- If 1 product: product spotlight/review style.
+- If 0 products: store/brand review with category context.
+FOCUS;
 
         return <<<PROMPT
 You are an expert U.S. e-commerce SEO copywriter for {$siteName}.
@@ -183,9 +196,7 @@ Article rules:
 - Audience: U.S. online shoppers looking for deals and buying advice.
 - Tone: helpful, specific, trustworthy — not hype or fake testimonials.
 - Length: 1,400–2,200 words in HTML.
-- If 2+ products: comparison article with a <table class="comparison-table"> (Product, Price, Best for).
-- If 1 product: product spotlight/review style.
-- If 0 products: store/brand review with category context.
+{$productFocusRules}
 - Include sections: intro, product comparison or highlights, pros/cons, how to save with coupons, FAQ, final verdict.
 - Mention {$siteName} naturally and link to our store deals page (store_url) when sending readers to browse coupons on our site.
 - When affiliate_url is provided in the JSON, include at least 2 in-article links to affiliate_url with rel="nofollow sponsored" and target="_blank" when directing readers to shop at the merchant. Do not use store_url for outbound shopping CTAs when affiliate_url exists.
@@ -238,7 +249,8 @@ PROMPT;
             'domain' => $merchant['domain'] ?? null,
             'meta_description' => $merchant['meta_description'] ?? null,
             'page_title' => $merchant['page_title'] ?? null,
-            'products' => $products,
+            'product_focus' => (bool) ($merchant['product_focus'] ?? false),
+            'products' => ! empty($merchant['product_focus']) ? array_slice($products, 0, 1) : $products,
             'faqs' => $faqs,
             'offers' => collect($offers)->map(fn (array $offer) => [
                 'title' => $offer['title'],
@@ -249,6 +261,9 @@ PROMPT;
         ];
 
         $factsJson = json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT);
+        $focusNote = ! empty($merchant['product_focus'])
+            ? "- product_focus is true: center the description on the single linked product (not the whole marketplace catalog).\n"
+            : '';
 
         return <<<PROMPT
 You are an expert U.S. e-commerce SEO copywriter for {$siteName}.
@@ -262,7 +277,7 @@ Description rules:
 - Audience: U.S. online shoppers researching the brand before they buy.
 - Tone: helpful, specific, trustworthy — not hype or fake testimonials.
 - Length: 950–1,100 words in HTML (minimum 1,000 words).
-- Include sections: brand overview, what shoppers buy here, key advantages, how to save with coupons, shopping tips, FAQ, summary.
+{$focusNote}- Include sections: brand overview, what shoppers buy here, key advantages, how to save with coupons, shopping tips, FAQ, summary.
 - Mention {$siteName} naturally and link to store_url when pointing readers to browse coupons on our site.
 - When affiliate_url is provided, include at least 2 natural in-text links to affiliate_url with rel="nofollow sponsored" and target="_blank" when directing readers to shop at the merchant.
 - List current offers from the JSON when relevant; use <code> tags for coupon codes.

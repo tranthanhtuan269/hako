@@ -43,7 +43,7 @@ final class AffiliateLinkResolver
         return $redirected;
     }
 
-    public function resolve(string $affiliateUrl): array
+    public function resolve(string $affiliateUrl, bool $productFocus = false): array
     {
         $affiliateUrl = trim($affiliateUrl);
         $seedUrl = $this->unwrapAffiliateUrl($affiliateUrl);
@@ -57,7 +57,13 @@ final class AffiliateLinkResolver
         $category = $this->guessCategory($host, $pageTitle, $metaDescription, $finalUrl);
         $logo = $this->resolveLogo($host, $finalUrl, $html);
         $faqs = $this->extractFaqs($html);
-        $products = $this->discoverProducts($finalUrl, $html);
+        $products = $productFocus
+            ? $this->discoverFocusedProduct($finalUrl, $html)
+            : $this->discoverProducts($finalUrl, $html);
+
+        if ($productFocus && $products !== [] && filled($products[0]['name'] ?? null)) {
+            $name = Str::limit((string) $products[0]['name'], 100, '');
+        }
 
         return [
             'affiliate_url' => $affiliateUrl,
@@ -71,6 +77,7 @@ final class AffiliateLinkResolver
             'category_name' => $category?->name,
             'faqs' => $faqs,
             'products' => $products,
+            'product_focus' => $productFocus,
         ];
     }
 
@@ -80,7 +87,7 @@ final class AffiliateLinkResolver
      * @param  array<string, mixed>  $merchant
      * @return array<string, mixed>
      */
-    public function enrichFromWebsite(array $merchant, string $websiteUrl): array
+    public function enrichFromWebsite(array $merchant, string $websiteUrl, bool $productFocus = false): array
     {
         $html = $this->fetchHtml($websiteUrl);
 
@@ -102,14 +109,59 @@ final class AffiliateLinkResolver
                 $merchant['logo'] = $logo;
             }
 
-            $websiteProducts = $this->discoverProducts($websiteUrl, $html);
+            // Product-focus mode keeps only the affiliate landing product — do not crawl the wider catalog.
+            if (! $productFocus) {
+                $websiteProducts = $this->discoverProducts($websiteUrl, $html);
 
-            if (count($websiteProducts) >= count($merchant['products'] ?? [])) {
-                $merchant['products'] = $websiteProducts;
+                if (count($websiteProducts) >= count($merchant['products'] ?? [])) {
+                    $merchant['products'] = $websiteProducts;
+                }
             }
         }
 
         return $merchant;
+    }
+
+    /**
+     * Extract a single product from the affiliate / landing page only (no shop/catalog crawl).
+     *
+     * @return array<int, array{name: string, description: ?string, price: ?string, image: ?string, url: ?string, features?: list<string>}>
+     */
+    public function discoverFocusedProduct(string $pageUrl, ?string $html = null): array
+    {
+        $html ??= $this->fetchHtml($pageUrl);
+
+        if (! $html) {
+            return [];
+        }
+
+        $products = $this->productExtractor->uniqueTake(
+            $this->productExtractor->extract($html, $pageUrl),
+            1
+        );
+
+        if ($products === []) {
+            $title = $this->extractTitle($html);
+            $description = $this->extractMetaDescription($html);
+
+            if (filled($title)) {
+                $products = [[
+                    'name' => Str::limit(HtmlCleaner::decodeEntities($title), 120),
+                    'description' => filled($description)
+                        ? Str::limit(HtmlCleaner::textFromHtml($description), 500)
+                        : null,
+                    'price' => null,
+                    'image' => null,
+                    'url' => $pageUrl,
+                    'features' => [],
+                ]];
+            }
+        } else {
+            $products[0]['url'] = $products[0]['url'] ?: $pageUrl;
+            $products[0] = $this->productExtractor->enrichFromPage($html, $products[0], $pageUrl);
+        }
+
+        return $products;
     }
 
     /**

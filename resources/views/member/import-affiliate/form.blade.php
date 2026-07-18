@@ -38,17 +38,28 @@
         <h2>Affiliate Link</h2>
         <div class="form-group">
             <label for="affiliate_url">Affiliate URL *</label>
+            <input type="hidden" name="product_focus" id="product_focus" value="{{ old('product_focus', '0') }}">
             <div class="import-detect-row">
                 <input type="url" id="affiliate_url" name="affiliate_url" value="{{ old('affiliate_url') }}" required placeholder="https://example.com/?ref=your-id">
-                <button type="button" class="btn btn-outline detect-store-btn" id="detect-store-btn">
+                <button type="button" class="btn btn-outline detect-store-btn" id="detect-store-btn" data-product-focus="0">
                     <span class="detect-btn-label">Detect Store</span>
                     <span class="detect-btn-busy">
                         <span class="detect-spinner detect-spinner--sm" aria-hidden="true"></span>
                         Detecting…
                     </span>
                 </button>
+                <button type="button" class="btn btn-outline detect-store-btn" id="detect-product-btn" data-product-focus="1">
+                    <span class="detect-btn-label">Detect Only Product</span>
+                    <span class="detect-btn-busy">
+                        <span class="detect-spinner detect-spinner--sm" aria-hidden="true"></span>
+                        Detecting…
+                    </span>
+                </button>
             </div>
-            <p class="form-hint">We follow redirects to suggest a logo and category. You enter the store website yourself below.</p>
+            <p class="form-hint">
+                <strong>Detect Store</strong> crawls the catalog for comparison posts.
+                <strong>Detect Only Product</strong> is for marketplaces like Amazon — extracts only the linked product and writes a single-product review.
+            </p>
             @error('affiliate_url')<p class="form-error">{{ $message }}</p>@enderror
         </div>
 
@@ -178,6 +189,7 @@
     justify-content: center;
     gap: .45rem;
     min-width: 8.5rem;
+    white-space: nowrap;
 }
 .detect-store-btn.is-loading {
     pointer-events: none;
@@ -185,6 +197,10 @@
 }
 .detect-store-btn.is-loading .detect-btn-label { display: none; }
 .detect-store-btn.is-loading .detect-btn-busy { display: inline-flex; }
+.detect-store-btn.is-disabled-peer {
+    pointer-events: none;
+    opacity: .55;
+}
 .detect-btn-busy {
     display: none;
     align-items: center;
@@ -516,7 +532,7 @@
         previewLogo.src = value;
     });
 
-    document.getElementById('detect-store-btn').addEventListener('click', async () => {
+    async function runDetect(productFocus) {
         const affiliateUrl = document.getElementById('affiliate_url').value.trim();
         const websiteUrl = document.getElementById('website').value.trim();
         const status = document.getElementById('detect-status');
@@ -528,9 +544,12 @@
         const previewBlogExcerpt = document.getElementById('preview-blog-excerpt');
         const previewBlogSource = document.getElementById('preview-blog-source');
         const previewExistingImport = document.getElementById('preview-existing-import');
-        const previewExistingImportText = document.getElementById('preview-existing-import-text');
         const generatedBlogInput = document.getElementById('generated_blog');
-        const detectBtn = document.getElementById('detect-store-btn');
+        const productFocusInput = document.getElementById('product_focus');
+        const detectStoreBtn = document.getElementById('detect-store-btn');
+        const detectProductBtn = document.getElementById('detect-product-btn');
+        const activeBtn = productFocus ? detectProductBtn : detectStoreBtn;
+        const peerBtn = productFocus ? detectStoreBtn : detectProductBtn;
         const affiliateInput = document.getElementById('affiliate_url');
         const loading = document.getElementById('detect-loading');
 
@@ -541,9 +560,13 @@
             return;
         }
 
+        productFocusInput.value = productFocus ? '1' : '0';
+
         function setDetectLoading(active) {
-            detectBtn.classList.toggle('is-loading', active);
-            detectBtn.disabled = active;
+            activeBtn.classList.toggle('is-loading', active);
+            activeBtn.disabled = active;
+            peerBtn.classList.toggle('is-disabled-peer', active);
+            peerBtn.disabled = active;
             affiliateInput.readOnly = active;
             loading.hidden = !active;
 
@@ -561,7 +584,9 @@
         }
 
         setDetectLoading(true);
-        document.getElementById('detect-loading-text').textContent = 'Detecting store, crawling products & writing AI article…';
+        document.getElementById('detect-loading-text').textContent = productFocus
+            ? 'Detecting linked product & writing focused AI article…'
+            : 'Detecting store, crawling products & writing AI article…';
 
         try {
             const response = await fetch(previewUrl, {
@@ -574,6 +599,7 @@
                 body: JSON.stringify({
                     affiliate_url: affiliateUrl,
                     website: websiteUrl || null,
+                    product_focus: productFocus ? 1 : 0,
                 }),
             });
 
@@ -588,7 +614,9 @@
 
             const merchant = data.merchant;
             document.getElementById('store_name').value = merchant.name || '';
-            if (merchant.domain) {
+            if (data.product_focus && merchant.final_url) {
+                document.getElementById('website').value = merchant.final_url;
+            } else if (merchant.domain) {
                 document.getElementById('website').value = `https://${merchant.domain}`;
             }
             if (merchant.category_id) {
@@ -629,6 +657,9 @@
                         return `<li>${product.name}${price}</li>`;
                     })
                     .join('');
+                previewProducts.querySelector('strong').textContent = data.product_focus
+                    ? 'Product for focused article'
+                    : 'Products for comparison article';
                 previewProducts.hidden = false;
             } else {
                 previewProductsList.innerHTML = '';
@@ -667,6 +698,10 @@
                 statusMessage += ' Blog draft prepared (template fallback).';
             }
 
+            if (data.product_focus) {
+                statusMessage += ' Product-focus mode: writing about the linked product only.';
+            }
+
             if (data.import_blocked) {
                 statusMessage += ' Import blocked — this store already exists.';
                 status.className = 'form-hint detect-status is-error';
@@ -684,7 +719,10 @@
         } finally {
             setDetectLoading(false);
         }
-    });
+    }
+
+    document.getElementById('detect-store-btn').addEventListener('click', () => runDetect(false));
+    document.getElementById('detect-product-btn').addEventListener('click', () => runDetect(true));
 })();
 </script>
 @endpush

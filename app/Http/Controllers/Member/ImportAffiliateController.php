@@ -44,9 +44,11 @@ class ImportAffiliateController extends Controller
         $data = $request->validate([
             'affiliate_url' => ['required', 'url', 'max:500'],
             'website' => ['nullable', 'url', 'max:500'],
+            'product_focus' => ['nullable', 'boolean'],
         ]);
 
         $affiliateUrl = $data['affiliate_url'];
+        $productFocus = $request->boolean('product_focus');
         $finalUrl = $resolver->finalUrl($affiliateUrl);
         $storeQuery = $couponSpeak->hostFromUrl($finalUrl)
             ?? $couponSpeak->hostFromUrl($affiliateUrl)
@@ -54,15 +56,27 @@ class ImportAffiliateController extends Controller
         $bundle = $couponSpeak->fetchStoreBundle($storeQuery);
         $detectSource = 'local';
 
-        if ($couponSpeak->profileIsUsable($bundle['store_profile'])) {
+        if ($couponSpeak->profileIsUsable($bundle['store_profile']) && ! $productFocus) {
             $merchant = $couponSpeak->merchantFromProfile($bundle['store_profile'], $affiliateUrl);
             $detectSource = 'scan_cache';
         } else {
-            $merchant = $resolver->resolve($affiliateUrl);
+            $merchant = $resolver->resolve($affiliateUrl, $productFocus);
         }
 
         if (filled($data['website'] ?? null)) {
-            $merchant = $resolver->enrichFromWebsite($merchant, trim($data['website']));
+            $merchant = $resolver->enrichFromWebsite($merchant, trim($data['website']), $productFocus);
+        }
+
+        if ($productFocus) {
+            $focusedProducts = $resolver->discoverFocusedProduct($finalUrl);
+            $merchant['products'] = $focusedProducts;
+            $merchant['product_focus'] = true;
+
+            if ($focusedProducts !== [] && filled($focusedProducts[0]['name'] ?? null)) {
+                $merchant['name'] = Str::limit((string) $focusedProducts[0]['name'], 100, '');
+            }
+        } else {
+            $merchant['product_focus'] = false;
         }
 
         if ($bundle['scan_logo'] !== null) {
@@ -129,6 +143,7 @@ class ImportAffiliateController extends Controller
             'merchant' => $merchant,
             'store_query' => $storeQuery,
             'detect_source' => $detectSource,
+            'product_focus' => $productFocus,
             'suggested_offers' => $suggestedOffers,
             'generated_blog' => $generatedBlog,
             'allow_reimport_existing_stores' => $allowReimport,
@@ -160,6 +175,7 @@ class ImportAffiliateController extends Controller
             'website' => ['nullable', 'url', 'max:500'],
             'logo_url' => ['nullable', 'url', 'max:500'],
             'category_id' => ['nullable', 'exists:categories,id'],
+            'product_focus' => ['nullable', 'boolean'],
             'offers' => ['required', 'array', 'min:1'],
             'offers.*.code' => ['nullable', 'string', 'max:100'],
             'offers.*.title' => ['required', 'string', 'max:255'],
@@ -168,10 +184,20 @@ class ImportAffiliateController extends Controller
             'generated_blog' => ['nullable', 'string', 'max:100000'],
         ]);
 
-        $merchant = $resolver->resolve($data['affiliate_url']);
+        $productFocus = $request->boolean('product_focus');
+        $merchant = $resolver->resolve($data['affiliate_url'], $productFocus);
 
         if (filled($data['website'] ?? null)) {
-            $merchant = $resolver->enrichFromWebsite($merchant, trim($data['website']));
+            $merchant = $resolver->enrichFromWebsite($merchant, trim($data['website']), $productFocus);
+        }
+
+        if ($productFocus) {
+            $finalUrl = $merchant['final_url'] ?? $resolver->finalUrl($data['affiliate_url']);
+            $focusedProducts = $resolver->discoverFocusedProduct($finalUrl);
+            $merchant['products'] = $focusedProducts;
+            $merchant['product_focus'] = true;
+        } else {
+            $merchant['product_focus'] = false;
         }
 
         $publish = true;
