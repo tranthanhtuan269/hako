@@ -17,6 +17,7 @@ final class MerchantProductEnricher
     {
         $enriched = [];
         $fetches = 0;
+        $usedImages = [];
 
         foreach ($products as $product) {
             $url = filled($product['url'] ?? null) ? (string) $product['url'] : null;
@@ -26,8 +27,18 @@ final class MerchantProductEnricher
                 $fetches++;
 
                 if ($html) {
-                    $product = $this->extractor->enrichFromPage($html, $product, $url);
+                    $product = $this->extractor->enrichFromPage($html, $product, $url, $usedImages);
                 }
+            }
+
+            // Drop listing/AI images that collide with another product already chosen.
+            if (filled($product['image'] ?? null)
+                && $this->extractor->imageUrlIsExcluded((string) $product['image'], $usedImages)) {
+                $product['image'] = null;
+            }
+
+            if (filled($product['image'] ?? null)) {
+                $usedImages[] = (string) $product['image'];
             }
 
             $product['features'] = is_array($product['features'] ?? null) ? $product['features'] : [];

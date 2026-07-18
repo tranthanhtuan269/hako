@@ -29,7 +29,9 @@ final class MerchantProductExtractor
      */
     public function uniqueTake(array $products, int $limit = 5): array
     {
-        $seen = [];
+        $seenNames = [];
+        $seenUrls = [];
+        $seenImages = [];
         $unique = [];
 
         foreach ($products as $product) {
@@ -39,13 +41,36 @@ final class MerchantProductExtractor
                 continue;
             }
 
-            $key = Str::lower($name);
+            $nameKey = Str::lower($name);
+            $urlKey = filled($product['url'] ?? null)
+                ? Str::lower(rtrim((string) $product['url'], '/'))
+                : '';
 
-            if (isset($seen[$key])) {
+            if (isset($seenNames[$nameKey])) {
                 continue;
             }
 
-            $seen[$key] = true;
+            if ($urlKey !== '' && isset($seenUrls[$urlKey])) {
+                continue;
+            }
+
+            $image = filled($product['image'] ?? null) ? (string) $product['image'] : null;
+            if ($image !== null) {
+                $imageKey = $this->normalizeImageKey($image);
+                if (isset($seenImages[$imageKey])) {
+                    // Keep the product, but drop the duplicated listing thumb so enrich can refill from PDP.
+                    $image = null;
+                }
+            }
+
+            $seenNames[$nameKey] = true;
+            if ($urlKey !== '') {
+                $seenUrls[$urlKey] = true;
+            }
+            if ($image !== null) {
+                $seenImages[$this->normalizeImageKey($image)] = true;
+            }
+
             $unique[] = [
                 'name' => Str::limit(HtmlCleaner::decodeEntities($name), 120),
                 'description' => filled($product['description'] ?? null)
@@ -54,7 +79,7 @@ final class MerchantProductExtractor
                 'price' => filled($product['price'] ?? null)
                     ? Str::limit(strip_tags((string) $product['price']), 40)
                     : null,
-                'image' => $product['image'] ?? null,
+                'image' => $image,
                 'url' => $product['url'] ?? null,
                 'features' => is_array($product['features'] ?? null) ? $product['features'] : [],
             ];
@@ -69,12 +94,36 @@ final class MerchantProductExtractor
 
     /**
      * @param  array{name: string, description: ?string, price: ?string, image: ?string, url: ?string, features?: list<string>}  $product
+     * @param  list<string>  $excludeImageUrls  Image URLs already used by other products (avoid duplicates).
      * @return array{name: string, description: ?string, price: ?string, image: ?string, url: ?string, features: list<string>}
      */
-    public function enrichFromPage(string $html, array $product, string $baseUrl): array
+    public function enrichFromPage(string $html, array $product, string $baseUrl, array $excludeImageUrls = []): array
     {
-        $extracted = $this->extract($html, $baseUrl);
-        $detail = $extracted[0] ?? null;
+        $extracted = $this->extract($html, $baseUrl, 3);
+        $detail = null;
+
+        // Prefer JSON-LD/detail that matches this product URL or name when possible.
+        $targetUrl = Str::lower(rtrim((string) ($product['url'] ?? ''), '/'));
+        $targetName = Str::lower((string) ($product['name'] ?? ''));
+
+        foreach ($extracted as $candidate) {
+            $candidateUrl = Str::lower(rtrim((string) ($candidate['url'] ?? ''), '/'));
+            $candidateName = Str::lower((string) ($candidate['name'] ?? ''));
+
+            if ($targetUrl !== '' && $candidateUrl !== '' && $candidateUrl === $targetUrl) {
+                $detail = $candidate;
+                break;
+            }
+
+            if ($targetName !== '' && $candidateName !== '' && (
+                str_contains($candidateName, $targetName) || str_contains($targetName, $candidateName)
+            )) {
+                $detail = $candidate;
+                break;
+            }
+        }
+
+        $detail ??= $extracted[0] ?? null;
 
         if (is_array($detail)) {
             if (empty($product['description']) && filled($detail['description'] ?? null)) {
@@ -85,17 +134,23 @@ final class MerchantProductExtractor
                 $product['price'] = $detail['price'];
             }
 
-            if (empty($product['image']) && filled($detail['image'] ?? null)) {
-                $product['image'] = $detail['image'];
-            }
-
             if (empty($product['url']) && filled($detail['url'] ?? null)) {
                 $product['url'] = $detail['url'];
             }
         }
 
-        if (empty($product['image'])) {
-            $product['image'] = $this->extractPrimaryProductImage($html, $baseUrl);
+        // Always prefer a PDP-specific product image so listing/AI thumbs are not reused across SKUs.
+        $pdpImage = $this->extractPrimaryProductImage($html, $baseUrl, $excludeImageUrls);
+
+        if ($pdpImage) {
+            $product['image'] = $pdpImage;
+        } elseif (empty($product['image']) && is_array($detail) && filled($detail['image'] ?? null)) {
+            $candidateImage = (string) $detail['image'];
+            if (! $this->imageUrlIsExcluded($candidateImage, $excludeImageUrls)) {
+                $product['image'] = $candidateImage;
+            }
+        } elseif (filled($product['image'] ?? null) && $this->imageUrlIsExcluded((string) $product['image'], $excludeImageUrls)) {
+            $product['image'] = null;
         }
 
         $features = $this->extractFeatures($html);
@@ -111,8 +166,10 @@ final class MerchantProductExtractor
 
     /**
      * Prefer Open Graph / Twitter / product gallery images from a product detail page.
+     *
+     * @param  list<string>  $excludeUrls
      */
-    public function extractPrimaryProductImage(string $html, string $baseUrl): ?string
+    public function extractPrimaryProductImage(string $html, string $baseUrl, array $excludeUrls = []): ?string
     {
         $candidates = [];
 
@@ -125,8 +182,10 @@ final class MerchantProductExtractor
             '/<meta[^>]+name=["\']twitter:image(?::src)?["\'][^>]+content=["\']([^"\']+)["\']/i',
             '/<meta[^>]+content=["\']([^"\']+)["\'][^>]+name=["\']twitter:image(?::src)?["\']/i',
         ] as $pattern) {
-            if (preg_match($pattern, $html, $match)) {
-                $candidates[] = $this->absolutizeUrl($baseUrl, html_entity_decode($match[1]));
+            if (preg_match_all($pattern, $html, $matches)) {
+                foreach ($matches[1] as $matchUrl) {
+                    $candidates[] = $this->absolutizeUrl($baseUrl, html_entity_decode($matchUrl));
+                }
             }
         }
 
@@ -153,27 +212,71 @@ final class MerchantProductExtractor
             }
         }
 
+        // Shopify / theme JSON blobs often expose featured_image without og tags in some themes.
+        if (preg_match_all('/"featured_image"\s*:\s*"(\\/[^"]+)"/i', $html, $matches)) {
+            foreach ($matches[1] as $matchUrl) {
+                $candidates[] = $this->absolutizeUrl($baseUrl, stripcslashes($matchUrl));
+            }
+        }
+        if (preg_match_all('/"featured_image"\s*:\s*"(https?:\\/\\/[^"]+)"/i', $html, $matches)) {
+            foreach ($matches[1] as $matchUrl) {
+                $candidates[] = $this->absolutizeUrl($baseUrl, stripcslashes($matchUrl));
+            }
+        }
+        if (preg_match_all('/"src"\s*:\s*"(https?:\\/\\/[^"]+cdn\\/shop\\/[^"]+\.(?:jpg|jpeg|png|webp)[^"]*)"/i', $html, $matches)) {
+            foreach ($matches[1] as $matchUrl) {
+                $candidates[] = $this->absolutizeUrl($baseUrl, stripcslashes($matchUrl));
+            }
+        }
+
         foreach ($candidates as $url) {
             $url = preg_replace('#^http://#i', 'https://', $url) ?: $url;
 
-            if ($this->looksLikeProductImageUrl($url)) {
-                return $url;
+            if (! $this->looksLikeProductImageUrl($url)) {
+                continue;
             }
-        }
 
-        // Shopify / theme JSON blobs often expose featured_image without og tags in some themes.
-        if (preg_match('/"featured_image"\s*:\s*"(\\/[^"]+)"/i', $html, $match)
-            || preg_match('/"featured_image"\s*:\s*"(https?:\\/\\/[^"]+)"/i', $html, $match)
-            || preg_match('/"src"\s*:\s*"(https?:\\/\\/[^"]+cdn\\/shop\\/[^"]+\.(?:jpg|jpeg|png|webp)[^"]*)"/i', $html, $match)) {
-            $url = $this->absolutizeUrl($baseUrl, stripcslashes($match[1]));
-            $url = preg_replace('#^http://#i', 'https://', $url) ?: $url;
-
-            if ($this->looksLikeProductImageUrl($url)) {
-                return $url;
+            if ($this->imageUrlIsExcluded($url, $excludeUrls)) {
+                continue;
             }
+
+            return $url;
         }
 
         return null;
+    }
+
+    /**
+     * Normalize image URLs for duplicate detection (ignore size/query noise).
+     */
+    public function normalizeImageKey(string $url): string
+    {
+        $url = preg_replace('#^http://#i', 'https://', trim($url)) ?: trim($url);
+        $parts = parse_url($url);
+        $path = $parts['path'] ?? '';
+
+        // Strip common Shopify size suffixes: image_300x.jpg / image_grande.jpg
+        $path = preg_replace('/_(?:pico|icon|thumb|small|compact|medium|large|grande|original|master|\d+x\d*|\d*x\d+)\./i', '.', $path) ?? $path;
+
+        return Str::lower(($parts['host'] ?? '').$path);
+    }
+
+    /** @param  list<string>  $excludeUrls */
+    public function imageUrlIsExcluded(string $url, array $excludeUrls): bool
+    {
+        if ($url === '' || $excludeUrls === []) {
+            return false;
+        }
+
+        $key = $this->normalizeImageKey($url);
+
+        foreach ($excludeUrls as $excluded) {
+            if ($excluded !== '' && $this->normalizeImageKey((string) $excluded) === $key) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private function looksLikeProductImageUrl(string $url): bool
@@ -202,17 +305,22 @@ final class MerchantProductExtractor
             foreach ($matches[1] as $item) {
                 $text = HtmlCleaner::textFromHtml($item);
 
-                if ($text === '' || strlen($text) < 8 || strlen($text) > 180) {
+                if ($text === '' || strlen($text) < 12 || strlen($text) > 160) {
                     continue;
                 }
 
-                if (preg_match('/^(home|shop|cart|login|sign in|subscribe|menu|search)$/i', $text)) {
+                if (preg_match('/^(home|shop|cart|login|sign in|subscribe|menu|search|affiliates?|instructions?|account|faq|contact|about|blog|privacy|terms)$/i', $text)) {
+                    continue;
+                }
+
+                // Skip promo / nav junk that often pollutes Shopify themes.
+                if (preg_match('/\b(use code|promo code|% off|ends friday|free shipping \$|newsletter|subscribe|add to cart|quick view)\b/i', $text)) {
                     continue;
                 }
 
                 $features[] = $text;
 
-                if (count($features) >= 8) {
+                if (count($features) >= 6) {
                     break;
                 }
             }
@@ -223,10 +331,21 @@ final class MerchantProductExtractor
 
     private function isJunkProductName(string $name): bool
     {
-        return (bool) preg_match(
-            '/^(shop|products|product|buy now|learn more|view all|add to cart|sale|new arrivals?|best sellers?|collections?)$/i',
-            trim($name)
-        );
+        $name = trim($name);
+
+        if (preg_match(
+            '/^(shop|products?|buy now|learn more|view all|add to cart|sale|new arrivals?|best sellers?|collections?|choose option|select option|select|options?|quick view|sold out|default title)$/i',
+            $name
+        )) {
+            return true;
+        }
+
+        // Generic placeholder alts / link text that are not real SKUs.
+        if (preg_match('/^(skin care product|beauty product|product image|item|untitled)$/i', $name)) {
+            return true;
+        }
+
+        return false;
     }
 
     /**

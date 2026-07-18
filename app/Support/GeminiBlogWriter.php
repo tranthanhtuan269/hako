@@ -110,6 +110,8 @@ final class GeminiBlogWriter
         }
 
         $products = [];
+        $usedImages = [];
+        $usedUrls = [];
 
         foreach ($items as $item) {
             if (! is_array($item)) {
@@ -124,6 +126,10 @@ final class GeminiBlogWriter
                 continue;
             }
 
+            if (preg_match('/^(choose option|select option|select|options?|quick view|default title|product image)$/i', $name)) {
+                continue;
+            }
+
             $urlHost = strtolower(preg_replace('/^www\./', '', (string) parse_url($url, PHP_URL_HOST)));
 
             if ($domain !== '' && $urlHost !== '' && $urlHost !== $domain && ! str_ends_with($urlHost, '.'.$domain)) {
@@ -131,6 +137,10 @@ final class GeminiBlogWriter
             }
 
             $urlKey = strtolower(rtrim($url, '/'));
+            if (isset($usedUrls[$urlKey])) {
+                continue;
+            }
+
             $matchedCandidate = $candidatesByUrl[$urlKey] ?? null;
 
             if ($candidatesByUrl !== [] && $matchedCandidate === null) {
@@ -159,6 +169,14 @@ final class GeminiBlogWriter
                 $image = '';
             }
 
+            // Never reuse the same product photo across SKUs.
+            if ($image !== '') {
+                $imageKey = $this->normalizePickerImageKey($image);
+                if (isset($usedImages[$imageKey])) {
+                    $image = '';
+                }
+            }
+
             if ($name === '' && is_array($matchedCandidate)) {
                 $name = (string) ($matchedCandidate['name'] ?? '');
             }
@@ -176,12 +194,27 @@ final class GeminiBlogWriter
                 'features' => [],
             ];
 
+            $usedUrls[$urlKey] = true;
+            if ($image !== '') {
+                $usedImages[$this->normalizePickerImageKey($image)] = true;
+            }
+
             if (count($products) >= 5) {
                 break;
             }
         }
 
         return $products !== [] ? $products : null;
+    }
+
+    private function normalizePickerImageKey(string $url): string
+    {
+        $url = preg_replace('#^http://#i', 'https://', trim($url)) ?: trim($url);
+        $parts = parse_url($url);
+        $path = $parts['path'] ?? '';
+        $path = preg_replace('/_(?:pico|icon|thumb|small|compact|medium|large|grande|original|master|\d+x\d*|\d*x\d+)\./i', '.', $path) ?? $path;
+
+        return Str::lower(($parts['host'] ?? '').$path);
     }
 
     /**
@@ -225,7 +258,7 @@ final class GeminiBlogWriter
         return <<<PROMPT
 You are a senior affiliate merchandiser picking products for a U.S. coupon/review article about {$storeName}.
 
-From the JSON below, select the 3–5 BEST products to feature (bestsellers, flagship items, or clearly distinct hero SKUs). Also pick the BEST product photo URL for each — a real product image (wallet, bag, backpack, device, etc.), never a logo, icon, badge, or banner.
+From the JSON below, select the 3–5 BEST products to feature (bestsellers, flagship items, or clearly distinct hero SKUs). Also pick the BEST product photo URL for each — a real product image (wallet, bag, backpack, device, serum bottle, etc.), never a logo, icon, badge, or banner.
 
 JSON:
 {$factsJson}
@@ -234,8 +267,10 @@ Rules:
 - Prefer items from candidate_products. You may use html_excerpt only to refine names/images/prices already implied by candidates.
 - Every product MUST include a product page url on domain "{$domain}" (or from candidate_products).
 - Every product SHOULD include an image URL of the actual product. Prefer high-quality CDN/product gallery images from candidates or html_excerpt. Do not invent image URLs that are not present in the JSON.
+- CRITICAL: each product must have a UNIQUE image URL. Never reuse the same image for two products. If you cannot find a distinct photo, set image to null.
+- Skip junk labels like "Choose Option", "Select Option", "Quick View", or generic "product" alts.
 - Do not invent product names or URLs that are not supported by candidates/html_excerpt.
-- Prefer variety across the catalog when candidates allow it (e.g. wallet + bag + belt) instead of near-duplicates.
+- Prefer variety across the catalog when candidates allow it instead of near-duplicates.
 - Rank by usefulness for shoppers researching deals: popular, clearly named, with price/image when available.
 
 Return valid JSON only:
