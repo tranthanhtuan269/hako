@@ -114,6 +114,14 @@ final class AffiliateImportContentBuilder
 
     private function finalizeStoreDescription(string $content, Store $store, array $merchant = [], array $offers = []): string
     {
+        $category = $store->category?->name ?? ($merchant['category_name'] ?? 'online retail');
+        $storeUrl = route('stores.show', $store->slug);
+        $products = is_array($merchant['products'] ?? null) ? $merchant['products'] : [];
+        if (! empty($merchant['product_focus'])) {
+            $products = array_slice($products, 0, 1);
+        }
+        $merchantFaqs = is_array($merchant['faqs'] ?? null) ? $merchant['faqs'] : [];
+
         $content = $this->ensureArticleImages($content, $merchant, $store->name);
         $content = $this->ensureWhyTrustUs($content, $store->name, $merchant, $offers);
         $content = $this->ensureComparisonTables(
@@ -121,8 +129,21 @@ final class AffiliateImportContentBuilder
             $store->name,
             $merchant,
             $offers,
-            $store->category?->name ?? ($merchant['category_name'] ?? null)
+            $category
         );
+        $content = $this->ensureAboutStoreOutline(
+            $content,
+            $store->name,
+            $category,
+            $merchant['meta_description'] ?? null,
+            $products,
+            $offers,
+            $merchant,
+            $merchantFaqs,
+            $storeUrl,
+            $store->affiliate_url
+        );
+        $content = $this->ensureHowToApplyCouponCodes($content, $store->name, $storeUrl, $store->affiliate_url);
         $content = $this->ensureSearchIntentFaqs($content, $store->name, $merchant, $offers, $store);
         $content = PostAffiliateContent::embed($content, $store);
         $content = $this->ensureAffiliateLinks($content, $store, self::STORE_DESCRIPTION_MIN_AFFILIATE_LINKS);
@@ -976,32 +997,32 @@ final class AffiliateImportContentBuilder
         $parts[] = '<p>'.$intro.'</p>';
 
         $parts[] = $this->sectionWhyTrustUs($name, $products, $offers);
-
-        if ($metaDescription) {
-            $parts[] = '<p><strong>Merchant positioning:</strong> '.e($metaDescription).'</p>';
-        }
-
-        $parts[] = '<p>Browse live coupons on our <a href="'.e($storeUrl).'">'.e($name).' deals page</a> before checkout, then confirm the final cart total on the merchant site.</p>';
-
         $parts[] = $this->sectionStoreAtAGlanceTable($name, $category, $products, $offers, $merchantFaqs, $metaDescription, $merchant);
-        $parts[] = $this->sectionBrandStory($name, $category, $metaDescription, $products, $merchant);
-        $parts[] = $this->sectionAdvantages($name, $category, $offers, $metaDescription, $products);
+
+        // CouponLanding-style outline: About store → products → offers → how to apply → Q&A.
+        $parts[] = $this->sectionAboutStore(
+            $name,
+            $category,
+            $metaDescription,
+            $products,
+            $offers,
+            $merchant,
+            $merchantFaqs,
+            $storeUrl,
+            $store->affiliate_url
+        );
 
         if (count($products) >= 2) {
             $parts[] = $this->sectionProductComparisonTable($name, $products, $category);
             $parts[] = $this->sectionProductDeepDives($name, $products, $storeUrl);
-            $parts[] = $this->sectionWhichProductToChoose($name, $products, $category);
         } elseif (count($products) === 1) {
             $parts[] = $this->sectionProductSpecTable($products[0], $name);
             $parts[] = $this->sectionProductDeepDives($name, $products, $storeUrl);
-            $parts[] = $this->sectionSingleProductProsCons($products[0]['name'], $products[0]);
-        } else {
-            $parts[] = $this->sectionBestSellers($name, $offers, $monthYear, $storeUrl);
         }
 
         $parts[] = $this->sectionCurrentOffers($name, $offers, $storeUrl, $monthYear, $store->affiliate_url);
-        $parts[] = $this->sectionHowToSave($name, $storeUrl, $store->affiliate_url);
-        $parts[] = $this->sectionFaq($name, $merchantFaqs, $storeUrl, $products, $offers, $merchant);
+        $parts[] = $this->sectionHowToApplyCouponCodes($name, $storeUrl, $store->affiliate_url);
+        $parts[] = $this->sectionQuestionsAnswers($name, $merchantFaqs, $storeUrl, $products, $offers, $merchant);
         $parts[] = $this->sectionCheckoutChecklist($store);
 
         $parts[] = '<h2>Bottom line</h2>';
@@ -1235,22 +1256,367 @@ final class AffiliateImportContentBuilder
 
     private function sectionHowToSave(string $name, string $storeUrl, ?string $affiliateUrl = null): string
     {
-        $parts = [];
-        $parts[] = '<h2>How to Maximize Savings at ' . e($name) . '</h2>';
-        $parts[] = '<ol>';
-        $parts[] = '<li>Start on our <a href="' . e($storeUrl) . '">' . e($name) . ' deals page</a> to see coupon vs automatic offers.</li>';
+        // Kept for older blog templates; store descriptions use sectionHowToApplyCouponCodes.
+        return $this->sectionHowToApplyCouponCodes($name, $storeUrl, $affiliateUrl);
+    }
 
-        if (filled($affiliateUrl)) {
-            $parts[] = '<li>Use our <a href="' . e($affiliateUrl) . '" rel="nofollow sponsored">affiliate shop link</a> so your order is tracked through ' . e(config('site.name')) . '.</li>';
+    /**
+     * CouponLanding-style "About store" block.
+     * Format B when merchant meta/brand copy is rich; otherwise Format A with 7 H3s.
+     *
+     * @param  array<int, array{name?: string, description?: ?string, price?: ?string, image?: ?string, url?: ?string, features?: list<string>}>  $products
+     * @param  array<int, array{code?: ?string, title?: string, description?: ?string, type?: string}>  $offers
+     * @param  array<string, mixed>  $merchant
+     * @param  array<int, array{question?: string, answer?: string}>  $merchantFaqs
+     */
+    private function sectionAboutStore(
+        string $name,
+        string $category,
+        ?string $metaDescription,
+        array $products,
+        array $offers,
+        array $merchant,
+        array $merchantFaqs,
+        string $storeUrl,
+        ?string $affiliateUrl = null,
+    ): string {
+        if ($this->hasRichBrandStory($metaDescription, $merchant)) {
+            return $this->sectionAboutStoreFormatB($name, $category, $metaDescription, $products, $merchant, $storeUrl);
         }
 
-        $parts[] = '<li>Copy the promo code before you open the merchant site if a code is required.</li>';
-        $parts[] = '<li>Check minimum spend rules, excluded categories, and expiration dates on the merchant checkout page.</li>';
-        $parts[] = '<li>Compare the final total with and without the code — some sitewide sales cannot stack with additional coupons.</li>';
-        $parts[] = '<li>Subscribe to the brand newsletter if you plan repeat purchases; many stores send exclusive codes to subscribers.</li>';
+        return $this->sectionAboutStoreFormatA(
+            $name,
+            $category,
+            $metaDescription,
+            $products,
+            $offers,
+            $merchant,
+            $merchantFaqs,
+            $storeUrl,
+            $affiliateUrl
+        );
+    }
+
+    /**
+     * @param  array<string, mixed>  $merchant
+     */
+    private function hasRichBrandStory(?string $metaDescription, array $merchant): bool
+    {
+        $meta = trim((string) $metaDescription);
+        if (strlen($meta) < 220) {
+            return false;
+        }
+
+        return (bool) preg_match(
+            '/\b(established|founded|mission|promise|history|since\s+\d{4}|our story|we are|we\'re|defect rate|commitment)\b/i',
+            $meta
+        );
+    }
+
+    /**
+     * Format B: paraphrase richer merchant About/meta copy (Casabrews / Blue Coolers style).
+     *
+     * @param  array<int, array{name?: string, description?: ?string}>  $products
+     * @param  array<string, mixed>  $merchant
+     */
+    private function sectionAboutStoreFormatB(
+        string $name,
+        string $category,
+        ?string $metaDescription,
+        array $products,
+        array $merchant,
+        string $storeUrl,
+    ): string {
+        $parts = [];
+        $parts[] = '<h2>About '.e($name).'</h2>';
+        $parts[] = '<p>'.e(Str::limit(HtmlCleaner::textFromHtml((string) $metaDescription), 900)).'</p>';
+
+        $domain = filled($merchant['domain'] ?? null) ? (string) $merchant['domain'] : null;
+        $closing = e($name).' sits in the '.e(strtolower($category)).' category';
+        if ($domain) {
+            $closing .= ' on '.e($domain);
+        }
+        $productCount = collect($products)->pluck('name')->filter()->count();
+        if ($productCount > 0) {
+            $closing .= ', with '.$productCount.' featured listing'.($productCount === 1 ? '' : 's').' researched for this guide';
+        }
+        $closing .= '. Browse live deals on our <a href="'.e($storeUrl).'">'.e($name).' coupon page</a> before you check out.';
+        $parts[] = '<p>'.$closing.'</p>';
+
+        return implode("\n", $parts);
+    }
+
+    /**
+     * Format A: seven grounded H3 sections (CouponLanding outline, fact-driven).
+     *
+     * @param  array<int, array{name?: string, description?: ?string, price?: ?string, image?: ?string, url?: ?string, features?: list<string>}>  $products
+     * @param  array<int, array{code?: ?string, title?: string, description?: ?string, type?: string}>  $offers
+     * @param  array<string, mixed>  $merchant
+     * @param  array<int, array{question?: string, answer?: string}>  $merchantFaqs
+     */
+    private function sectionAboutStoreFormatA(
+        string $name,
+        string $category,
+        ?string $metaDescription,
+        array $products,
+        array $offers,
+        array $merchant,
+        array $merchantFaqs,
+        string $storeUrl,
+        ?string $affiliateUrl = null,
+    ): string {
+        $site = (string) config('site.name');
+        $domain = filled($merchant['domain'] ?? null) ? (string) $merchant['domain'] : null;
+        $offerCount = count($offers);
+        $bestOffer = collect($offers)->pluck('title')->filter()->first();
+        $leadProduct = collect($products)->first();
+        $leadName = is_array($leadProduct) ? (string) ($leadProduct['name'] ?? '') : '';
+
+        $parts = [];
+        $parts[] = '<h2>About '.e($name).'</h2>';
+
+        // 1. Why American Shoppers Keep Coming Back
+        $parts[] = '<h3>Why American Shoppers Keep Coming Back</h3>';
+        $hook = e($name).' is tracked on '.e($site).' for U.S. shoppers researching the '.e(strtolower($category)).' category';
+        if ($domain) {
+            $hook .= ' at '.e($domain);
+        }
+        $hook .= '.';
+        if ($offerCount > 0) {
+            $hook .= ' We currently list '.$offerCount.' offer'.($offerCount === 1 ? '' : 's');
+            if (is_string($bestOffer) && $bestOffer !== '') {
+                $hook .= ' (including '.e($bestOffer).')';
+            }
+            $hook .= ' so deal hunters can compare savings before checkout.';
+        } else {
+            $hook .= ' Use this guide as a research starting point, then confirm live pricing on the merchant site.';
+        }
+        if ($metaDescription) {
+            $hook .= ' Merchant positioning: '.e(Str::limit(HtmlCleaner::textFromHtml($metaDescription), 180)).'.';
+        }
+        $parts[] = '<p>'.$hook.'</p>';
+
+        // 2. What Makes This Store Different
+        $parts[] = '<h3>What Makes This Store Different</h3>';
+        $diffBits = [];
+        if ($metaDescription) {
+            $diffBits[] = 'Public brand copy emphasizes: '.e(Str::limit(HtmlCleaner::textFromHtml($metaDescription), 220));
+        }
+        if (is_array($leadProduct) && filled($leadProduct['description'] ?? null)) {
+            $diffBits[] = 'A featured listing ('.e($leadName).') highlights: '
+                .e(Str::limit(strip_tags((string) $leadProduct['description']), 160));
+        }
+        if ($diffBits === []) {
+            $diffBits[] = 'Compared with generic coupon blurbs, this guide sticks to public product pages, listed offers, and merchant FAQs — not invented brand stories.';
+        }
+        $parts[] = '<p>'.implode(' ', $diffBits).'</p>';
+
+        // 3. Product Categories Worth Exploring
+        $parts[] = '<h3>Product Categories Worth Exploring</h3>';
+        $parts[] = '<p>Shoppers browsing '.e($name).' in '.e(strtolower($category)).' typically start with listings like these:</p>';
+        $parts[] = '<ul>';
+        if ($products !== []) {
+            foreach (array_slice($products, 0, 5) as $product) {
+                $productName = (string) ($product['name'] ?? 'Featured listing');
+                $line = '<li><strong>'.e($productName).'</strong>';
+                if (filled($product['description'] ?? null)) {
+                    $line .= ' — '.e(Str::limit(strip_tags((string) $product['description']), 120));
+                } elseif (filled($product['price'] ?? null)) {
+                    $line .= ' — listed near '.e((string) $product['price']);
+                } else {
+                    $line .= ' — confirm specs on the merchant product page';
+                }
+                $line .= '</li>';
+                $parts[] = $line;
+            }
+        } else {
+            $parts[] = '<li><strong>'.e(ucfirst(strtolower($category))).'</strong> — explore the official catalog and match a listing to a promo on our deals page.</li>';
+        }
+        $parts[] = '</ul>';
+
+        // 4. Quality That Justifies the Price
+        $parts[] = '<h3>Quality That Justifies the Price</h3>';
+        $quality = 'Price only makes sense after you compare the listing details with the final cart total.';
+        if (is_array($leadProduct) && filled($leadProduct['price'] ?? null)) {
+            $quality .= ' For example, '.e($leadName !== '' ? $leadName : 'a featured listing').' shows '
+                .e((string) $leadProduct['price']).' on the public product page — re-check live pricing before you pay.';
+        }
+        $featureBits = [];
+        foreach (array_slice($products, 0, 2) as $product) {
+            $features = is_array($product['features'] ?? null) ? array_slice($product['features'], 0, 1) : [];
+            foreach ($features as $feature) {
+                $featureBits[] = (string) $feature;
+            }
+        }
+        if ($featureBits !== []) {
+            $quality .= ' Merchant listing details include: '.e(implode('; ', array_slice($featureBits, 0, 2))).'.';
+        } else {
+            $quality .= ' Prefer products with clear specs on the merchant page over vague “premium quality” claims.';
+        }
+        $parts[] = '<p>'.$quality.'</p>';
+
+        // 5. Shipping, Returns and Customer Experience
+        $parts[] = '<h3>Shipping, Returns and Customer Experience</h3>';
+        $shipping = $this->faqAnswerMatching($merchantFaqs, '/ship|deliver|worldwide|international|postage|shipping/i', [
+            (string) $metaDescription,
+        ]);
+        $returns = $this->faqAnswerMatching($merchantFaqs, '/return|refund|exchange|warranty/i', [
+            (string) $metaDescription,
+        ]);
+        $shipLine = $shipping
+            ? 'Shipping note from public pages: '.$shipping
+            : 'Confirm shipping options, rates, and delivery windows on the '.$name.' checkout page before paying.';
+        $returnLine = $returns
+            ? 'Returns note from public pages: '.$returns
+            : 'Confirm return, exchange, and warranty terms on the merchant help center for the SKU you buy.';
+        $parts[] = '<p>'.e($shipLine).' '.e($returnLine).'</p>';
+
+        // 6. How to Maximize Your Savings
+        $parts[] = '<h3>How to Maximize Your Savings</h3>';
+        $parts[] = '<ul>';
+        $parts[] = '<li>Start on our <a href="'.e($storeUrl).'">'.e($name).' deals page</a> to compare coupon codes vs automatic discounts.</li>';
+        if ($offerCount > 0 && is_string($bestOffer) && $bestOffer !== '') {
+            $parts[] = '<li>Prioritize the strongest listed offer first — currently highlighted as '.e($bestOffer).'.</li>';
+        }
+        if (filled($affiliateUrl)) {
+            $parts[] = '<li>Use our <a href="'.e($affiliateUrl).'" rel="nofollow sponsored" target="_blank">tracked shop link</a> so the order is attributed through '.e($site).'.</li>';
+        }
+        $parts[] = '<li>Check minimum spend, excluded products, and expiration dates on the merchant checkout page.</li>';
+        $parts[] = '<li>Compare the cart total with and without the code — some sitewide sales cannot stack.</li>';
+        $parts[] = '<li>Subscribe to the brand newsletter if you shop often; many stores send subscriber-only codes.</li>';
+        $parts[] = '</ul>';
+
+        // 7. Is This Store Worth Shopping?
+        $parts[] = '<h3>Is This Store Worth Shopping?</h3>';
+        $verdict = e($name).' is worth a look when the '.e(strtolower($category)).' listings match what you need';
+        if ($leadName !== '') {
+            $verdict .= ' — for example '.e($leadName);
+        }
+        $verdict .= ' — and the final total still looks fair after shipping.';
+        if ($offerCount > 0) {
+            $verdict .= ' Pair the purchase with a current deal from our <a href="'.e($storeUrl).'">'.e($name).' coupon page</a>.';
+        } else {
+            $verdict .= ' Re-check our <a href="'.e($storeUrl).'">'.e($name).' deals page</a> before you buy.';
+        }
+        if (filled($affiliateUrl)) {
+            $verdict .= ' When you are ready, <a href="'.e($affiliateUrl).'" rel="nofollow sponsored" target="_blank">shop at '.e($name).'</a> through our affiliate link.';
+        }
+        $parts[] = '<p>'.$verdict.'</p>';
+
+        return implode("\n", $parts);
+    }
+
+    private function sectionHowToApplyCouponCodes(string $name, string $storeUrl, ?string $affiliateUrl = null): string
+    {
+        $site = (string) config('site.name');
+        $parts = [];
+        $parts[] = '<h2>How to Apply '.e($name).' Coupon Codes</h2>';
+        $parts[] = '<p>Use this short checkout checklist to apply a '.e($name).' promo code without losing the discount at the last step:</p>';
+        $parts[] = '<ol>';
+        $parts[] = '<li><strong>Step 1:</strong> Find a '.e($name).' coupon or discount on our <a href="'.e($storeUrl).'">'.e($name).' deals page</a> at '.e($site).'. If a code is required, copy it to your clipboard.</li>';
+        if (filled($affiliateUrl)) {
+            $parts[] = '<li><strong>Step 2:</strong> Open <a href="'.e($affiliateUrl).'" rel="nofollow sponsored" target="_blank">'.e($name).'</a>, add the items you want, then go to checkout.</li>';
+        } else {
+            $parts[] = '<li><strong>Step 2:</strong> Go to '.e($name).', add the items you want, then go to checkout.</li>';
+        }
+        $parts[] = '<li><strong>Step 3:</strong> Look for a field labeled “Promo Code”, “Discount Code”, or similar. Paste the code, click Apply, and confirm the new cart total before you pay.</li>';
         $parts[] = '</ol>';
 
         return implode("\n", $parts);
+    }
+
+    /**
+     * Inject About store outline when Gemini/templates omit it.
+     *
+     * @param  array<int, array{name?: string, description?: ?string, price?: ?string, image?: ?string, url?: ?string, features?: list<string>}>  $products
+     * @param  array<int, array{code?: ?string, title?: string, description?: ?string, type?: string}>  $offers
+     * @param  array<string, mixed>  $merchant
+     * @param  array<int, array{question?: string, answer?: string}>  $merchantFaqs
+     */
+    private function ensureAboutStoreOutline(
+        string $content,
+        string $storeName,
+        string $category,
+        ?string $metaDescription,
+        array $products,
+        array $offers,
+        array $merchant,
+        array $merchantFaqs,
+        string $storeUrl,
+        ?string $affiliateUrl = null,
+    ): string {
+        $content = trim($content);
+        if ($content === '') {
+            return $content;
+        }
+
+        $hasAbout = (bool) preg_match('/<h2[^>]*>\s*About\s+'.preg_quote($storeName, '/').'\s*<\/h2>/i', $content)
+            || (bool) preg_match('/<h2[^>]*>\s*About\s+store\s*<\/h2>/i', $content);
+        $hasWhyComingBack = str_contains(Str::lower($content), 'why american shoppers keep coming back')
+            || str_contains(Str::lower($content), 'is this store worth shopping');
+
+        if ($hasAbout && ($hasWhyComingBack || $this->hasRichBrandStory($metaDescription, $merchant))) {
+            return $content;
+        }
+
+        $block = $this->sectionAboutStore(
+            $storeName,
+            $category,
+            $metaDescription,
+            $products,
+            $offers,
+            $merchant,
+            $merchantFaqs,
+            $storeUrl,
+            $affiliateUrl
+        );
+
+        if ($hasAbout) {
+            $replaced = preg_replace(
+                '/<h2[^>]*>\s*About(?:\s+store|\s+'.preg_quote($storeName, '/').')\s*<\/h2>.*?(?=<h2\b|$)/is',
+                $block."\n\n",
+                $content,
+                1
+            );
+
+            return trim($replaced ?? ($content."\n\n".$block));
+        }
+
+        // Insert after Why Trust Us or at-a-glance table when possible.
+        if (preg_match('/<h2[^>]*>\s*Why\s+Trust\s+Us\s*<\/h2>.*?(?=<h2\b)/is', $content, $match, PREG_OFFSET_CAPTURE)) {
+            $pos = $match[0][1] + strlen($match[0][0]);
+
+            return trim(substr($content, 0, $pos)."\n\n".$block."\n\n".ltrim(substr($content, $pos)));
+        }
+
+        return trim($content."\n\n".$block);
+    }
+
+    private function ensureHowToApplyCouponCodes(
+        string $content,
+        string $storeName,
+        string $storeUrl,
+        ?string $affiliateUrl = null,
+    ): string {
+        $content = trim($content);
+        if ($content === '') {
+            return $content;
+        }
+
+        if (preg_match('/<h2[^>]*>\s*How to Apply\s+.+?\s+Coupon Codes\s*<\/h2>/i', $content)) {
+            return $content;
+        }
+
+        $block = $this->sectionHowToApplyCouponCodes($storeName, $storeUrl, $affiliateUrl);
+
+        // Place before Q&A / FAQ when present.
+        if (preg_match('/<h2[^>]*>\s*(?:'.preg_quote($storeName, '/').'\s+Questions?\s*(?:&amp;|&)\s*Answers?|Frequently Asked Questions)\s*<\/h2>/i', $content, $match, PREG_OFFSET_CAPTURE)) {
+            $pos = $match[0][1];
+
+            return trim(substr($content, 0, $pos)."\n\n".$block."\n\n".ltrim(substr($content, $pos)));
+        }
+
+        return trim($content."\n\n".$block);
     }
 
     /**
@@ -1267,26 +1633,141 @@ final class AffiliateImportContentBuilder
         array $offers = [],
         array $merchant = [],
     ): string {
+        return $this->sectionQuestionsAnswers($name, $merchantFaqs, $storeUrl, $products, $offers, $merchant);
+    }
+
+    /**
+     * CouponLanding-style Q&A: merchant FAQs first, then coupon/search-intent fallbacks.
+     *
+     * @param  array<int, array{question: string, answer: string}>  $merchantFaqs
+     * @param  array<int, array{name?: string, description?: ?string, price?: ?string, image?: ?string, url?: ?string, features?: list<string>}>  $products
+     * @param  array<int, array{code?: ?string, title?: string, description?: ?string, type?: string}>  $offers
+     * @param  array<string, mixed>  $merchant
+     */
+    private function sectionQuestionsAnswers(
+        string $name,
+        array $merchantFaqs,
+        string $storeUrl,
+        array $products = [],
+        array $offers = [],
+        array $merchant = [],
+    ): string {
+        $site = (string) config('site.name');
         $parts = [];
-        $parts[] = '<h2>Frequently Asked Questions</h2>';
+        $parts[] = '<h2>'.e($name).' Questions &amp; Answers</h2>';
 
         if ($merchantFaqs !== []) {
-            $parts[] = '<p>These answers start with the merchant\'s own public FAQ content, then cover common search questions shoppers ask about '.e($name).':</p>';
+            $parts[] = '<p>These answers start with the merchant\'s own public FAQ content from '.e($name).', then cover common coupon questions shoppers ask on '.e($site).':</p>';
 
-            foreach ($merchantFaqs as $faq) {
-                $parts[] = '<h3>' . e($faq['question']) . '</h3>';
-                $parts[] = '<p>' . e($faq['answer']) . '</p>';
+            foreach (array_slice($merchantFaqs, 0, 12) as $faq) {
+                $question = trim((string) ($faq['question'] ?? ''));
+                $answer = trim((string) ($faq['answer'] ?? ''));
+                if ($question === '' || $answer === '') {
+                    continue;
+                }
+                $parts[] = '<h3>'.e($question).'</h3>';
+                $parts[] = '<p>'.e(Str::limit(HtmlCleaner::textFromHtml($answer), 400)).'</p>';
             }
         } else {
-            $parts[] = '<p>Common search questions U.S. shoppers ask before buying from '.e($name).':</p>';
+            $parts[] = '<p>We did not find a dedicated public FAQ block on the merchant pages collected for this guide. The answers below cover the coupon and checkout questions U.S. shoppers ask most often about '.e($name).':</p>';
+        }
+
+        $seen = [];
+        foreach ($merchantFaqs as $faq) {
+            $key = Str::lower(trim((string) ($faq['question'] ?? '')));
+            if ($key !== '') {
+                $seen[$key] = true;
+            }
+        }
+
+        foreach ($this->couponSiteFaqs($name, $storeUrl, $offers) as $faq) {
+            $key = Str::lower($faq[0]);
+            if (isset($seen[$key])) {
+                continue;
+            }
+            $seen[$key] = true;
+            $parts[] = '<h3>'.e($faq[0]).'</h3>';
+            $parts[] = '<p>'.$faq[1].'</p>';
         }
 
         foreach ($this->searchIntentFaqs($name, $storeUrl, $products, $offers, $merchant, $merchantFaqs) as $faq) {
-            $parts[] = '<h3>' . e($faq[0]) . '</h3>';
-            $parts[] = '<p>' . $faq[1] . '</p>';
+            $key = Str::lower($faq[0]);
+            if (isset($seen[$key])) {
+                continue;
+            }
+            // Skip near-duplicates already covered by couponSiteFaqs.
+            if (str_contains($key, 'promo code') && isset($seen[Str::lower('Does '.$name.' require a promo code for every deal?')])) {
+                continue;
+            }
+            $seen[$key] = true;
+            $parts[] = '<h3>'.e($faq[0]).'</h3>';
+            $parts[] = '<p>'.$faq[1].'</p>';
         }
 
         return implode("\n", $parts);
+    }
+
+    /**
+     * CouponLanding-style coupon Q&As, adapted for this site (no invented “50% best coupon”).
+     *
+     * @param  array<int, array{code?: ?string, title?: string, description?: ?string, type?: string}>  $offers
+     * @return list<array{0: string, 1: string}>
+     */
+    private function couponSiteFaqs(string $name, string $storeUrl, array $offers): array
+    {
+        $site = (string) config('site.name');
+        $dealsLink = '<a href="'.e($storeUrl).'">'.e($name).' deals page</a>';
+        $offerCount = count($offers);
+        $bestOffer = collect($offers)->pluck('title')->filter()->first();
+        $bestCode = collect($offers)->first(fn (array $o) => ($o['type'] ?? '') === 'coupon' && filled($o['code'] ?? null));
+
+        $faqs = [];
+        $faqs[] = [
+            'Why should I visit '.$site.' for '.$name.' coupons?',
+            e($site).' collects publicly listed '.$name.' discounts in one place and updates this '.$dealsLink.' so you can compare codes vs automatic deals before checkout.',
+        ];
+        $faqs[] = [
+            'Where to find '.$name.' promo codes?',
+            'Start on our '.$dealsLink.', then confirm the same promotion still appears at '.$name.' checkout. Some codes are also emailed by the merchant newsletter.',
+        ];
+        $faqs[] = [
+            'Will all '.$name.' discounts automatically be applied at checkout?',
+            'No. It depends on each deal. Some require a code in the discount field, while others apply automatically — our listings separate coupon codes from no-code discounts.',
+        ];
+        $faqs[] = [
+            'How do I use a '.$name.' coupon code?',
+            'Copy a code from our '.$dealsLink.', add items at '.$name.', paste the code at checkout, and confirm the discounted total before you pay.',
+        ];
+        $faqs[] = [
+            'How often does '.$name.' release a new coupon?',
+            $offerCount > 0
+                ? 'We currently track '.$offerCount.' '.$name.' offer'.($offerCount === 1 ? '' : 's').' on '.e($site).'. Brands often refresh codes around seasonal sales, launches, and newsletter drops — check the '.$dealsLink.' before you buy.'
+                : e($name).' promo codes appear most often around seasonal sales and newsletter campaigns. Bookmark our '.$dealsLink.' for newly listed codes.',
+        ];
+        $faqs[] = [
+            'How to know if an item is eligible for a '.$name.' coupon?',
+            'Read the offer description on our '.$dealsLink.' and re-check exclusions or minimum spend on the merchant checkout page for the SKU in your cart.',
+        ];
+        $faqs[] = [
+            'What is currently the best coupon of '.$name.'?',
+            is_string($bestOffer) && $bestOffer !== ''
+                ? 'Among the offers tracked here, the strongest listing is '.e($bestOffer)
+                    .(is_array($bestCode) && filled($bestCode['code'] ?? null) ? ' (code <code>'.e((string) $bestCode['code']).'</code>)' : '')
+                    .'. Always confirm it still applies in cart.'
+                : 'We do not currently list a standout '.$name.' coupon on this page. Re-check our '.$dealsLink.' for newly added deals.',
+        ];
+        $faqs[] = [
+            'Does a sitewide coupon of '.$name.' exist?',
+            $offerCount > 0
+                ? 'If '.$name.' is running a sitewide promo, it should appear on our '.$dealsLink.'. Open each listing for scope and exclusions.'
+                : 'We do not currently show a sitewide '.$name.' coupon here. Check the merchant homepage banners and our '.$dealsLink.' later.',
+        ];
+        $faqs[] = [
+            'How many items can I include with a '.$name.' discount code?',
+            'Most '.$name.' codes do not cap item count, but merchants often set a minimum order value or exclude sale items. Confirm the rule on the checkout page.',
+        ];
+
+        return $faqs;
     }
 
     /**
@@ -1434,8 +1915,12 @@ final class AffiliateImportContentBuilder
             }
         }
 
-        // Already has a strong FAQ set covering search intents.
-        if ($missing <= 1 && preg_match('/<h2[^>]*>\s*Frequently Asked Questions\s*<\/h2>/i', $content)) {
+        // Already has a strong FAQ / Q&A set covering search intents.
+        $hasFaqHeading = (bool) preg_match(
+            '/<h2[^>]*>\s*(?:Frequently Asked Questions|.+?\s+Questions?\s*(?:&amp;|&)\s*Answers?)\s*<\/h2>/i',
+            $content
+        );
+        if ($missing <= 1 && $hasFaqHeading) {
             return $content;
         }
 
@@ -1448,13 +1933,12 @@ final class AffiliateImportContentBuilder
             ? route('stores.show', $store->slug)
             : url('/stores/'.Str::slug($storeName));
 
-        $block = $this->sectionFaq($storeName, $faqs, $storeUrl, $products, $offers, $merchant);
+        $block = $this->sectionQuestionsAnswers($storeName, $faqs, $storeUrl, $products, $offers, $merchant);
 
-        // Drop merchant-only intro duplication when appending.
-        if (preg_match('/<h2[^>]*>\s*Frequently Asked Questions\s*<\/h2>/i', $content)) {
-            // Replace existing FAQ section with the stronger block.
+        // Replace existing FAQ / Q&A section with the stronger block.
+        if (preg_match('/<h2[^>]*>\s*(?:Frequently Asked Questions|.+?\s+Questions?\s*(?:&amp;|&)\s*Answers?)\s*<\/h2>/i', $content)) {
             $replaced = preg_replace(
-                '/<h2[^>]*>\s*Frequently Asked Questions\s*<\/h2>.*?(?=<h2\b|$)/is',
+                '/<h2[^>]*>\s*(?:Frequently Asked Questions|.+?\s+Questions?\s*(?:&amp;|&)\s*Answers?)\s*<\/h2>.*?(?=<h2\b|$)/is',
                 $block."\n\n",
                 $content,
                 1

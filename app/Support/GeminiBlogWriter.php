@@ -524,27 +524,42 @@ JSON facts:
 
 Description rules:
 - Audience: U.S. online shoppers researching this merchant before they buy.
-- Length: 700–1,000 words preferred. Prefer specific, useful copy over padded filler. Never invent content just to hit a word count.
-{$focusNote}- Include sections: Why Trust Us (EEAT), at-a-glance comparison table, what this store sells (with product headings when products exist), current savings, shopping tips tied to the listed offers, FAQ, short summary.
-- REQUIRED: include at least one HTML <table class="comparison-table"> titled like "{$storeName} at a glance" with columns Feature | {$storeName}. Rows must be grounded in JSON (Category, product types such as Wallet/Bags/Belt only if supported by product names, Featured products, Sample listed price, Offers tracked, Shipping, Returns). Unknown shipping/returns => "Confirm on merchant site".
+- Length: 700–1,100 words preferred. Prefer specific, useful copy over padded filler. Never invent content just to hit a word count.
+{$focusNote}- REQUIRED outline (use these exact H2 titles, adapting {store} to "{$storeName}"):
+  1) Short intro paragraph
+  2) <h2>Why Trust Us</h2> (EEAT)
+  3) At-a-glance <table class="comparison-table"> titled "{$storeName} at a glance" (Feature | {$storeName})
+  4) <h2>About {$storeName}</h2> with either:
+     - Format A (default): these exact H3s in order —
+       "Why American Shoppers Keep Coming Back",
+       "What Makes This Store Different",
+       "Product Categories Worth Exploring",
+       "Quality That Justifies the Price",
+       "Shipping, Returns and Customer Experience",
+       "How to Maximize Your Savings",
+       "Is This Store Worth Shopping?"
+     - Format B (only if meta_description is a rich brand story ≥ ~220 chars with founding/mission/history language): paraphrase that merchant copy under About {$storeName} instead of inventing the 7 H3s.
+  5) Optional product deep-dives (<h2> + <h3> per product) ONLY when products exist in JSON
+  6) Current offers / coupons section when offers exist
+  7) <h2>How to Apply {$storeName} Coupon Codes</h2> with 3 numbered steps (copy code on {$siteName} → shop merchant → paste at checkout)
+  8) <h2>{$storeName} Questions &amp; Answers</h2>
+  9) Short bottom line
+- REQUIRED: include at least one HTML <table class="comparison-table">. Rows must be grounded in JSON (Category, product types only if supported by product names, Featured products as a count, Sample listed price, Offers tracked, Shipping, Returns). Unknown shipping/returns => "Confirm on merchant site".
 - If 2+ products exist, also include a product comparison table (Feature | each product).
-- Place a <h2>Why Trust Us</h2> section near the top (right after the intro). Example tone: "We researched {$storeName} products, customer reviews, pricing and verified coupon availability before publishing this guide." Cover product research, coupon verification, and transparent affiliate disclosure for {$siteName}. Do not invent lab tests, awards, or fake reviewer credentials.
+- Place <h2>Why Trust Us</h2> near the top (right after the intro). Cover product research, coupon verification, and transparent affiliate disclosure for {$siteName}. Do not invent lab tests, awards, or fake reviewer credentials.
 - If banner URL is provided, place it FIRST: <figure class="article-media article-media--banner"><img src="BANNER_URL" alt="{$storeName} official store banner" loading="lazy"><figcaption>{$storeName} store banner</figcaption></figure>
 - If logo URL is provided, place it right after the banner: <figure class="article-media article-media--logo"><img src="LOGO_URL" alt="{$storeName} brand logo" width="160" height="160" loading="lazy"><figcaption>{$storeName} logo</figcaption></figure>
-- When products are provided, create an <h2> for featured products and an <h3> for EACH product name. Immediately under each product <h3>, include <figure class="article-media article-media--product"><img src="IMAGE_URL" alt="PRODUCT_NAME product photo from {$storeName}" loading="lazy"><figcaption>PRODUCT_NAME</figcaption></figure> when that product has an image URL. Use only image URLs from the JSON — never invent image URLs.
-- CRITICAL: under each product <h3>, use that product's OWN description/features/price only. Never reuse the same feature bullets across products. If features look like shared theme USPs (shipping bars, "Individual Products", ingredient-list links), paraphrase the product description instead or omit the list.
-- Do NOT keyword-stuff. Mention the full product-name list at most once (preferably only as <h3> headings). Intro, Why Trust Us, and at-a-glance may use product counts instead of repeating every name.
-- Include a strong FAQ section with high-intent search questions shoppers type into Google. Required patterns when relevant to the brand/category:
-  - "Is {$storeName} genuine leather?" (include only if leather appears in JSON; otherwise skip)
-  - "Where is {$storeName} made?" — first mine products[].description, products[].features, meta_description, and faqs for Made in / manufactured / formulated / origin clues. Only if none exist, say a brand-wide origin is not stated publicly and shoppers should check the SKU label — do not invent a country.
-  - "Does {$storeName} ship internationally?"
-  - "Is {$storeName} worth buying?"
-  - "Does {$storeName} offer student discounts?"
-  - "How often does {$storeName} release coupon codes?"
-  Answer from JSON facts or give a precise research note — never invent origin, shipping coverage, or student discounts.
-- Ground major sections in prices, distinct product facts, offer titles/codes, meta_description, or FAQs from the JSON — not by repeating the same product-name string in every paragraph.
+- When products are provided, create product <h3> headings with optional <figure class="article-media article-media--product"> using ONLY image URLs from the JSON.
+- CRITICAL: under each product heading, use that product's OWN description/features/price only. Never reuse the same feature bullets across products.
+- Do NOT keyword-stuff. Do NOT invent categories (e.g. do not write fashion/beauty if products are liquor, coolers, golf, etc.). Ground every About subsection in JSON facts.
+- Q&A rules (critical):
+  - If faqs[] exist in JSON, copy/paraphrase those merchant Q&As FIRST under "{$storeName} Questions & Answers".
+  - Only after merchant FAQs, add coupon/search-intent questions (promo code required?, code not working?, ship internationally?, worth buying?, how often coupons?, best current offer from JSON only).
+  - Never invent “50% off best coupon” unless that offer exists in JSON.
+  - Never invent origin, shipping coverage, gift cards, or loyalty programs.
+- Ground major sections in prices, distinct product facts, offer titles/codes, meta_description, or FAQs from the JSON.
 - Mention {$siteName} naturally and link to store_url when pointing readers to browse coupons on our site.
-- When affiliate_url is provided, include at least 2 natural in-text links to affiliate_url with rel="nofollow sponsored" and target="_blank" when directing readers to shop at the merchant.
+- When affiliate_url is provided, include at least 2 natural in-text links to affiliate_url with rel="nofollow sponsored" and target="_blank".
 - List current offers from the JSON when relevant; use <code> tags for coupon codes.
 - HTML only: <h2>, <h3>, <p>, <ul>, <li>, <ol>, <table>, <thead>, <tbody>, <tr>, <th>, <td>, <strong>, <em>, <a>, <code>, <img>, <figure>, <figcaption>. No <h1>, no markdown.
 - Do not claim star ratings or verified customer reviews unless explicitly in the JSON.
