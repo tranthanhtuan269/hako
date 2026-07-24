@@ -34,6 +34,7 @@ final class HtmlCleaner
         }
 
         self::sanitizeNode($root);
+        self::applyFullWidthImages($root);
 
         $clean = '';
         foreach ($root->childNodes as $child) {
@@ -43,6 +44,109 @@ final class HtmlCleaner
         $clean = trim($clean);
 
         return $clean !== '' ? $clean : null;
+    }
+
+    /**
+     * Force content images to display at full article width (skip brand logos).
+     */
+    public static function ensureFullWidthImages(?string $html): ?string
+    {
+        if ($html === null || trim($html) === '') {
+            return $html;
+        }
+
+        if (! preg_match('/<img\b/i', $html)) {
+            return $html;
+        }
+
+        $document = new DOMDocument('1.0', 'UTF-8');
+        $previous = libxml_use_internal_errors(true);
+
+        $wrapped = '<?xml encoding="utf-8" ?><div id="root">'.$html.'</div>';
+        $document->loadHTML($wrapped, LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD);
+        libxml_clear_errors();
+        libxml_use_internal_errors($previous);
+
+        $root = $document->getElementById('root');
+        if (! $root) {
+            return $html;
+        }
+
+        self::applyFullWidthImages($root);
+
+        $clean = '';
+        foreach ($root->childNodes as $child) {
+            $clean .= $document->saveHTML($child);
+        }
+
+        $clean = trim($clean);
+
+        return $clean !== '' ? $clean : $html;
+    }
+
+    private static function applyFullWidthImages(DOMNode $root): void
+    {
+        if (! $root instanceof DOMElement) {
+            return;
+        }
+
+        $images = $root->getElementsByTagName('img');
+
+        // Snapshot nodes — live NodeList mutates while we edit attributes.
+        $list = [];
+        foreach ($images as $image) {
+            $list[] = $image;
+        }
+
+        foreach ($list as $image) {
+            if (! $image instanceof DOMElement) {
+                continue;
+            }
+
+            if (self::isLogoImage($image)) {
+                continue;
+            }
+
+            $image->setAttribute('width', '100%');
+            $image->removeAttribute('height');
+
+            $style = trim($image->getAttribute('style'));
+            $parts = array_filter(array_map('trim', explode(';', $style)));
+            $filtered = [];
+
+            foreach ($parts as $part) {
+                if ($part === '') {
+                    continue;
+                }
+                if (preg_match('/^(width|max-width|height)\s*:/i', $part)) {
+                    continue;
+                }
+                $filtered[] = $part;
+            }
+
+            $filtered[] = 'width: 100%';
+            $filtered[] = 'height: auto';
+            $image->setAttribute('style', implode('; ', $filtered).';');
+        }
+    }
+
+    private static function isLogoImage(DOMElement $image): bool
+    {
+        $class = strtolower($image->getAttribute('class'));
+        if (str_contains($class, 'logo')) {
+            return true;
+        }
+
+        $parent = $image->parentNode;
+        while ($parent instanceof DOMElement) {
+            $parentClass = strtolower($parent->getAttribute('class'));
+            if (str_contains($parentClass, 'article-media--logo') || str_contains($parentClass, 'logo')) {
+                return true;
+            }
+            $parent = $parent->parentNode;
+        }
+
+        return false;
     }
 
     private static function sanitizeNode(DOMNode $node): void
@@ -92,7 +196,7 @@ final class HtmlCleaner
         $tag = strtolower($element->tagName);
         $allowed = match ($tag) {
             'a' => ['href', 'title', 'target', 'rel'],
-            'img' => ['src', 'alt', 'title', 'width', 'height', 'loading', 'class'],
+            'img' => ['src', 'alt', 'title', 'width', 'height', 'loading', 'class', 'style'],
             'figure' => ['class'],
             'figcaption' => [],
             'table' => ['class'],
@@ -130,6 +234,27 @@ final class HtmlCleaner
             $src = $element->getAttribute('src');
             if (! self::isSafeUrl($src)) {
                 $element->parentNode?->removeChild($element);
+
+                return;
+            }
+
+            // Keep only safe CSS declarations on images (full-width helpers).
+            if ($element->hasAttribute('style')) {
+                $style = trim($element->getAttribute('style'));
+                $parts = array_filter(array_map('trim', explode(';', $style)));
+                $safe = [];
+
+                foreach ($parts as $part) {
+                    if (preg_match('/^(width|max-width|height)\s*:\s*[^;]+$/i', $part)) {
+                        $safe[] = $part;
+                    }
+                }
+
+                if ($safe === []) {
+                    $element->removeAttribute('style');
+                } else {
+                    $element->setAttribute('style', implode('; ', $safe).';');
+                }
             }
         }
     }

@@ -61,6 +61,10 @@ class Post extends Model
             } elseif (blank($post->author_name)) {
                 $post->author_name = config('site.default_author.name');
             }
+
+            if ($post->isDirty('content') && filled($post->content)) {
+                $post->content = HtmlCleaner::ensureFullWidthImages((string) $post->content);
+            }
         });
     }
 

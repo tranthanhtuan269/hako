@@ -1941,9 +1941,11 @@ div.pagination > nav.paginator-nav .pagination {
 .store-description-content ul,
 .store-description-content ol { margin: 0 0 1rem 1.25rem; }
 .store-description-content a { color: var(--primary); }
-.store-description-content img { max-width: 100%; height: auto; border-radius: 8px; }
+.store-description-content img { width: 100%; max-width: 100%; height: auto; border-radius: 8px; }
 .store-description-content .article-media { margin: 1rem 0 1.25rem; }
-.store-description-content .article-media img { display: block; margin: 0; }
+.store-description-content .article-media img { display: block; margin: 0; width: 100%; height: auto; }
+.store-description-content .article-media--banner img,
+.store-description-content .article-media--product img { width: 100%; height: auto; }
 .store-description-content .article-media--logo { max-width: 160px; }
 .store-description-content .article-media--logo img { width: 160px; height: auto; object-fit: contain; }
 .store-description-content .article-media figcaption {

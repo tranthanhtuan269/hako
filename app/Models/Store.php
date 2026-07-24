@@ -49,6 +49,12 @@ class Store extends Model
                 $store->slug = Str::slug($store->name);
             }
         });
+
+        static::saving(function (Store $store) {
+            if ($store->isDirty('description') && filled($store->description)) {
+                $store->description = HtmlCleaner::ensureFullWidthImages((string) $store->description);
+            }
+        });
     }
 
     public function user(): BelongsTo
