@@ -62,10 +62,10 @@
     <footer class="site-footer">
         <div class="container footer-grid">
             <div>
-                <strong>{{ $siteName }}</strong>
-                <p class="footer-tagline">{{ $siteTagline }}</p>
-                <p>Coupon codes and discount deals for U.S. shoppers. Updated daily at {{ config('site.domain') }}.</p>
-                @include('partials.site-affiliate-notice')
+                <strong>{{ $siteHomeH1 }}</strong>
+                <p class="footer-tagline">{{ $siteFooterTagline }}</p>
+                <p class="footer-sub-tagline">{{ $siteFooterSubTagline }}</p>
+                <p class="footer-description-tagline">{{ $siteFooterDescriptionTagline }}</p>
             </div>
             <div>
                 <h4>Explore</h4>

@@ -33,6 +33,12 @@ class AppServiceProvider extends ServiceProvider
             $siteTagline = SiteBranding::resolvedTagline();
             $siteDisplayName = SiteBranding::customName();
             $siteDisplayTagline = SiteBranding::customTagline();
+            $siteHomeH1 = SiteBranding::resolvedHomeH1();
+            $siteHomeSubH1 = SiteBranding::resolvedHomeSubH1();
+            $siteHeroSubtitle = SiteBranding::resolvedHeroSubtitle();
+            $siteFooterTagline = SiteBranding::resolvedFooterTagline();
+            $siteFooterSubTagline = SiteBranding::resolvedFooterSubTagline();
+            $siteFooterDescriptionTagline = SiteBranding::resolvedFooterDescriptionTagline();
         } catch (\Throwable) {
             $siteLogoUrl = null;
             $siteSocialLinks = [];
@@ -41,11 +47,24 @@ class AppServiceProvider extends ServiceProvider
             $siteTagline = config('site.tagline');
             $siteDisplayName = null;
             $siteDisplayTagline = null;
+            $siteHomeH1 = config('site.name');
+            $siteHomeSubH1 = config('site.tagline');
+            $siteHeroSubtitle = 'Deals for brands like Amazon, Walmart, Target, and other U.S. retailers. '
+                .config('site.name').' is not affiliated with these merchants.';
+            $siteFooterTagline = config('site.tagline');
+            $siteFooterSubTagline = config('site.tagline');
+            $siteFooterDescriptionTagline = config('site.tagline');
         }
 
         View::share([
             'siteName' => $siteName,
             'siteTagline' => $siteTagline,
+            'siteHomeH1' => $siteHomeH1,
+            'siteHomeSubH1' => $siteHomeSubH1,
+            'siteHeroSubtitle' => $siteHeroSubtitle,
+            'siteFooterTagline' => $siteFooterTagline,
+            'siteFooterSubTagline' => $siteFooterSubTagline,
+            'siteFooterDescriptionTagline' => $siteFooterDescriptionTagline,
             'siteBrandShowText' => $siteBrandShowText,
             'siteDisplayName' => $siteDisplayName,
             'siteDisplayTagline' => $siteDisplayTagline,

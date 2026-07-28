@@ -33,9 +33,9 @@
 @else
 <section class="hero">
     <div class="container">
-        <h1>{{ config('site.name') }}</h1>
-        <p>{{ config('site.tagline') }}.</p>
-        <p class="hero-subtitle">Deals for brands like Amazon, Walmart, Target, and other U.S. retailers. {{ config('site.name') }} is not affiliated with these merchants.</p>
+        <h1>{{ $siteHomeH1 }}</h1>
+        <p>{{ $siteHomeSubH1 }}.</p>
+        <p class="hero-subtitle">{{ $siteHeroSubtitle }}</p>
         <form action="{{ route('search') }}" method="GET" class="search-form" style="max-width:480px;margin:0 auto;">
             <input type="search" name="q" placeholder="Search coupons, stores, articles...">
             <button type="submit">Search</button>

@@ -113,6 +113,93 @@
         @endforeach
     </div>
 
+    <div class="branding-section">
+        <h2>Homepage &amp; footer copy</h2>
+        <p class="form-hint" style="margin-bottom:1rem;">
+            Customize the main homepage headline, the hero subtitle below it, and the footer tagline text.
+        </p>
+
+        <div class="form-group">
+            <label for="home_h1">Homepage H1</label>
+            <input
+                type="text"
+                id="home_h1"
+                name="home_h1"
+                value="{{ old('home_h1', $homeH1) }}"
+                maxlength="180"
+                placeholder="{{ config('site.name') }}"
+            >
+            <p class="form-hint">Main H1 shown on the homepage hero.</p>
+            @error('home_h1')<p class="form-error">{{ $message }}</p>@enderror
+        </div>
+
+        <div class="form-group">
+            <label for="home_sub_h1">Homepage sub H1</label>
+            <input
+                type="text"
+                id="home_sub_h1"
+                name="home_sub_h1"
+                value="{{ old('home_sub_h1', $homeSubH1) }}"
+                maxlength="200"
+                placeholder="{{ config('site.tagline') }}"
+            >
+            <p class="form-hint">Sub H1 shown on the homepage hero.</p>
+            @error('home_sub_h1')<p class="form-error">{{ $message }}</p>@enderror
+        </div>
+
+        <div class="form-group">
+            <label for="hero_subtitle">Hero subtitle</label>
+            <textarea
+                id="hero_subtitle"
+                name="hero_subtitle"
+                rows="3"
+                maxlength="320"
+                placeholder="Deals for brands like Amazon, Walmart, Target, and other U.S. retailers."
+            >{{ old('hero_subtitle', $heroSubtitle) }}</textarea>
+            <p class="form-hint">Text under the homepage hero heading.</p>
+            @error('hero_subtitle')<p class="form-error">{{ $message }}</p>@enderror
+        </div>
+
+        <div class="form-group">
+            <label for="footer_tagline">Footer tagline</label>
+            <input
+                type="text"
+                id="footer_tagline"
+                name="footer_tagline"
+                value="{{ old('footer_tagline', $footerTagline) }}"
+                maxlength="200"
+                placeholder="{{ config('site.tagline') }}"
+            >
+            <p class="form-hint">Replaces the “Top Hub of US Online Coupons” line in the footer.</p>
+            @error('footer_tagline')<p class="form-error">{{ $message }}</p>@enderror
+        </div>
+
+        <div class="form-group">
+            <label for="footer_sub_tagline">Footer sub tagline</label>
+            <input
+                type="text"
+                id="footer_sub_tagline"
+                name="footer_sub_tagline"
+                value="{{ old('footer_sub_tagline', $footerSubTagline) }}"
+            >
+            <p class="form-hint">Replaces the “Coupon codes and discount deals for U.S. shoppers. Updated daily at {{ config('site.domain') }}.” line in the footer.</p>
+            @error('footer_sub_tagline')<p class="form-error">{{ $message }}</p>@enderror
+        </div>
+
+        <div class="form-group">
+            <label for="footer_description_tagline">Footer description tagline</label>
+            <textarea
+                rows="3"
+                maxlength="200"
+                id="footer_description_tagline"
+                name="footer_description_tagline"
+                value="{{ old('footer_description_tagline', $footerDescriptionTagline) }}"
+            >{{ old('footer_description_tagline', $footerDescriptionTagline) }}</textarea>
+            <p class="form-hint">Description shown below the footer tagline.</p>
+            @error('footer_description_tagline')<p class="form-error">{{ $message }}</p>@enderror
+        </div>
+    </div>
+
     <div style="display:flex;gap:.75rem;flex-wrap:wrap;">
         <button type="submit" class="btn btn-primary">Save</button>
         <a href="{{ route('home') }}" class="btn btn-outline" target="_blank" rel="noopener">View public site →</a>

@@ -13,6 +13,18 @@ final class SiteBranding
 
     private const TAGLINE_KEY = 'site_display_tagline';
 
+    private const HOME_H1_KEY = 'site_home_h1';
+
+    private const HOME_SUB_H1_KEY = 'site_home_sub_h1';
+
+    private const HERO_SUBTITLE_KEY = 'site_home_hero_subtitle';
+
+    private const FOOTER_TAGLINE_KEY = 'site_footer_tagline';
+
+    private const FOOTER_SUB_TAGLINE_KEY = 'site_footer_sub_tagline';
+
+    private const FOOTER_DESCRIPTION_TAGLINE_KEY = 'site_footer_description_tagline';
+
     private const SOCIAL_KEY = 'site_social_links';
 
     /** @var array<string, array{label: string, placeholder: string}> */
@@ -84,6 +96,48 @@ final class SiteBranding
         return self::customName() !== null || self::customTagline() !== null;
     }
 
+    public static function homeH1(): ?string
+    {
+        $value = trim((string) SiteSetting::get(self::HOME_H1_KEY, ''));
+
+        return $value !== '' ? $value : null;
+    }
+
+    public static function homeSubH1(): ?string
+    {
+        $value = trim((string) SiteSetting::get(self::HOME_SUB_H1_KEY, ''));
+
+        return $value !== '' ? $value : null;
+    }
+
+    public static function heroSubtitle(): ?string
+    {
+        $value = trim((string) SiteSetting::get(self::HERO_SUBTITLE_KEY, ''));
+
+        return $value !== '' ? $value : null;
+    }
+
+    public static function footerTagline(): ?string
+    {
+        $value = trim((string) SiteSetting::get(self::FOOTER_TAGLINE_KEY, ''));
+
+        return $value !== '' ? $value : null;
+    }
+
+    public static function footerSubTagline(): ?string
+    {
+        $value = trim((string) SiteSetting::get(self::FOOTER_SUB_TAGLINE_KEY, ''));
+
+        return $value !== '' ? $value : null;
+    }
+
+    public static function footerDescriptionTagline(): ?string
+    {
+        $value = trim((string) SiteSetting::get(self::FOOTER_DESCRIPTION_TAGLINE_KEY, ''));
+
+        return $value !== '' ? $value : null;
+    }
+
     public static function resolvedName(): string
     {
         return self::customName() ?? (string) config('site.name');
@@ -94,6 +148,38 @@ final class SiteBranding
         return self::customTagline() ?? (string) config('site.tagline');
     }
 
+    public static function resolvedHomeH1(): string
+    {
+        return self::homeH1() ?? self::resolvedName();
+    }
+
+    public static function resolvedHomeSubH1(): string
+    {
+        return self::homeSubH1() ?? self::resolvedTagline();
+    }
+
+    public static function resolvedHeroSubtitle(): string
+    {
+        return self::heroSubtitle()
+            ?? ('Deals for brands like Amazon, Walmart, Target, and other U.S. retailers. '
+                .self::resolvedName().' is not affiliated with these merchants.');
+    }
+
+    public static function resolvedFooterTagline(): string
+    {
+        return self::footerTagline() ?? self::resolvedTagline();
+    }
+
+    public static function resolvedFooterSubTagline(): string
+    {
+        return self::footerSubTagline() ?? self::resolvedTagline();
+    }
+
+    public static function resolvedFooterDescriptionTagline(): string
+    {
+        return self::footerDescriptionTagline() ?? self::resolvedTagline();
+    }
+
     public static function setCustomName(?string $name): void
     {
         SiteSetting::set(self::NAME_KEY, trim((string) $name));
@@ -102,6 +188,36 @@ final class SiteBranding
     public static function setCustomTagline(?string $tagline): void
     {
         SiteSetting::set(self::TAGLINE_KEY, trim((string) $tagline));
+    }
+
+    public static function setHomeH1(?string $value): void
+    {
+        SiteSetting::set(self::HOME_H1_KEY, trim((string) $value));
+    }
+
+    public static function setHomeSubH1(?string $value): void
+    {
+        SiteSetting::set(self::HOME_SUB_H1_KEY, trim((string) $value));
+    }
+
+    public static function setHeroSubtitle(?string $value): void
+    {
+        SiteSetting::set(self::HERO_SUBTITLE_KEY, trim((string) $value));
+    }
+
+    public static function setFooterTagline(?string $value): void
+    {
+        SiteSetting::set(self::FOOTER_TAGLINE_KEY, trim((string) $value));
+    }
+
+    public static function setFooterSubTagline(?string $value): void
+    {
+        SiteSetting::set(self::FOOTER_SUB_TAGLINE_KEY, trim((string) $value));
+    }
+
+    public static function setFooterDescriptionTagline(?string $value): void
+    {
+        SiteSetting::set(self::FOOTER_DESCRIPTION_TAGLINE_KEY, trim((string) $value));
     }
 
     /**

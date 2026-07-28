@@ -16,6 +16,12 @@ class BrandingController extends Controller
             'logoUrl' => SiteBranding::logoUrl(),
             'customName' => SiteBranding::customName(),
             'customTagline' => SiteBranding::customTagline(),
+            'homeH1' => SiteBranding::homeH1(),
+            'homeSubH1' => SiteBranding::homeSubH1(),
+            'heroSubtitle' => SiteBranding::heroSubtitle(),
+            'footerTagline' => SiteBranding::footerTagline(),
+            'footerSubTagline' => SiteBranding::footerSubTagline(),
+            'footerDescriptionTagline' => SiteBranding::footerDescriptionTagline(),
             'socialUrls' => SiteBranding::socialUrls(),
             'networks' => SiteBranding::networks(),
         ]);
@@ -31,6 +37,12 @@ class BrandingController extends Controller
             'remove_logo' => ['nullable', 'boolean'],
             'site_name' => ['nullable', 'string', 'max:120'],
             'site_tagline' => ['nullable', 'string', 'max:200'],
+            'home_h1' => ['nullable', 'string', 'max:180'],
+            'home_sub_h1' => ['nullable', 'string', 'max:200'],
+            'hero_subtitle' => ['nullable', 'string', 'max:320'],
+            'footer_tagline' => ['nullable', 'string', 'max:200'],
+            'footer_sub_tagline' => ['nullable', 'string', 'max:200'],
+            'footer_description_tagline' => ['nullable', 'string', 'max:200'],
         ];
 
         foreach ($networkKeys as $key) {
@@ -50,9 +62,15 @@ class BrandingController extends Controller
         SiteBranding::setSocialUrls($validated['social'] ?? []);
         SiteBranding::setCustomName($validated['site_name'] ?? '');
         SiteBranding::setCustomTagline($validated['site_tagline'] ?? '');
-
+        SiteBranding::setHomeH1($validated['home_h1'] ?? '');
+        SiteBranding::setHomeSubH1($validated['home_sub_h1'] ?? '');
+        SiteBranding::setHeroSubtitle($validated['hero_subtitle'] ?? '');
+        SiteBranding::setFooterTagline($validated['footer_tagline'] ?? '');
+        SiteBranding::setFooterSubTagline($validated['footer_sub_tagline'] ?? '');
+        SiteBranding::setFooterDescriptionTagline($validated['footer_description_tagline'] ?? '');
+        
         return redirect()
             ->route('admin.branding.index')
-            ->with('success', 'Site logo, name, slogan, and social links saved.');
+            ->with('success', 'Branding, homepage copy, and social links saved.');
     }
 }
