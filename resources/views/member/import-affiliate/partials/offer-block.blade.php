@@ -1,5 +1,11 @@
 <div class="offer-block" data-index="{{ $index }}">
     <div class="offer-row">
+        <button
+            type="button"
+            class="offer-sort-handle"
+            aria-label="Drag to reorder offer"
+            title="Drag to reorder"
+        >⠿</button>
         <span class="offer-num">#<span class="offer-block-number">{{ is_numeric($index) ? $index + 1 : 1 }}</span></span>
         <div class="offer-field offer-field-code">
             <label>Code</label>

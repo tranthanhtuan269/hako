@@ -312,8 +312,11 @@ class ImportAffiliateController extends Controller
             }
 
             $createdCoupons = [];
+            $offerCount = count($offers);
 
-            foreach ($offers as $offer) {
+            foreach ($offers as $index => $offer) {
+                $sortOrder = max(1, $offerCount - $index);
+
                 $createdCoupons[] = Coupon::create([
                     'user_id' => $userId,
                     'store_id' => $store->id,
@@ -324,6 +327,8 @@ class ImportAffiliateController extends Controller
                     'type' => $offer['type'],
                     'expires_at' => $offer['expires_at'],
                     'is_active' => $publish,
+                    'store_sort_order' => $sortOrder,
+                    'coupons_sort_order' => $sortOrder,
                 ]);
             }
 

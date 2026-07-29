@@ -132,7 +132,7 @@
             <h2>Offers</h2>
             <button type="button" class="btn btn-outline" id="add-offer-btn">+ Add Offer</button>
         </div>
-        <p class="form-hint" style="margin-bottom:.75rem;">Each row becomes one coupon or discount on your site.</p>
+        <p class="form-hint" style="margin-bottom:.75rem;">Each row becomes one coupon or discount on your site. Drag ⠿ to change display order.</p>
 
         <div id="offers-list" class="offers-list">
             @php($oldOffers = old('offers', [['code' => '', 'title' => '', 'description' => '', 'expires_at' => '']]))
@@ -312,12 +312,36 @@
     padding: .55rem .65rem;
     margin-bottom: .5rem;
     background: #fafafa;
+    transition: box-shadow .15s ease, border-color .15s ease, opacity .15s ease;
+}
+.offer-block.is-dragging {
+    opacity: .65;
+    border-color: var(--primary);
+    box-shadow: 0 8px 20px rgba(15, 23, 42, .12);
+}
+.offer-block.is-drop-target {
+    border-color: var(--primary);
 }
 .offer-row {
     display: grid;
-    grid-template-columns: 2rem 110px minmax(0, 1fr) 2rem;
+    grid-template-columns: 1.5rem 2rem 110px minmax(0, 1fr) 2rem;
     gap: .5rem;
     align-items: end;
+}
+.offer-sort-handle {
+    appearance: none;
+    border: 0;
+    background: transparent;
+    color: #94a3b8;
+    cursor: grab;
+    font-size: 1.05rem;
+    line-height: 1;
+    padding: 0 0 .45rem;
+    text-align: center;
+    user-select: none;
+}
+.offer-sort-handle:active {
+    cursor: grabbing;
 }
 .offer-num {
     font-size: .8rem;
@@ -346,11 +370,11 @@
 }
 .offer-field-desc {
     margin-top: .45rem;
-    margin-left: 2.5rem;
+    margin-left: 3.5rem;
 }
 .offer-meta-row {
     margin-top: .45rem;
-    margin-left: 2.5rem;
+    margin-left: 3.5rem;
 }
 .offer-field-expires input {
     max-width: 16rem;
@@ -373,17 +397,17 @@
 }
 @media (max-width: 640px) {
     .offer-row {
-        grid-template-columns: 1.75rem 1fr 2rem;
+        grid-template-columns: 1.25rem 1.5rem 1fr 2rem;
     }
     .offer-field-code {
-        grid-column: 2 / 3;
+        grid-column: 3 / 4;
     }
     .offer-field-title {
-        grid-column: 2 / 4;
+        grid-column: 2 / 5;
         grid-row: 2;
     }
     .remove-offer-btn {
-        grid-column: 3;
+        grid-column: 4;
         grid-row: 1;
     }
     .offer-field-desc {
@@ -491,10 +515,101 @@
             block.dataset.index = index;
             block.querySelector('.offer-block-number').textContent = index + 1;
             block.querySelectorAll('[name]').forEach((input) => {
-                input.name = input.name.replace(/offers\[\d+\]/, `offers[${index}]`);
+                input.name = input.name.replace(/offers\[(?:\d+|__INDEX__)\]/, `offers[${index}]`);
             });
         });
     }
+
+    let dragOffer = null;
+
+    function clearOfferDropTargets() {
+        offersList.querySelectorAll('.offer-block.is-drop-target').forEach((block) => {
+            block.classList.remove('is-drop-target');
+        });
+    }
+
+    offersList.addEventListener('mousedown', (event) => {
+        const handle = event.target.closest('.offer-sort-handle');
+        if (!handle) {
+            return;
+        }
+
+        const block = handle.closest('.offer-block');
+        if (block) {
+            block.draggable = true;
+        }
+    });
+
+    offersList.addEventListener('mouseup', (event) => {
+        const block = event.target.closest('.offer-block');
+        if (block) {
+            block.draggable = false;
+        }
+    });
+
+    offersList.addEventListener('dragstart', (event) => {
+        const block = event.target.closest('.offer-block');
+        if (!block || !block.draggable) {
+            return;
+        }
+
+        dragOffer = block;
+        block.classList.add('is-dragging');
+
+        if (event.dataTransfer) {
+            event.dataTransfer.effectAllowed = 'move';
+            event.dataTransfer.setData('text/plain', block.dataset.index || '');
+        }
+    });
+
+    offersList.addEventListener('dragend', (event) => {
+        const block = event.target.closest('.offer-block');
+        if (block) {
+            block.draggable = false;
+            block.classList.remove('is-dragging');
+        }
+        clearOfferDropTargets();
+        dragOffer = null;
+        renumberOffers();
+    });
+
+    offersList.addEventListener('dragover', (event) => {
+        const block = event.target.closest('.offer-block');
+        if (!dragOffer || !block || dragOffer === block) {
+            return;
+        }
+
+        event.preventDefault();
+
+        if (event.dataTransfer) {
+            event.dataTransfer.dropEffect = 'move';
+        }
+
+        clearOfferDropTargets();
+        block.classList.add('is-drop-target');
+
+        const rect = block.getBoundingClientRect();
+        const after = event.clientY > rect.top + rect.height / 2;
+
+        if (after) {
+            block.after(dragOffer);
+        } else {
+            block.before(dragOffer);
+        }
+    });
+
+    offersList.addEventListener('dragleave', (event) => {
+        const block = event.target.closest('.offer-block');
+        if (block) {
+            block.classList.remove('is-drop-target');
+        }
+    });
+
+    offersList.addEventListener('drop', (event) => {
+        event.preventDefault();
+        clearOfferDropTargets();
+        renumberOffers();
+    });
 
     function fillSuggestedOffers(offers) {
         offersList.innerHTML = '';
