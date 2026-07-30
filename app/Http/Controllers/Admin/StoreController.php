@@ -85,6 +85,7 @@ class StoreController extends Controller
     {
         $data = $this->validatedStore($request);
         $data['logo'] = $this->resolveLogo($request, $data['logo'] ?? null);
+        $data['user_id'] = auth()->id();
 
         $store = Store::create($data);
         $store->ensureLogoStored($request->input('logo'));

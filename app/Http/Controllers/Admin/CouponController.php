@@ -80,6 +80,7 @@ class CouponController extends Controller
     {
         $data = $this->validated($request);
         $data['slug'] = $this->uniqueSlug($data['title']);
+        $data['user_id'] = $this->resolveOwnerId((int) $data['store_id']);
 
         Coupon::create($data);
 
@@ -106,6 +107,12 @@ class CouponController extends Controller
         $coupon->delete();
 
         return redirect()->route('admin.coupons.index')->with('success', 'Coupon deleted successfully.');
+    }
+
+    /** Coupons belong to the store owner so they stay visible in that member's dashboard. */
+    private function resolveOwnerId(int $storeId): ?int
+    {
+        return Store::whereKey($storeId)->value('user_id') ?? auth()->id();
     }
 
     private function validated(Request $request): array
