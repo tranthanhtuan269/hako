@@ -16,6 +16,7 @@ final class AffiliateImportContentBuilder
 
     public function __construct(
         private readonly GeminiBlogWriter $geminiWriter = new GeminiBlogWriter(),
+        private readonly MerchantProductExtractor $productExtractor = new MerchantProductExtractor(),
     ) {}
 
     /**
@@ -31,13 +32,20 @@ final class AffiliateImportContentBuilder
         array $merchant = [],
     ): string {
         $store = $this->storeContextModel($storeName, $storeSlug, $affiliateUrl, $categoryName);
+        $merchant['products'] = $this->usableProducts($merchant);
         $context = $this->storeDescriptionContext($store, $offers, $merchant);
 
-        $aiContent = $this->geminiWriter->generateStoreDescription($context);
+        try {
+            $aiContent = $this->geminiWriter->generateStoreDescription($context);
 
-        $content = filled($aiContent)
-            ? $aiContent
-            : $this->buildStoreDescriptionWithoutAi($store, $offers, $merchant);
+            $content = filled($aiContent)
+                ? $aiContent
+                : $this->buildStoreDescriptionWithoutAi($store, $offers, $merchant);
+        } catch (\Throwable $e) {
+            report($e);
+            $merchant['products'] = [];
+            $content = $this->buildStoreDescriptionWithoutAi($store, $offers, $merchant);
+        }
 
         return $this->finalizeStoreDescription($content, $store, $merchant, $offers);
     }
@@ -197,17 +205,27 @@ final class AffiliateImportContentBuilder
      */
     public function blogPost(Store $store, array $offers, array $merchant = [], ?array $preGenerated = null): array
     {
+        $merchant['products'] = $this->usableProducts($merchant);
+
         if ($preGenerated !== null) {
             return $this->sanitizeBlogOutput($preGenerated, $store, $merchant, $offers);
         }
 
-        $aiBlog = $this->geminiWriter->generate($this->blogContext($store, $offers, $merchant));
+        try {
+            $aiBlog = $this->geminiWriter->generate($this->blogContext($store, $offers, $merchant));
 
-        if ($aiBlog !== null) {
-            return $this->sanitizeBlogOutput($aiBlog, $store, $merchant, $offers);
+            if ($aiBlog !== null) {
+                return $this->sanitizeBlogOutput($aiBlog, $store, $merchant, $offers);
+            }
+
+            return $this->sanitizeBlogOutput($this->blogPostWithoutAi($store, $offers, $merchant), $store, $merchant, $offers);
+        } catch (\Throwable $e) {
+            report($e);
+
+            $merchant['products'] = [];
+
+            return $this->sanitizeBlogOutput($this->classicBlogPost($store, $offers, $merchant), $store, $merchant, $offers);
         }
-
-        return $this->sanitizeBlogOutput($this->blogPostWithoutAi($store, $offers, $merchant), $store, $merchant, $offers);
     }
 
     /**
@@ -266,15 +284,44 @@ final class AffiliateImportContentBuilder
      */
     public function generateBlogPreview(Store $store, array $offers, array $merchant = []): ?array
     {
-        $aiBlog = $this->geminiWriter->generate($this->blogContext($store, $offers, $merchant));
+        $merchant['products'] = $this->usableProducts($merchant);
 
-        if ($aiBlog !== null) {
-            return $this->sanitizeBlogOutput($aiBlog, $store, $merchant, $offers) + ['source' => 'gemini'];
+        try {
+            $aiBlog = $this->geminiWriter->generate($this->blogContext($store, $offers, $merchant));
+
+            if ($aiBlog !== null) {
+                return $this->sanitizeBlogOutput($aiBlog, $store, $merchant, $offers) + ['source' => 'gemini'];
+            }
+
+            $fallback = $this->blogPostWithoutAi($store, $offers, $merchant);
+
+            return $this->sanitizeBlogOutput($fallback, $store, $merchant, $offers) + ['source' => 'template'];
+        } catch (\Throwable $e) {
+            report($e);
+
+            // SaaS / no-catalog merchants must still get a usable brand+offers article.
+            $merchant['products'] = [];
+            $fallback = $this->classicBlogPost($store, $offers, $merchant);
+
+            return $this->sanitizeBlogOutput($fallback, $store, $merchant, $offers) + ['source' => 'template'];
+        }
+    }
+
+    /**
+     * @param  array<string, mixed>  $merchant
+     * @return array<int, array{name: string, description: ?string, price: ?string, image: ?string, url: ?string, features?: list<string>}>
+     */
+    private function usableProducts(array $merchant): array
+    {
+        $products = is_array($merchant['products'] ?? null) ? $merchant['products'] : [];
+        $products = array_values(array_filter($products, fn ($product) => is_array($product)));
+        $products = $this->productExtractor->uniqueTake($products, max(count($products), 1));
+
+        if (! empty($merchant['product_focus'])) {
+            $products = array_slice($products, 0, 1);
         }
 
-        $fallback = $this->blogPostWithoutAi($store, $offers, $merchant);
-
-        return $this->sanitizeBlogOutput($fallback, $store, $merchant, $offers) + ['source' => 'template'];
+        return $products;
     }
 
     /**
@@ -284,11 +331,8 @@ final class AffiliateImportContentBuilder
      */
     private function blogPostWithoutAi(Store $store, array $offers, array $merchant = []): array
     {
-        $products = is_array($merchant['products'] ?? null) ? $merchant['products'] : [];
-
-        if (! empty($merchant['product_focus'])) {
-            $products = array_slice($products, 0, 1);
-        }
+        $products = $this->usableProducts($merchant);
+        $merchant['products'] = $products;
 
         if (count($products) >= 2) {
             return $this->comparisonBlogPost($store, $offers, $merchant, $products);
@@ -422,7 +466,7 @@ final class AffiliateImportContentBuilder
         $parts[] = $this->sectionSingleProductProsCons($productName, $product);
         $parts[] = $this->sectionCurrentOffers($name, $offers, $storeUrl, $monthYear, $store->affiliate_url);
         $parts[] = $this->sectionHowToSave($name, $storeUrl, $store->affiliate_url);
-        $parts[] = $this->sectionFaq($name, $faqs, $storeUrl, $products, $offers, $merchant);
+        $parts[] = $this->sectionFaq($name, $faqs, $storeUrl, [$product], $offers, $merchant);
         $parts[] = $this->sectionCheckoutChecklist($store);
 
         return [
@@ -1041,6 +1085,8 @@ final class AffiliateImportContentBuilder
         $productCount = collect($products)->pluck('name')->filter()->count();
         if ($productCount > 0) {
             $opening .= ', with '.$productCount.' featured listing'.($productCount === 1 ? '' : 's').' broken down below';
+        } else {
+            $opening .= '. Public catalog product pages were limited or unavailable during research, so this guide focuses on brand positioning and current offers';
         }
         $opening .= '.';
         $parts[] = '<p>'.$opening.'</p>';

@@ -39,7 +39,7 @@ class ScrollCouponPopup
             'affiliateUrl' => $affiliateUrl,
             'openAffiliateOnCopy' => $openAffiliateOnCopy,
             'coupons' => $coupons->map(fn (Coupon $coupon) => [
-                'title' => $coupon->title,
+                'title' => self::titleWithStore($coupon->title, $store->name),
                 'discount' => $coupon->discountLabel(),
                 'hasCode' => filled($coupon->code),
                 'codeMasked' => filled($coupon->code) ? $coupon->maskedCodeParts() : null,
@@ -49,5 +49,22 @@ class ScrollCouponPopup
                 'revealUrl' => route('coupons.reveal', $coupon->slug),
             ])->values()->all(),
         ];
+    }
+
+    private static function titleWithStore(string $title, string $storeName): string
+    {
+        $title = trim($title);
+        $storeName = trim($storeName);
+
+        if ($title === '' || $storeName === '') {
+            return $title;
+        }
+
+        $suffix = ' at '.$storeName;
+        if (str_ends_with(mb_strtolower($title), mb_strtolower($suffix))) {
+            return $title;
+        }
+
+        return $title.$suffix;
     }
 }

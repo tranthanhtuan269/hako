@@ -718,9 +718,16 @@
                 }),
             });
 
-            const data = await response.json();
+            let data = {};
+            try {
+                data = await response.json();
+            } catch (_) {
+                status.textContent = 'Detect failed with an unexpected server response. You can still fill the form manually.';
+                status.className = 'form-hint detect-status is-error';
+                return;
+            }
 
-            if (!response.ok) {
+            if (!response.ok || data.ok === false) {
                 const message = data.message || data.errors?.affiliate_url?.[0] || 'Could not detect store.';
                 status.textContent = message;
                 status.className = 'form-hint detect-status is-error';
@@ -780,8 +787,9 @@
                     : 'Products for comparison article';
                 previewProducts.hidden = false;
             } else {
-                previewProductsList.innerHTML = '';
-                previewProducts.hidden = true;
+                previewProductsList.innerHTML = '<li style="color:#64748b;">No catalog products found. The article will use brand details, FAQs, and offers instead.</li>';
+                previewProducts.querySelector('strong').textContent = 'Products';
+                previewProducts.hidden = false;
             }
 
             if (data.generated_blog && data.generated_blog.title) {
@@ -805,7 +813,11 @@
                 : 'Detected store. Please choose a category if needed.');
 
             if (Array.isArray(data.suggested_offers) && data.suggested_offers.length) {
-                statusMessage += ` Loaded ${data.suggested_offers.length} offer(s) from coupon database.`;
+                const fromPricing = Number(data.pricing_offers_found || 0) > 0
+                    && (!Array.isArray(merchant.products) || merchant.products.length === 0);
+                statusMessage += fromPricing
+                    ? ` Loaded ${data.suggested_offers.length} offer(s) from pricing page.`
+                    : ` Loaded ${data.suggested_offers.length} offer(s) from coupon database.`;
             } else if (data.store_query) {
                 statusMessage += ` No matching coupons found for ${data.store_query}.`;
             }
@@ -818,6 +830,10 @@
 
             if (data.product_focus) {
                 statusMessage += ' Product-focus mode: writing about the linked product only.';
+            }
+
+            if (!Array.isArray(merchant.products) || merchant.products.length === 0) {
+                statusMessage += ' No catalog products found — using brand/offers content.';
             }
 
             if (data.import_blocked) {

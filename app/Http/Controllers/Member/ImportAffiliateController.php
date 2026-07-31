@@ -11,6 +11,7 @@ use App\Support\AffiliateImportContentBuilder;
 use App\Support\AffiliateLinkResolver;
 use App\Support\CouponSpeakClient;
 use App\Support\HtmlCleaner;
+use App\Support\MerchantProductExtractor;
 use App\Support\PublicImage;
 use App\Support\SiteImportSettings;
 use App\Support\StoreSlug;
@@ -37,7 +38,8 @@ class ImportAffiliateController extends Controller
         Request $request,
         AffiliateLinkResolver $resolver,
         CouponSpeakClient $couponSpeak,
-        AffiliateImportContentBuilder $contentBuilder
+        AffiliateImportContentBuilder $contentBuilder,
+        MerchantProductExtractor $productExtractor,
     ): JsonResponse {
         $this->authorize('create', Store::class);
 
@@ -105,7 +107,33 @@ class ImportAffiliateController extends Controller
         }
 
         $storeQuery = $merchant['domain'] ?? $storeQuery;
-        $suggestedOffers = $bundle['offers'];
+
+        $products = is_array($merchant['products'] ?? null) ? $merchant['products'] : [];
+        $merchant['products'] = $productExtractor->uniqueTake(
+            array_values(array_filter($products, fn ($product) => is_array($product))),
+            max(count($products), 1)
+        );
+
+        if (
+            ! $productFocus
+            && $merchant['products'] === []
+            && empty($merchant['pricing_offers'])
+        ) {
+            $pricingBase = filled($data['website'] ?? null)
+                ? trim((string) $data['website'])
+                : (filled($merchant['final_url'] ?? null)
+                    ? (string) $merchant['final_url']
+                    : (filled($merchant['domain'] ?? null) ? 'https://'.$merchant['domain'] : $finalUrl));
+
+            $merchant['pricing_offers'] = $resolver->discoverPricingOffers($pricingBase);
+        }
+
+        $pricingOffers = is_array($merchant['pricing_offers'] ?? null) ? $merchant['pricing_offers'] : [];
+        $suggestedOffers = $this->mergePricingOffers(
+            $bundle['offers'],
+            $pricingOffers,
+            $merchant['products'] === []
+        );
 
         $offers = $this->normalizeOffers(
             collect($suggestedOffers)->map(fn (array $offer) => [
@@ -130,7 +158,13 @@ class ImportAffiliateController extends Controller
             $previewStore->setRelation('category', Category::find($merchant['category_id']));
         }
 
-        $generatedBlog = $contentBuilder->generateBlogPreview($previewStore, $offers, $merchant);
+        $generatedBlog = null;
+
+        try {
+            $generatedBlog = $contentBuilder->generateBlogPreview($previewStore, $offers, $merchant);
+        } catch (\Throwable $e) {
+            report($e);
+        }
 
         $existingStore = Store::findForMerchantImport(
             auth()->id(),
@@ -153,6 +187,8 @@ class ImportAffiliateController extends Controller
             'product_focus' => $productFocus,
             'suggested_offers' => $suggestedOffers,
             'generated_blog' => $generatedBlog,
+            'products_found' => count($merchant['products']),
+            'pricing_offers_found' => count($pricingOffers),
             'allow_reimport_existing_stores' => $allowReimport,
             'import_blocked' => $importBlocked,
             'existing_import' => $existingStore ? [
@@ -457,6 +493,43 @@ class ImportAffiliateController extends Controller
             })
             ->values()
             ->all();
+    }
+
+    /**
+     * Prefer pricing-page Free Trial / Save X% deals when the merchant has no catalog products.
+     *
+     * @param  list<array<string, mixed>>  $existing
+     * @param  list<array<string, mixed>>  $pricingOffers
+     * @return list<array<string, mixed>>
+     */
+    private function mergePricingOffers(array $existing, array $pricingOffers, bool $noProducts): array
+    {
+        if ($pricingOffers === [] || ! $noProducts) {
+            return $existing;
+        }
+
+        if ($existing === []) {
+            return array_values($pricingOffers);
+        }
+
+        $merged = [];
+        $seenTitles = [];
+
+        foreach (array_merge($pricingOffers, $existing) as $offer) {
+            if (! is_array($offer)) {
+                continue;
+            }
+
+            $title = Str::lower(trim((string) ($offer['title'] ?? '')));
+            if ($title === '' || isset($seenTitles[$title])) {
+                continue;
+            }
+
+            $seenTitles[$title] = true;
+            $merged[] = $offer;
+        }
+
+        return $merged;
     }
 
     private function uniqueCouponSlug(string $title): string

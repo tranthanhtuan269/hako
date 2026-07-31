@@ -13,6 +13,7 @@ final class AffiliateLinkResolver
         private readonly MerchantProductExtractor $productExtractor = new MerchantProductExtractor(),
         private readonly MerchantProductEnricher $productEnricher = new MerchantProductEnricher(),
         private readonly GeminiBlogWriter $geminiWriter = new GeminiBlogWriter(),
+        private readonly MerchantPricingOfferExtractor $pricingOfferExtractor = new MerchantPricingOfferExtractor(),
     ) {}
 
     public function finalUrl(string $affiliateUrl): string
@@ -73,6 +74,11 @@ final class AffiliateLinkResolver
             $name = Str::limit((string) $products[0]['name'], 100, '');
         }
 
+        $pricingOffers = [];
+        if (! $productFocus && $this->productExtractor->uniqueTake($products, max(count($products), 1)) === []) {
+            $pricingOffers = $this->discoverPricingOffers($finalUrl ?: $seedUrl ?: $affiliateUrl, $html);
+        }
+
         return [
             'affiliate_url' => $affiliateUrl,
             'final_url' => $finalUrl,
@@ -86,6 +92,7 @@ final class AffiliateLinkResolver
             'category_name' => $category?->name,
             'faqs' => $faqs,
             'products' => $products,
+            'pricing_offers' => $pricingOffers,
             'product_focus' => $productFocus,
         ];
     }
@@ -138,6 +145,18 @@ final class AffiliateLinkResolver
                     $merchant['products'] = $websiteProducts;
                 }
             }
+        }
+
+        $usableProducts = $this->productExtractor->uniqueTake(
+            array_values(array_filter(
+                is_array($merchant['products'] ?? null) ? $merchant['products'] : [],
+                fn ($product) => is_array($product)
+            )),
+            max(count($merchant['products'] ?? []), 1)
+        );
+
+        if (! $productFocus && $usableProducts === [] && empty($merchant['pricing_offers'])) {
+            $merchant['pricing_offers'] = $this->discoverPricingOffers($websiteUrl, $html);
         }
 
         return $merchant;
@@ -265,6 +284,42 @@ final class AffiliateLinkResolver
         }
 
         return $products;
+    }
+
+    /**
+     * When a merchant has no catalog products (SaaS / pricing-page sites), scrape /pricing
+     * for Free Trial and annual "Save X%" style deals to seed coupons.
+     *
+     * @return list<array{code: null, title: string, description: ?string, coupon_type: string, discount_label: ?string, expires_at: null, source: string}>
+     */
+    public function discoverPricingOffers(string $baseUrl, ?string $homepageHtml = null): array
+    {
+        $baseUrl = trim($baseUrl);
+        if ($baseUrl === '') {
+            return [];
+        }
+
+        $homepageHtml ??= $this->fetchHtml($baseUrl);
+        $candidates = $this->pricingOfferExtractor->candidateUrls($baseUrl, $homepageHtml);
+
+        foreach ($candidates as $url) {
+            $html = $this->fetchHtml($url);
+            if (! $html) {
+                continue;
+            }
+
+            $offers = $this->pricingOfferExtractor->extract($html, $url);
+            if ($offers !== []) {
+                return $offers;
+            }
+        }
+
+        // Last resort: homepage itself may embed pricing copy.
+        if ($homepageHtml) {
+            return $this->pricingOfferExtractor->extract($homepageHtml, $baseUrl);
+        }
+
+        return [];
     }
 
     /**

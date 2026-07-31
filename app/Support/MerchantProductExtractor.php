@@ -46,6 +46,10 @@ final class MerchantProductExtractor
                 ? Str::lower(rtrim((string) $product['url'], '/'))
                 : '';
 
+            if ($urlKey !== '' && $this->isJunkProductUrl($urlKey)) {
+                continue;
+            }
+
             if (isset($seenNames[$nameKey])) {
                 continue;
             }
@@ -425,6 +429,15 @@ final class MerchantProductExtractor
             return true;
         }
 
+        // Review-widget / social-proof CTAs (common on SaaS landing pages).
+        if (preg_match('/\breviews?\s+on\s+(g2|trustpilot|capterra|sitejabber|getapp|softwareadvice)\b/i', $name)) {
+            return true;
+        }
+
+        if (preg_match('/^(read|see|check|view|browse)\s+.+\s+reviews?\b/i', $name)) {
+            return true;
+        }
+
         // Generic placeholder alts / SEO keyword blobs that are not real SKUs.
         if (preg_match('/^(skin care product|beauty product|product image|item|untitled)$/i', $name)) {
             return true;
@@ -444,6 +457,22 @@ final class MerchantProductExtractor
         }
 
         return false;
+    }
+
+    private function isJunkProductUrl(string $url): bool
+    {
+        $host = Str::lower((string) (parse_url($url, PHP_URL_HOST) ?? ''));
+
+        if ($host === '') {
+            return false;
+        }
+
+        $host = preg_replace('/^www\./', '', $host) ?? $host;
+
+        return (bool) preg_match(
+            '/(^|\.)(g2\.com|trustpilot\.com|capterra\.com|sitejabber\.com|getapp\.com|softwareadvice\.com|producthunt\.com)$/i',
+            $host
+        );
     }
 
     public function nameFromProductUrl(string $url): ?string

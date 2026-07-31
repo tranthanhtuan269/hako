@@ -19,6 +19,7 @@ class MerchantProductQualityTest extends TestCase
             ['name' => 'peptide skin care product', 'url' => 'https://example.com/products/peptide', 'image' => null, 'description' => null, 'price' => null],
             ['name' => 'best peptides for women', 'url' => 'https://example.com/products/best', 'image' => null, 'description' => null, 'price' => null],
             ['name' => 'hyaluronic acid and peptides', 'url' => 'https://example.com/products/ha', 'image' => null, 'description' => null, 'price' => null],
+            ['name' => 'Read Krisp reviews on G2', 'url' => 'https://www.g2.com/products/krisp/reviews', 'image' => null, 'description' => null, 'price' => null],
         ], 5);
 
         $this->assertSame(['Wrinkle Reset Serum™'], array_column($products, 'name'));
