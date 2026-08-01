@@ -2,7 +2,14 @@
     <div class="container">
         <header class="gc-categories-page-head">
             <div class="gc-categories-page-title">
-                <span class="gc-categories-page-icon" aria-hidden="true">#</span>
+                <span class="gc-categories-page-icon" aria-hidden="true">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="3" y="3" width="7" height="7" rx="1"/>
+                        <rect x="14" y="3" width="7" height="7" rx="1"/>
+                        <rect x="3" y="14" width="7" height="7" rx="1"/>
+                        <rect x="14" y="14" width="7" height="7" rx="1"/>
+                    </svg>
+                </span>
                 <h1>Categories</h1>
             </div>
             <p class="gc-categories-page-desc">

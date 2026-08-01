@@ -8,7 +8,7 @@
         <div class="gc-categories-head">
             <div class="gc-categories-title">
                 <span class="gc-categories-icon" aria-hidden="true">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
                         <rect x="3" y="3" width="5" height="5" rx="1"/>
                         <rect x="10" y="3" width="5" height="5" rx="1"/>
                         <rect x="17" y="3" width="5" height="5" rx="1"/>

@@ -279,7 +279,7 @@ body.theme-googlycodes .gc-slide-copy {
     display: flex;
     flex-direction: column;
     justify-content: center;
-    padding: 3rem 3.75rem 3.5rem 3.5rem;
+    padding: 3rem 3.75rem 3.5rem 5.5rem;
     background: linear-gradient(135deg, rgba(138, 160, 245, 0.92), rgba(176, 130, 230, 0.88) 55%, rgba(240, 160, 220, 0.55));
     position: relative;
     z-index: 1;
@@ -466,7 +466,7 @@ body.theme-googlycodes .gc-slider-dot.is-active {
     }
 
     body.theme-googlycodes .gc-slide-copy {
-        padding: 2.25rem 1.4rem 1.25rem;
+        padding: 2.25rem 3.5rem 1.25rem;
         text-align: center;
         align-items: center;
         min-height: 280px;
@@ -614,11 +614,7 @@ body.theme-googlycodes .gc-events-title {
     gap: 0.55rem;
     font-size: 1.2rem;
     font-weight: 700;
-    color: rgba(226, 232, 240, 0.88);
-}
-
-body.theme-googlycodes .gc-events-cal {
-    font-size: 1.05rem;
+    color: #1d3557;
 }
 
 body.theme-googlycodes .gc-events-intro p {
@@ -824,14 +820,15 @@ body.theme-googlycodes .gc-blog-page-title::after {
 }
 
 body.theme-googlycodes .gc-blog-page-icon {
-    width: 2.35rem;
-    height: 2.35rem;
-    border-radius: 10px;
+    width: 2.4rem;
+    height: 2.4rem;
+    border-radius: 12px;
     display: grid;
     place-items: center;
-    color: #FFFFFF;
-    border: 1.5px solid rgba(230, 57, 70, 0.5);
-    background: rgba(230, 57, 70, 0.14);
+    color: #fff;
+    border: 0;
+    background: linear-gradient(135deg, #e63946, #f4a261);
+    box-shadow: 0 0 18px rgba(230, 57, 70, 0.5);
     flex-shrink: 0;
 }
 
@@ -1099,16 +1096,22 @@ body.theme-googlycodes .gc-trending-title {
     gap: 0.75rem;
 }
 
-body.theme-googlycodes .gc-trending-icon {
-    width: 2.15rem;
-    height: 2.15rem;
-    border-radius: 10px;
+body.theme-googlycodes .gc-trending-icon,
+body.theme-googlycodes .gc-exclusive-icon,
+body.theme-googlycodes .gc-categories-icon,
+body.theme-googlycodes .gc-popular-stores-icon,
+body.theme-googlycodes .gc-events-cal {
+    width: 2.4rem;
+    height: 2.4rem;
+    border-radius: 12px;
     display: grid;
     place-items: center;
-    color: #e63946;
-    border: 1.5px solid rgba(230, 57, 70, 0.55);
-    background: rgba(230, 57, 70, 0.12);
+    color: #fff;
+    border: 0;
+    background: linear-gradient(135deg, #e63946, #f4a261);
+    box-shadow: 0 0 18px rgba(230, 57, 70, 0.5);
     flex-shrink: 0;
+    font-size: inherit;
 }
 
 body.theme-googlycodes .gc-trending-title h2 {
@@ -1311,18 +1314,6 @@ body.theme-googlycodes .gc-exclusive-title::after {
     height: 3px;
     border-radius: 999px;
     background: linear-gradient(90deg, #e63946, #f4a261, #1d3557);
-}
-
-body.theme-googlycodes .gc-exclusive-icon {
-    width: 2.15rem;
-    height: 2.15rem;
-    border-radius: 10px;
-    display: grid;
-    place-items: center;
-    color: #fff;
-    background: var(--gc-gradient);
-    box-shadow: 0 0 14px rgba(230, 57, 70, 0.4);
-    flex-shrink: 0;
 }
 
 body.theme-googlycodes .gc-exclusive-title h2 {
@@ -1539,18 +1530,6 @@ body.theme-googlycodes .gc-categories-title::after {
     background: linear-gradient(90deg, #e63946, #f4a261 55%, transparent);
 }
 
-body.theme-googlycodes .gc-categories-icon {
-    width: 2.1rem;
-    height: 2.1rem;
-    border-radius: 10px;
-    display: grid;
-    place-items: center;
-    color: #FFFFFF;
-    border: 1.5px solid rgba(230, 57, 70, 0.55);
-    background: rgba(230, 57, 70, 0.12);
-    flex-shrink: 0;
-}
-
 body.theme-googlycodes .gc-categories-title h2 {
     margin: 0;
     font-size: 1.35rem;
@@ -1693,18 +1672,6 @@ body.theme-googlycodes .gc-popular-stores-title::after {
     height: 3px;
     border-radius: 999px;
     background: linear-gradient(90deg, #e63946, #f4a261 60%, transparent);
-}
-
-body.theme-googlycodes .gc-popular-stores-icon {
-    width: 2.1rem;
-    height: 2.1rem;
-    border-radius: 10px;
-    display: grid;
-    place-items: center;
-    color: #FFFFFF;
-    border: 1.5px solid rgba(230, 57, 70, 0.55);
-    background: rgba(230, 57, 70, 0.14);
-    flex-shrink: 0;
 }
 
 body.theme-googlycodes .gc-popular-stores-title h2 {
@@ -2094,13 +2061,13 @@ body.theme-googlycodes .gc-stores-page-title h1 {
     margin: 0;
     font-size: clamp(1.75rem, 3vw, 2.25rem);
     font-weight: 800;
-    color: #e0e7ff;
+    color: #1d3557;
     letter-spacing: -0.02em;
 }
 
 body.theme-googlycodes .gc-stores-page-desc {
     margin: 0;
-    color: rgba(148, 163, 184, 0.95);
+    color: #64748b;
     font-size: 0.98rem;
     line-height: 1.65;
 }
@@ -2277,16 +2244,17 @@ body.theme-googlycodes .gc-categories-page-title::after {
 }
 
 body.theme-googlycodes .gc-categories-page-icon {
-    width: 2.35rem;
-    height: 2.35rem;
-    border-radius: 10px;
+    width: 2.4rem;
+    height: 2.4rem;
+    border-radius: 12px;
     display: grid;
     place-items: center;
     font-size: 1.15rem;
     font-weight: 800;
-    color: #FFFFFF;
-    border: 1.5px solid rgba(230, 57, 70, 0.55);
-    background: rgba(230, 57, 70, 0.12);
+    color: #fff;
+    border: 0;
+    background: linear-gradient(135deg, #e63946, #f4a261);
+    box-shadow: 0 0 18px rgba(230, 57, 70, 0.5);
     flex-shrink: 0;
 }
 
@@ -2418,14 +2386,15 @@ body.theme-googlycodes .gc-contact-title::after {
 }
 
 body.theme-googlycodes .gc-contact-icon {
-    width: 2.35rem;
-    height: 2.35rem;
-    border-radius: 10px;
+    width: 2.4rem;
+    height: 2.4rem;
+    border-radius: 12px;
     display: grid;
     place-items: center;
-    color: #FFFFFF;
-    border: 1.5px solid rgba(230, 57, 70, 0.5);
-    background: rgba(230, 57, 70, 0.14);
+    color: #fff;
+    border: 0;
+    background: linear-gradient(135deg, #e63946, #f4a261);
+    box-shadow: 0 0 18px rgba(230, 57, 70, 0.5);
     flex-shrink: 0;
 }
 
@@ -2679,8 +2648,14 @@ body.theme-googlycodes .visually-hidden {
 body.theme-googlycodes .section-title,
 body.theme-googlycodes .gc-section-title,
 body.theme-googlycodes .page-hero h1,
-body.theme-googlycodes .blog-article-header h1 {
+body.theme-googlycodes .blog-article-header h1,
+body.theme-googlycodes .gc-stores-page-title h1,
+body.theme-googlycodes .gc-categories-page-title h1,
+body.theme-googlycodes .gc-blog-page-title h1,
+body.theme-googlycodes .gc-contact-title h1 {
     color: #1d3557 !important;
+    background: none !important;
+    -webkit-text-fill-color: #1d3557 !important;
 }
 
 body.theme-googlycodes .page-hero,
