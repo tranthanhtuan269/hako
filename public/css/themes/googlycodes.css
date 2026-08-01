@@ -430,7 +430,7 @@ body.theme-googlycodes .gc-slide-copy {
     flex-direction: column;
     justify-content: center;
     padding: 3rem 3.75rem 3.5rem 5.5rem;
-    background: linear-gradient(135deg, rgba(138, 160, 245, 0.92), rgba(176, 130, 230, 0.88) 55%, rgba(240, 160, 220, 0.55));
+    background: linear-gradient(135deg, rgb(0 20 102 / 92%), rgb(58 120 187 / 96%) 55%, rgba(240, 160, 220, 0.55));
     position: relative;
     z-index: 1;
 }
