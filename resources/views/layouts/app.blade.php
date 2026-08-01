@@ -23,7 +23,12 @@
                 <input type="search" name="q" placeholder="{{ $activeTheme === 'googlycodes' ? 'Search stores, deals & coupon' : 'Search codes, stores, articles...' }}" value="{{ request('q') }}">
                 <button type="submit">Search</button>
             </form>
-            <nav class="main-nav">
+            @if($activeTheme === 'googlycodes')
+                <button type="button" class="gc-nav-toggle" data-gc-nav-toggle aria-expanded="false" aria-controls="gc-main-nav" aria-label="Open menu">
+                    <span class="gc-nav-toggle-bars" aria-hidden="true"></span>
+                </button>
+            @endif
+            <nav class="main-nav" @if($activeTheme === 'googlycodes') id="gc-main-nav" data-gc-main-nav @endif>
                 @if($activeTheme === 'googlycodes')
                     <a href="{{ route('home') }}" @class(['is-active' => request()->routeIs('home')])>Home</a>
                     <a href="{{ route('stores.index') }}" @class(['is-active' => request()->routeIs('stores.*')])>Stores</a>

@@ -214,22 +214,172 @@ body.theme-googlycodes .nav-logout-btn {
     color: #1d3557;
 }
 
+body.theme-googlycodes .gc-nav-toggle {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    padding: 0;
+    border: 1.5px solid rgba(230, 57, 70, 0.35);
+    border-radius: 10px;
+    background: #FFF8F5;
+    color: #1d3557;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+body.theme-googlycodes .gc-nav-toggle-bars,
+body.theme-googlycodes .gc-nav-toggle-bars::before,
+body.theme-googlycodes .gc-nav-toggle-bars::after {
+    display: block;
+    width: 1.1rem;
+    height: 2px;
+    background: currentColor;
+    border-radius: 2px;
+    transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+body.theme-googlycodes .gc-nav-toggle-bars {
+    position: relative;
+}
+
+body.theme-googlycodes .gc-nav-toggle-bars::before,
+body.theme-googlycodes .gc-nav-toggle-bars::after {
+    content: '';
+    position: absolute;
+    left: 0;
+}
+
+body.theme-googlycodes .gc-nav-toggle-bars::before { top: -6px; }
+body.theme-googlycodes .gc-nav-toggle-bars::after { top: 6px; }
+
+body.theme-googlycodes .gc-nav-toggle[aria-expanded="true"] .gc-nav-toggle-bars {
+    background: transparent;
+}
+
+body.theme-googlycodes .gc-nav-toggle[aria-expanded="true"] .gc-nav-toggle-bars::before {
+    top: 0;
+    transform: rotate(45deg);
+}
+
+body.theme-googlycodes .gc-nav-toggle[aria-expanded="true"] .gc-nav-toggle-bars::after {
+    top: 0;
+    transform: rotate(-45deg);
+}
+
 @media (max-width: 900px) {
+    /* Fixed 1-row: logo | search | hamburger — grid prevents wrap */
     body.theme-googlycodes .header-inner {
-        align-items: stretch;
+        display: grid !important;
+        grid-template-columns: auto minmax(0, 1fr) auto;
+        grid-template-areas:
+            "brand search toggle"
+            "nav nav nav";
+        align-items: center;
+        column-gap: 0.5rem;
+        row-gap: 0;
+        padding: 0.65rem 0.85rem;
+        flex-direction: unset;
+        flex-wrap: unset;
+    }
+
+    body.theme-googlycodes .site-brand {
+        grid-area: brand;
+        max-width: none;
+        min-width: 0;
+    }
+
+    body.theme-googlycodes .site-brand-text {
+        display: none;
+    }
+
+    body.theme-googlycodes .site-brand-logo,
+    body.theme-googlycodes .site-brand-icon,
+    body.theme-googlycodes .site-brand--logo-only .site-brand-logo {
+        width: 2.35rem;
+        height: 2.35rem;
+        max-width: 2.35rem;
+        object-fit: contain;
     }
 
     body.theme-googlycodes .search-form {
-        max-width: none;
-        flex: 1 1 100%;
-        order: 3;
+        grid-area: search;
+        display: flex;
+        width: 100%;
+        min-width: 0 !important;
+        max-width: none !important;
+        flex: unset;
+        margin: 0;
+        gap: 0.35rem;
+    }
+
+    body.theme-googlycodes .search-form input {
+        flex: 1 1 auto;
+        width: 100%;
+        min-width: 0 !important;
+        height: 2.35rem;
+        padding: 0 0.75rem;
+        font-size: 0.82rem;
+    }
+
+    body.theme-googlycodes .search-form button {
+        flex: 0 0 auto;
+        height: 2.35rem;
+        min-width: 2.35rem;
+        padding: 0 0.55rem;
+        font-size: 0.72rem;
+        border-radius: 999px;
+    }
+
+    body.theme-googlycodes .gc-nav-toggle {
+        display: inline-flex !important;
+        grid-area: toggle;
+        width: 2.35rem;
+        height: 2.35rem;
     }
 
     body.theme-googlycodes .main-nav {
-        margin-left: 0;
+        display: none;
+        grid-area: nav;
         width: 100%;
+        margin-left: 0;
+        margin-top: 0.55rem;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.25rem;
+        padding: 0.65rem 0 0.15rem;
+        border-top: 1px solid rgba(230, 57, 70, 0.18);
+    }
+
+    body.theme-googlycodes .main-nav.is-open {
+        display: flex;
+    }
+
+    body.theme-googlycodes .main-nav > a,
+    body.theme-googlycodes .main-nav .nav-logout-btn {
         justify-content: flex-start;
-        order: 4;
+        width: 100%;
+        min-height: 2.65rem;
+        padding: 0 0.85rem;
+        border-radius: 10px;
+    }
+
+    body.theme-googlycodes .main-nav .nav-logout-form {
+        width: 100%;
+    }
+
+    body.theme-googlycodes .main-nav .nav-register {
+        justify-content: center;
+        text-align: center;
+    }
+}
+
+@media (max-width: 768px) {
+    body.theme-googlycodes .header-inner {
+        display: grid !important;
+        flex-direction: unset;
+        align-items: center;
     }
 }
 
@@ -1049,25 +1199,47 @@ body.theme-googlycodes .alert-error {
 body.theme-googlycodes .site-footer {
     background: #FFF8F5;
     border-top: 2px solid rgba(230, 57, 70, 0.25);
-    color: #4B5563;
+    color: #1d3557;
     margin-top: 2rem;
 }
 
-body.theme-googlycodes .site-footer a {
+body.theme-googlycodes .site-footer strong {
     color: #1d3557;
+}
+
+body.theme-googlycodes .site-footer a {
+    color: #1d3557 !important;
 }
 
 body.theme-googlycodes .site-footer a:hover {
-    color: #e63946;
+    color: #e63946 !important;
 }
 
-body.theme-googlycodes .site-footer h4 {
+body.theme-googlycodes .site-footer h4,
+body.theme-googlycodes .site-footer .footer-social-heading {
+    color: #1d3557 !important;
+}
+
+body.theme-googlycodes .site-footer .footer-grid p,
+body.theme-googlycodes .site-footer .footer-tagline,
+body.theme-googlycodes .site-footer .footer-sub-tagline,
+body.theme-googlycodes .site-footer .footer-description-tagline {
+    color: #4B5563 !important;
+}
+
+body.theme-googlycodes .site-footer .footer-grid a:not(.site-social-link) {
+    color: #1d3557 !important;
+}
+
+body.theme-googlycodes .site-footer .site-social-link {
     color: #1d3557;
+    border-color: rgba(29, 53, 87, 0.25);
 }
 
 body.theme-googlycodes .footer-copy {
     border-top: 1px solid rgba(230, 57, 70, 0.18);
-    color: #9CA3AF;
+    color: #64748b !important;
+    opacity: 1;
 }
 
 /* Trending Stores â€” dual independent marquees */
