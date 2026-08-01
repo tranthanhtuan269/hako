@@ -9,6 +9,9 @@
 @endpush
 
 @section('content')
+@if(($activeTheme ?? '') === 'googlycodes')
+    @include('themes.googlycodes.stores-index', ['stores' => $stores])
+@else
 <div class="container">
     <div class="page-header"><h1>Stores</h1></div>
     <div class="store-grid store-grid--cards">
@@ -39,4 +42,5 @@
     </div>
     <div class="pagination">{{ $stores->links() }}</div>
 </div>
+@endif
 @endsection

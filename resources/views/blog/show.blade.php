@@ -47,6 +47,32 @@
         background: #f8fafc;
         font-weight: 600;
     }
+
+    body.theme-googlycodes .article-content h2,
+    body.theme-googlycodes .article-content h3 {
+        color: #e9d5ff;
+    }
+    body.theme-googlycodes .article-content p,
+    body.theme-googlycodes .article-content ul,
+    body.theme-googlycodes .article-content ol,
+    body.theme-googlycodes .article-content li {
+        color: rgba(226, 232, 240, 0.88);
+    }
+    body.theme-googlycodes .article-content a {
+        color: #93c5fd;
+    }
+    body.theme-googlycodes .article-content .article-media figcaption {
+        color: rgba(148, 163, 184, 0.9);
+    }
+    body.theme-googlycodes .article-content table.comparison-table th,
+    body.theme-googlycodes .article-content table.comparison-table td {
+        border-color: rgba(148, 163, 184, 0.28);
+        color: rgba(226, 232, 240, 0.9);
+    }
+    body.theme-googlycodes .article-content table.comparison-table th {
+        background: rgba(79, 70, 229, 0.18);
+        color: #e9d5ff;
+    }
 </style>
 @endpush
 

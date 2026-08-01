@@ -5,6 +5,9 @@
 @section('canonical', route('categories.index'))
 
 @section('content')
+@if(($activeTheme ?? '') === 'googlycodes')
+    @include('themes.googlycodes.categories-index', ['categories' => $categories])
+@else
 <div class="container">
     <div class="page-header"><h1>Deal Categories</h1></div>
     <div class="category-grid" style="grid-template-columns:repeat(auto-fill,minmax(180px,1fr));">
@@ -17,4 +20,5 @@
         @endforeach
     </div>
 </div>
+@endif
 @endsection

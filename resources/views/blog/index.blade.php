@@ -9,6 +9,9 @@
 @endpush
 
 @section('content')
+@if(($activeTheme ?? '') === 'googlycodes')
+    @include('themes.googlycodes.blog-index', ['posts' => $posts, 'q' => $q])
+@else
 <section class="page-hero">
     <div class="container">
         <h1>Savings Blog</h1>
@@ -34,4 +37,5 @@
         <div class="pagination">{{ $posts->links() }}</div>
     @endif
 </div>
+@endif
 @endsection
