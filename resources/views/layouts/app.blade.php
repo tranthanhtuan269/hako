@@ -99,8 +99,11 @@
 
     <script src="{{ asset('js/app.js') }}?v={{ filemtime(public_path('js/app.js')) }}"></script>
     @include('themes.savingspro.coupon-modal')
-    @if($activeTheme === 'savingspro' && file_exists(public_path('js/themes/savingspro.js')))
-        <script src="{{ asset('js/themes/savingspro.js') }}?v={{ filemtime(public_path('js/themes/savingspro.js')) }}"></script>
+    @php
+        $themeJs = \App\Support\ThemeManager::jsPath();
+    @endphp
+    @if($themeJs && file_exists(public_path($themeJs)))
+        <script src="{{ asset($themeJs) }}?v={{ filemtime(public_path($themeJs)) }}"></script>
     @endif
     @stack('scripts')
 </body>

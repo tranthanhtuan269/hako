@@ -10,6 +10,7 @@
         'admin.account.*',
         'admin.tracking.*',
         'admin.themes.*',
+        'admin.hero-slider.*',
     );
     $contentOpen = request()->routeIs(
         'admin.posts.*',
@@ -58,6 +59,8 @@
                     @class(['sidebar-nav-sublink', 'active' => request()->routeIs('admin.tracking.*')])>Tracking Scripts</a>
                 <a href="{{ route('admin.themes.index') }}"
                     @class(['sidebar-nav-sublink', 'active' => request()->routeIs('admin.themes.*')])>Frontend Theme</a>
+                <a href="{{ route('admin.hero-slider.index') }}"
+                    @class(['sidebar-nav-sublink', 'active' => request()->routeIs('admin.hero-slider.*')])>Homepage Slider</a>
             @include('partials.dashboard-sidebar-collapsible-section-end')
         </div>
 
@@ -116,6 +119,8 @@
                         @class(['sidebar-nav-sublink', 'active' => request()->routeIs('admin.tracking.*')])>Tracking Scripts</a>
                     <a href="{{ route('admin.themes.index') }}"
                         @class(['sidebar-nav-sublink', 'active' => request()->routeIs('admin.themes.*')])>Frontend Theme</a>
+                    <a href="{{ route('admin.hero-slider.index') }}"
+                        @class(['sidebar-nav-sublink', 'active' => request()->routeIs('admin.hero-slider.*')])>Homepage Slider</a>
                 @include('partials.dashboard-sidebar-collapsible-section-end')
             </div>
 

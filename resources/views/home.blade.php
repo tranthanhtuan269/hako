@@ -28,7 +28,15 @@
 @endpush
 
 @section('content')
-@if($activeTheme === 'savingspro')
+@if($activeTheme === 'googlycodes')
+    @include('themes.googlycodes.home-hero', ['heroSlides' => $heroSlides ?? collect()])
+    @include('themes.googlycodes.trending-stores', [
+        'trendingStores' => $trendingStores ?? $stores ?? collect(),
+    ])
+    @include('themes.googlycodes.exclusive-promos', [
+        'exclusiveCoupons' => $exclusiveCoupons ?? collect(),
+    ])
+@elseif($activeTheme === 'savingspro')
     @include('themes.savingspro.home-hero', compact('stats'))
 @else
 <section class="hero">
@@ -49,7 +57,7 @@
 </section>
 @endif
 
-@if($latestPosts->isNotEmpty())
+@if($activeTheme !== 'googlycodes' && $latestPosts->isNotEmpty())
 <section class="section">
     <div class="container">
         <h2 class="section-title">Review <a href="{{ route('blog.index') }}">All articles →</a></h2>
@@ -62,9 +70,16 @@
 </section>
 @endif
 
+@if($activeTheme !== 'googlycodes')
 <section class="section">
     <div class="container">
-        <h2 class="section-title">{{ $activeTheme === 'savingspro' ? 'Savings from the World\'s Best Stores' : 'Popular Stores' }}</h2>
+        <h2 class="section-title">
+            @if($activeTheme === 'savingspro')
+                Savings from the World's Best Stores
+            @else
+                Popular Stores
+            @endif
+        </h2>
         <div class="store-slider" data-autoplay="3000">
             <div class="store-slider-viewport store-scroll--autoplay" tabindex="0" aria-label="Popular stores">
                 <div class="store-scroll-track">
@@ -92,7 +107,19 @@
         </div>
     </div>
 </section>
+@endif
 
+@if($activeTheme === 'googlycodes')
+    @include('themes.googlycodes.popular-categories', [
+        'categories' => $categories ?? collect(),
+    ])
+    @include('themes.googlycodes.popular-stores', [
+        'stores' => $stores ?? collect(),
+    ])
+    {{-- SEO copy + special events — last content before footer --}}
+    @include('themes.googlycodes.promo-copy')
+    @include('themes.googlycodes.special-events')
+@else
 <section class="section">
     <div class="container">
         <h2 class="section-title">Categories</h2>
@@ -106,6 +133,7 @@
         </div>
     </div>
 </section>
+@endif
 
 @if($activeTheme === 'savingspro')
     @include('themes.savingspro.newsletter-cta')

@@ -2,7 +2,7 @@
 
 return [
 
-    'default' => 'classic',
+    'default' => 'googlycodes',
 
     'themes' => [
         'classic' => [
@@ -54,6 +54,14 @@ return [
             'font' => 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap',
             'js' => 'js/themes/savingspro.js',
             'preview' => ['#006838', '#f0f4f8', '#e69100'],
+        ],
+        'googlycodes' => [
+            'name' => 'GooglyCodes',
+            'description' => 'Dark glassmorphism hub with indigo–purple gradients, event cards, and Exclusive Deals hero (inspired by googlycodes.com).',
+            'css' => 'themes/googlycodes.css',
+            'font' => 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap',
+            'js' => 'js/themes/googlycodes.js',
+            'preview' => ['#667eea', '#764ba2', '#0a0e27'],
         ],
     ],
 

@@ -6,6 +6,7 @@ use App\Models\Category;
 use App\Models\Coupon;
 use App\Models\Post;
 use App\Models\Store;
+use App\Support\SiteHeroSlides;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
@@ -13,8 +14,21 @@ class HomeController extends Controller
 {
     public function index(): View
     {
-        $categories = Category::active()->orderBy('sort_order')->take(18)->get();
-        $stores = Store::homeFeaturedQuery(12)->get();
+        $categories = Category::active()->orderBy('sort_order')->take(12)->get();
+        $stores = Store::homeFeaturedQuery(18)
+            ->withCount(['coupons as active_coupons_count' => function ($query) {
+                $query->valid();
+            }])
+            ->get();
+        $trendingStores = Store::homeFeaturedQuery(24)->get();
+        if ($trendingStores->count() < 8) {
+            $trendingStores = Store::active()->orderByDesc('view_count')->orderBy('name')->take(24)->get();
+        }
+
+        $exclusiveCoupons = Coupon::publicCatalogQuery()
+            ->with(['store.category'])
+            ->take(8)
+            ->get();
 
         $latestPosts = Post::homeFeaturedQuery(6)->get();
 
@@ -24,11 +38,16 @@ class HomeController extends Controller
             'categories' => Category::active()->count(),
         ];
 
+        $heroSlides = SiteHeroSlides::forHome();
+
         return view('home', compact(
             'categories',
             'stores',
+            'trendingStores',
+            'exclusiveCoupons',
             'latestPosts',
-            'stats'
+            'stats',
+            'heroSlides',
         ));
     }
 

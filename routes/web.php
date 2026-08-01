@@ -31,6 +31,7 @@ use App\Http\Controllers\Admin\IntegrationsController;
 use App\Http\Controllers\Admin\AffiliateSignupController;
 use App\Http\Controllers\Admin\AccountController;
 use App\Http\Controllers\Admin\AdsSettingsController;
+use App\Http\Controllers\Admin\HeroSliderController;
 use App\Http\Controllers\Admin\AffiliateOrderController as AdminAffiliateOrderController;
 use App\Http\Controllers\Admin\AffiliatePayoutController as AdminAffiliatePayoutController;
 use App\Http\Controllers\ReferralController;
@@ -121,6 +122,8 @@ Route::middleware(['auth', 'admin', 'noindex'])->prefix('admin')->name('admin.')
     Route::resource('posts', AdminPostController::class)->except(['show']);
     Route::get('themes', [ThemeController::class, 'index'])->name('themes.index');
     Route::put('themes', [ThemeController::class, 'update'])->name('themes.update');
+    Route::get('hero-slider', [HeroSliderController::class, 'index'])->name('hero-slider.index');
+    Route::put('hero-slider', [HeroSliderController::class, 'update'])->name('hero-slider.update');
     Route::get('tracking', [TrackingController::class, 'index'])->name('tracking.index');
     Route::put('tracking', [TrackingController::class, 'update'])->name('tracking.update');
     Route::get('branding', [BrandingController::class, 'index'])->name('branding.index');
