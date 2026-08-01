@@ -6,7 +6,7 @@
 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem;flex-wrap:wrap;gap:.75rem;">
     <div>
         <h1 style="margin:0;">Coupons</h1>
-        <p class="form-hint" style="margin:.35rem 0 0;">Drag rows to set display order on the public <a href="{{ route('coupons.index') }}" target="_blank" rel="noopener">/coupons</a> page. Top rows appear first.</p>
+        <p class="form-hint" style="margin:.35rem 0 0;">Drag rows to set display order on the public <a href="{{ route('coupons.index') }}" target="_blank" rel="noopener">/coupons</a> page, store pages, and the scroll coupon popup. Top rows appear first. Filter by store first if you only want to reorder that store.</p>
     </div>
     <div style="display:flex;gap:.5rem;flex-wrap:wrap;">
         <a href="{{ route('admin.coupons.catalog-display') }}" class="btn btn-outline">Coupons page display</a>

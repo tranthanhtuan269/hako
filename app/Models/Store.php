@@ -146,6 +146,7 @@ class Store extends Model
             ->valid()
             ->where('show_on_store', true)
             ->orderByDesc('store_sort_order')
+            ->orderByDesc('coupons_sort_order')
             ->orderByDesc('is_featured')
             ->latest();
     }

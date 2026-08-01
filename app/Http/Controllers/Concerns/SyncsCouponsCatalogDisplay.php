@@ -56,12 +56,41 @@ trait SyncsCouponsCatalogDisplay
 
     protected function applyCouponsCatalogSortOrder(array $orderedIds): void
     {
+        $orderedIds = array_values(array_map('intval', $orderedIds));
         $count = count($orderedIds);
 
         foreach ($orderedIds as $index => $id) {
-            Coupon::whereKey((int) $id)->update([
+            Coupon::whereKey($id)->update([
                 'coupons_sort_order' => max(1, $count - $index),
             ]);
+        }
+
+        // Keep store page + scroll popup in the same relative order as admin drag-sort.
+        $coupons = Coupon::query()
+            ->whereIn('id', $orderedIds)
+            ->get(['id', 'store_id'])
+            ->keyBy('id');
+
+        $perStore = [];
+
+        foreach ($orderedIds as $id) {
+            $coupon = $coupons->get($id);
+
+            if (! $coupon || ! $coupon->store_id) {
+                continue;
+            }
+
+            $perStore[(int) $coupon->store_id][] = $id;
+        }
+
+        foreach ($perStore as $storeCouponIds) {
+            $storeCount = count($storeCouponIds);
+
+            foreach ($storeCouponIds as $index => $id) {
+                Coupon::whereKey($id)->update([
+                    'store_sort_order' => max(1, $storeCount - $index),
+                ]);
+            }
         }
     }
 }

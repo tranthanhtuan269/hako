@@ -46,7 +46,7 @@ class CouponController extends Controller
 
         return redirect()
             ->route('admin.coupons.index')
-            ->with('success', 'Coupons page display order saved.');
+            ->with('success', 'Coupon display order saved for /coupons, store pages, and popup.');
     }
 
     public function catalogDisplay(): View
