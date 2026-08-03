@@ -1100,8 +1100,8 @@ body.theme-googlycodes .blog-featured-img-wrap {
 
 body.theme-googlycodes .article-content.legal-content,
 body.theme-googlycodes .legal-content.article-content {
-    color: rgba(226, 232, 240, 0.9);
-    background: transparent;
+    color: #1d3557;
+    background: #fff;
 }
 
 body.theme-googlycodes .blog-sidebar .sidebar-box,
@@ -2989,6 +2989,26 @@ body.theme-googlycodes .gc-blog-page-authors a,
 body.theme-googlycodes .author-link,
 body.theme-googlycodes .author-box-more {
     color: #e63946 !important;
+}
+
+body.theme-googlycodes .article-content table,
+body.theme-googlycodes .article-content table.comparison-table {
+    color: #1d3557 !important;
+}
+
+body.theme-googlycodes .article-content table th,
+body.theme-googlycodes .article-content table td,
+body.theme-googlycodes .article-content table.comparison-table th,
+body.theme-googlycodes .article-content table.comparison-table td {
+    color: #1d3557 !important;
+    border-color: rgba(29, 53, 87, 0.18) !important;
+    background: #fff !important;
+}
+
+body.theme-googlycodes .article-content table th,
+body.theme-googlycodes .article-content table.comparison-table th {
+    background: #FFF5F5 !important;
+    color: #1d3557 !important;
 }
 
 body.theme-googlycodes .pagination a,

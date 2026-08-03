@@ -43,8 +43,8 @@
                         @if(auth()->user()->isAdmin())
                             <a href="{{ route('admin.dashboard') }}" class="nav-admin">Admin</a>
                             <a href="{{ route('member.import-affiliate.create') }}" class="nav-register">Import</a>
-                        @else
-                            <a href="{{ route('member.dashboard') }}" class="nav-register">Dashboard</a>
+                        @elseif(config('affiliate.enabled'))
+                            <a href="{{ route('member.affiliate.index') }}" class="nav-register">Referral</a>
                         @endif
                         <form action="{{ route('logout') }}" method="POST" class="nav-logout-form">
                             @csrf
@@ -64,8 +64,8 @@
                         @if(auth()->user()->isAdmin())
                             <a href="{{ route('admin.dashboard') }}" class="nav-admin">Admin</a>
                             <a href="{{ route('member.import-affiliate.create') }}" class="nav-register">Import</a>
-                        @else
-                            <a href="{{ route('member.dashboard') }}" class="nav-register">Dashboard</a>
+                        @elseif(config('affiliate.enabled'))
+                            <a href="{{ route('member.affiliate.index') }}" class="nav-register">Referral</a>
                         @endif
                         <form action="{{ route('logout') }}" method="POST" class="nav-logout-form">
                             @csrf

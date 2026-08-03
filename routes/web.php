@@ -78,7 +78,7 @@ Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 Route::middleware(['auth', 'noindex'])->post('/editor/upload-image', [EditorImageController::class, 'store'])
     ->name('editor.upload-image');
 
-Route::middleware(['auth', 'noindex'])->prefix('dashboard')->name('member.')->group(function () {
+Route::middleware(['auth', 'admin', 'noindex'])->prefix('dashboard')->name('member.')->group(function () {
     Route::get('/', [MemberDashboardController::class, 'index'])->name('dashboard');
     Route::get('import-affiliate', [ImportAffiliateController::class, 'create'])->name('import-affiliate.create');
     Route::post('import-affiliate/preview', [ImportAffiliateController::class, 'preview'])->name('import-affiliate.preview');
@@ -92,13 +92,13 @@ Route::middleware(['auth', 'noindex'])->prefix('dashboard')->name('member.')->gr
     Route::resource('stores', MemberStoreController::class)->except(['show']);
     Route::resource('coupons', MemberCouponController::class)->except(['show']);
     Route::resource('posts', MemberPostController::class)->except(['show']);
+});
 
-    Route::middleware('affiliate.enabled')->group(function () {
-        Route::get('affiliate', [MemberAffiliateController::class, 'index'])->name('affiliate.index');
-        Route::get('affiliate/orders', [MemberAffiliateController::class, 'orders'])->name('affiliate.orders');
-        Route::get('affiliate/payouts', [MemberAffiliateController::class, 'payouts'])->name('affiliate.payouts');
-        Route::post('affiliate/payouts', [MemberAffiliateController::class, 'storePayout'])->name('affiliate.payouts.store');
-    });
+Route::middleware(['auth', 'noindex', 'affiliate.enabled'])->prefix('dashboard')->name('member.')->group(function () {
+    Route::get('affiliate', [MemberAffiliateController::class, 'index'])->name('affiliate.index');
+    Route::get('affiliate/orders', [MemberAffiliateController::class, 'orders'])->name('affiliate.orders');
+    Route::get('affiliate/payouts', [MemberAffiliateController::class, 'payouts'])->name('affiliate.payouts');
+    Route::post('affiliate/payouts', [MemberAffiliateController::class, 'storePayout'])->name('affiliate.payouts.store');
 });
 
 Route::middleware(['auth', 'admin', 'noindex'])->prefix('admin')->name('admin.')->group(function () {

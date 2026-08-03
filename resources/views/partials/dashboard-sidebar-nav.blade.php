@@ -30,15 +30,17 @@
     $googleAdsOpen = request()->routeIs('member.keywords.*', 'admin.ads-settings.*');
 @endphp
 <nav class="sidebar-nav" aria-label="Dashboard menu">
-    <div class="sidebar-nav-group">
-        @if($panel === 'admin')
-            <a href="{{ route('admin.dashboard') }}" @class(['active' => request()->routeIs('admin.dashboard')])>Dashboard</a>
-        @else
-            <a href="{{ route('member.dashboard') }}" @class(['active' => request()->routeIs('member.dashboard')])>Dashboard</a>
-        @endif
-    </div>
+    @if($panel === 'admin' || $isAdmin)
+        <div class="sidebar-nav-group">
+            @if($panel === 'admin')
+                <a href="{{ route('admin.dashboard') }}" @class(['active' => request()->routeIs('admin.dashboard')])>Dashboard</a>
+            @else
+                <a href="{{ route('member.dashboard') }}" @class(['active' => request()->routeIs('member.dashboard')])>Dashboard</a>
+            @endif
+        </div>
 
-    <hr class="sidebar-divider" aria-hidden="true">
+        <hr class="sidebar-divider" aria-hidden="true">
+    @endif
 
     @if($panel === 'admin')
         <div class="sidebar-nav-group">
@@ -125,30 +127,26 @@
             </div>
 
             <hr class="sidebar-divider" aria-hidden="true">
-        @endif
 
-        <div class="sidebar-nav-group">
-            @include('partials.dashboard-sidebar-collapsible-section-start', [
-                'sectionId' => 'content',
-                'sectionLabel' => 'Content',
-                'sectionOpen' => $contentOpen,
-            ])
-                <a href="{{ route('member.posts.index') }}"
-                    @class(['sidebar-nav-sublink', 'active' => request()->routeIs('member.posts.*')])>Blogs</a>
-                @if($isAdmin)
+            <div class="sidebar-nav-group">
+                @include('partials.dashboard-sidebar-collapsible-section-start', [
+                    'sectionId' => 'content',
+                    'sectionLabel' => 'Content',
+                    'sectionOpen' => $contentOpen,
+                ])
+                    <a href="{{ route('member.posts.index') }}"
+                        @class(['sidebar-nav-sublink', 'active' => request()->routeIs('member.posts.*')])>Blogs</a>
                     <a href="{{ route('admin.categories.index') }}"
                         @class(['sidebar-nav-sublink', 'active' => request()->routeIs('admin.categories.*')])>Categories</a>
-                @endif
-                <a href="{{ route('member.stores.index') }}"
-                    @class(['sidebar-nav-sublink', 'active' => request()->routeIs('member.stores.*')])>Stores</a>
-                <a href="{{ route('member.coupons.index') }}"
-                    @class(['sidebar-nav-sublink', 'active' => request()->routeIs('member.coupons.*')])>Coupons</a>
-                <a href="{{ route('member.import-affiliate.create') }}"
-                    @class(['sidebar-nav-sublink', 'active' => request()->routeIs('member.import-affiliate.*')])>Import from Affiliate Link</a>
-            @include('partials.dashboard-sidebar-collapsible-section-end')
-        </div>
+                    <a href="{{ route('member.stores.index') }}"
+                        @class(['sidebar-nav-sublink', 'active' => request()->routeIs('member.stores.*')])>Stores</a>
+                    <a href="{{ route('member.coupons.index') }}"
+                        @class(['sidebar-nav-sublink', 'active' => request()->routeIs('member.coupons.*')])>Coupons</a>
+                    <a href="{{ route('member.import-affiliate.create') }}"
+                        @class(['sidebar-nav-sublink', 'active' => request()->routeIs('member.import-affiliate.*')])>Import from Affiliate Link</a>
+                @include('partials.dashboard-sidebar-collapsible-section-end')
+            </div>
 
-        @if($isAdmin)
             <hr class="sidebar-divider" aria-hidden="true">
 
             <div class="sidebar-nav-group">
@@ -166,15 +164,13 @@
                 @include('partials.dashboard-sidebar-collapsible-section-end')
             </div>
         @elseif(config('affiliate.enabled'))
-            <hr class="sidebar-divider" aria-hidden="true">
-
             <div class="sidebar-nav-group">
                 <a href="{{ route('member.affiliate.index') }}" @class(['active' => request()->routeIs('member.affiliate.*')])>Referral Program</a>
             </div>
         @endif
     @endif
 
-    @if($showGoogleAdsBuilder)
+    @if($showGoogleAdsBuilder && $isAdmin)
         <hr class="sidebar-divider" aria-hidden="true">
 
         <div class="sidebar-nav-group">
@@ -185,14 +181,11 @@
             ])
                 <a href="{{ route('member.keywords.create') }}"
                     @class(['sidebar-nav-sublink', 'active' => request()->routeIs('member.keywords.*')])>Keyword Generator</a>
-                @if($isAdmin)
-                    <a href="{{ route('admin.ads-settings.index') }}"
-                        @class(['sidebar-nav-sublink', 'active' => request()->routeIs('admin.ads-settings.*')])>Ads Settings</a>
-                @endif
+                <a href="{{ route('admin.ads-settings.index') }}"
+                    @class(['sidebar-nav-sublink', 'active' => request()->routeIs('admin.ads-settings.*')])>Ads Settings</a>
             @include('partials.dashboard-sidebar-collapsible-section-end')
         </div>
     @endif
-
     <hr class="sidebar-divider" aria-hidden="true">
 
     <div class="sidebar-nav-group sidebar-nav-group--footer">

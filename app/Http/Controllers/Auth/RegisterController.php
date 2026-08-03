@@ -44,6 +44,11 @@ class RegisterController extends Controller
         Auth::login($user);
         $request->session()->regenerate();
 
-        return redirect()->route('member.dashboard')->with('success', 'Welcome! Your account has been created.');
+        if (config('affiliate.enabled')) {
+            return redirect()->route('member.affiliate.index')
+                ->with('success', 'Welcome! Your account has been created.');
+        }
+
+        return redirect()->route('home')->with('success', 'Welcome! Your account has been created.');
     }
 }

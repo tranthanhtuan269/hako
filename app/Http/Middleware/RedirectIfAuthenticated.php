@@ -24,7 +24,9 @@ class RedirectIfAuthenticated
                 $user = Auth::guard($guard)->user();
 
                 return redirect(
-                    $user->isAdmin() ? route('admin.dashboard') : route('member.dashboard')
+                    $user->isAdmin()
+                        ? route('admin.dashboard')
+                        : (config('affiliate.enabled') ? route('member.affiliate.index') : route('home'))
                 );
             }
         }

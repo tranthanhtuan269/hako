@@ -50,28 +50,44 @@
 
     body.theme-googlycodes .article-content h2,
     body.theme-googlycodes .article-content h3 {
-        color: #e9d5ff;
+        color: #e63946;
     }
     body.theme-googlycodes .article-content p,
     body.theme-googlycodes .article-content ul,
     body.theme-googlycodes .article-content ol,
     body.theme-googlycodes .article-content li {
-        color: rgba(226, 232, 240, 0.88);
+        color: #1d3557;
     }
     body.theme-googlycodes .article-content a {
-        color: #93c5fd;
+        color: #e63946;
     }
     body.theme-googlycodes .article-content .article-media figcaption {
-        color: rgba(148, 163, 184, 0.9);
+        color: #6B7280;
     }
+    body.theme-googlycodes .article-content table,
+    body.theme-googlycodes .article-content table.comparison-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 1rem 0 1.5rem;
+        font-size: .95rem;
+        color: #1d3557;
+    }
+    body.theme-googlycodes .article-content table th,
+    body.theme-googlycodes .article-content table td,
     body.theme-googlycodes .article-content table.comparison-table th,
     body.theme-googlycodes .article-content table.comparison-table td {
-        border-color: rgba(148, 163, 184, 0.28);
-        color: rgba(226, 232, 240, 0.9);
+        border: 1px solid rgba(29, 53, 87, 0.18);
+        padding: .65rem .75rem;
+        text-align: left;
+        vertical-align: top;
+        color: #1d3557;
+        background: #fff;
     }
+    body.theme-googlycodes .article-content table th,
     body.theme-googlycodes .article-content table.comparison-table th {
-        background: rgba(79, 70, 229, 0.18);
-        color: #e9d5ff;
+        background: #FFF5F5;
+        color: #1d3557;
+        font-weight: 700;
     }
 </style>
 @endpush
