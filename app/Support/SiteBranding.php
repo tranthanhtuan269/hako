@@ -25,6 +25,10 @@ final class SiteBranding
 
     private const FOOTER_DESCRIPTION_TAGLINE_KEY = 'site_footer_description_tagline';
 
+    private const CONTACT_EMAIL_KEY = 'site_contact_email';
+
+    private const PRIVACY_EMAIL_KEY = 'site_privacy_email';
+
     private const SOCIAL_KEY = 'site_social_links';
 
     /** @var array<string, array{label: string, placeholder: string}> */
@@ -180,6 +184,30 @@ final class SiteBranding
         return self::footerDescriptionTagline() ?? self::resolvedTagline();
     }
 
+    public static function contactEmail(): ?string
+    {
+        $value = trim((string) SiteSetting::get(self::CONTACT_EMAIL_KEY, ''));
+
+        return $value !== '' ? $value : null;
+    }
+
+    public static function privacyEmail(): ?string
+    {
+        $value = trim((string) SiteSetting::get(self::PRIVACY_EMAIL_KEY, ''));
+
+        return $value !== '' ? $value : null;
+    }
+
+    public static function resolvedContactEmail(): string
+    {
+        return self::contactEmail() ?? (string) config('site.contact_email');
+    }
+
+    public static function resolvedPrivacyEmail(): string
+    {
+        return self::privacyEmail() ?? (string) config('site.privacy_email');
+    }
+
     public static function setCustomName(?string $name): void
     {
         SiteSetting::set(self::NAME_KEY, trim((string) $name));
@@ -218,6 +246,16 @@ final class SiteBranding
     public static function setFooterDescriptionTagline(?string $value): void
     {
         SiteSetting::set(self::FOOTER_DESCRIPTION_TAGLINE_KEY, trim((string) $value));
+    }
+
+    public static function setContactEmail(?string $value): void
+    {
+        SiteSetting::set(self::CONTACT_EMAIL_KEY, strtolower(trim((string) $value)));
+    }
+
+    public static function setPrivacyEmail(?string $value): void
+    {
+        SiteSetting::set(self::PRIVACY_EMAIL_KEY, strtolower(trim((string) $value)));
     }
 
     /**

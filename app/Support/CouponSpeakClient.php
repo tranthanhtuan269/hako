@@ -535,7 +535,7 @@ final class CouponSpeakClient
             'title' => $description !== '' ? $description : $coupon->title,
             'coupon_type' => $hasCode ? 'code' : 'deal',
             'affiliate_url' => $affiliateUrl,
-            'button_text' => $hasCode ? 'Get Code' : 'Get Deal',
+            'button_text' => $hasCode ? 'Copy Code' : 'Get Deal',
         ];
 
         if ($hasCode) {

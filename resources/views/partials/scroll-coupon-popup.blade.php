@@ -55,7 +55,7 @@
                                     data-coupon-discount="{{ $coupon['discount'] ?? '' }}"
                                     data-coupon-store="{{ $scrollPopup['storeName'] }}"
                                     data-coupon-expires="{{ $coupon['expires'] ?? '' }}">
-                                    Show Code
+                                    Copy Code
                                 </button>
                             </div>
                         @else

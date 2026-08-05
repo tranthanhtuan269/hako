@@ -11,6 +11,12 @@ document.addEventListener('DOMContentLoaded', function () {
     let affiliateOpened = false;
     const scrollThreshold = 35;
 
+    function redirectsOnClose() {
+        const flow = window.__couponRedirectFlow || 'close';
+
+        return flow === 'close' || flow === 'both';
+    }
+
     function getScrollPercent() {
         const doc = document.documentElement;
         const scrollTop = window.scrollY || doc.scrollTop;
@@ -65,7 +71,9 @@ document.addEventListener('DOMContentLoaded', function () {
             return;
         }
 
-        openAffiliateTab();
+        if (redirectsOnClose()) {
+            openAffiliateTab();
+        }
 
         modal.hidden = true;
         modal.setAttribute('aria-hidden', 'true');
@@ -74,7 +82,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function bindCloseWithBackgroundTab(element) {
         element.addEventListener('mousedown', function (event) {
-            if (event.button !== 0 || modal.hidden) {
+            if (event.button !== 0 || modal.hidden || !redirectsOnClose()) {
                 return;
             }
 

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Support\SiteCouponRedirect;
 use App\Support\SiteImportSettings;
 use App\Support\SiteIntegrations;
 use Illuminate\Http\RedirectResponse;
@@ -23,6 +24,8 @@ class IntegrationsController extends Controller
             'geminiMasked' => SiteIntegrations::maskedGeminiApiKey(),
             'geminiConfigured' => filled(SiteIntegrations::geminiApiKey()),
             'allowReimportExistingStores' => SiteImportSettings::allowReimportExistingStores(),
+            'couponRedirectFlow' => SiteCouponRedirect::flow(),
+            'couponRedirectOptions' => SiteCouponRedirect::options(),
         ]);
     }
 
@@ -36,6 +39,7 @@ class IntegrationsController extends Controller
             'gemini_api_key' => ['nullable', 'string', 'max:500'],
             'clear_gemini_api_key' => ['nullable', 'boolean'],
             'import_allow_reimport_existing_stores' => ['nullable', 'boolean'],
+            'coupon_redirect_flow' => ['required', 'in:close,copy,both'],
         ]);
 
         SiteIntegrations::setScanSite($validated['scan_site'] ?? '');
@@ -55,6 +59,8 @@ class IntegrationsController extends Controller
         SiteImportSettings::setAllowReimportExistingStores(
             $request->boolean('import_allow_reimport_existing_stores')
         );
+
+        SiteCouponRedirect::setFlow($validated['coupon_redirect_flow']);
 
         return redirect()
             ->route('admin.integrations.index')

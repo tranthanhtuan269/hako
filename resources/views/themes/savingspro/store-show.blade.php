@@ -91,7 +91,7 @@
 
             <div class="sp-store-main">
                 @if($store->description)
-                    <div class="store-description-content" id="store-full-desc">{!! $store->description !!}</div>
+                    <div class="store-description-content" id="store-full-desc">{!! $store->renderedDescription() !!}</div>
                 @endif
                 <div class="sp-store-offers-head">
                     <h2>Active {{ $store->name }} Offers ({{ $coupons->total() }})</h2>

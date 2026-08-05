@@ -53,7 +53,7 @@
             @include('partials.site-affiliate-notice')
 
             @if($store->description)
-                <div class="store-description-content">{!! $store->description !!}</div>
+                <div class="store-description-content">{!! $store->renderedDescription() !!}</div>
             @endif
         </div>
         <div class="store-page-column store-page-column--coupons">

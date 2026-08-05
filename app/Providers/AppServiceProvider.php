@@ -39,6 +39,8 @@ class AppServiceProvider extends ServiceProvider
             $siteFooterTagline = SiteBranding::resolvedFooterTagline();
             $siteFooterSubTagline = SiteBranding::resolvedFooterSubTagline();
             $siteFooterDescriptionTagline = SiteBranding::resolvedFooterDescriptionTagline();
+            $contactEmail = SiteBranding::resolvedContactEmail();
+            $privacyEmail = SiteBranding::resolvedPrivacyEmail();
         } catch (\Throwable) {
             $siteLogoUrl = null;
             $siteSocialLinks = [];
@@ -54,6 +56,8 @@ class AppServiceProvider extends ServiceProvider
             $siteFooterTagline = config('site.tagline');
             $siteFooterSubTagline = config('site.tagline');
             $siteFooterDescriptionTagline = config('site.tagline');
+            $contactEmail = config('site.contact_email');
+            $privacyEmail = config('site.privacy_email');
         }
 
         View::share([
@@ -70,8 +74,8 @@ class AppServiceProvider extends ServiceProvider
             'siteDisplayTagline' => $siteDisplayTagline,
             'siteUrl' => rtrim(config('site.url'), '/'),
             'siteDomain' => config('site.domain'),
-            'contactEmail' => config('site.contact_email'),
-            'privacyEmail' => config('site.privacy_email'),
+            'contactEmail' => $contactEmail,
+            'privacyEmail' => $privacyEmail,
             'lastUpdated' => config('site.legal_last_updated'),
             'activeTheme' => ThemeManager::current(),
             'siteLogoUrl' => $siteLogoUrl,

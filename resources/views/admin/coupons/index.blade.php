@@ -14,7 +14,17 @@
     </div>
 </div>
 
-@include('partials.coupon-index-filters', ['action' => route('admin.coupons.index'), 'stores' => $stores])
+@include('partials.coupon-index-filters', ['action' => route('admin.coupons.index'), 'stores' => $stores, 'statsDate' => $statsDate ?? null])
+
+@include('partials.click-stats-date-filter', [
+    'action' => route('admin.coupons.index'),
+    'statsDate' => $statsDate ?? now()->toDateString(),
+    'period' => $period ?? null,
+    'preserve' => array_filter([
+        'title' => request('title'),
+        'store_id' => request('store_id'),
+    ]),
+])
 
 <div class="coupon-sort-table-wrap">
 <table class="admin-table coupon-sort-table">
@@ -28,7 +38,10 @@
             <th>Type</th>
             <th>On /coupons</th>
             <th>Status</th>
-            <th>Clicks</th>
+            <th>Day</th>
+            <th>Month</th>
+            <th>Year</th>
+            <th>Total</th>
             <th class="table-actions-col">Actions</th>
         </tr>
     </thead>
@@ -45,6 +58,9 @@
                 <td>{{ $coupon->typeLabel() }}</td>
                 <td>{{ $coupon->show_on_coupons ? 'Yes' : 'No' }}</td>
                 <td>{{ $coupon->is_active ? 'Active' : 'Inactive' }}</td>
+                <td><strong>{{ number_format((int) ($coupon->day_clicks ?? 0)) }}</strong></td>
+                <td>{{ number_format((int) ($coupon->month_clicks ?? 0)) }}</td>
+                <td>{{ number_format((int) ($coupon->year_clicks ?? 0)) }}</td>
                 <td><strong>{{ number_format($coupon->click_count) }}</strong></td>
                 <td>
                     @include('partials.coupon-table-actions', [
@@ -56,7 +72,7 @@
             </tr>
         @empty
             <tr>
-                <td colspan="10">{{ request()->hasAny(['title', 'store_id']) ? 'No coupons match your search.' : 'No coupons yet.' }}</td>
+                <td colspan="13">{{ request()->hasAny(['title', 'store_id']) ? 'No coupons match your search.' : 'No coupons yet.' }}</td>
             </tr>
         @endforelse
     </tbody>

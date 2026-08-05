@@ -1,5 +1,5 @@
 @php
-    $hasFilters = filled(request('title')) || filled(request('store_id'));
+    $hasFilters = filled(request('title')) || filled(request('store_id')) || filled(request('date'));
     $selectedStoreId = request('store_id');
     $selectedStoreName = $stores->firstWhere('id', (int) $selectedStoreId)?->name ?? '';
     $storeOptions = $stores->map(fn ($store) => [
@@ -8,6 +8,9 @@
     ])->values();
 @endphp
 <form method="GET" action="{{ $action }}" class="coupon-index-filters">
+    @if(filled($statsDate ?? null))
+        <input type="hidden" name="date" value="{{ $statsDate }}">
+    @endif
     <label class="coupon-index-filters__field">
         <span class="coupon-index-filters__label">Title</span>
         <span class="coupon-index-filters__input-wrap">

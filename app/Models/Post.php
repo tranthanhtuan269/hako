@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Support\PublicImage;
 use App\Support\AuthorProfile;
+use App\Support\DynamicCouponContent;
 use App\Support\HtmlCleaner;
 use App\Support\PostAffiliateContent;
 use Carbon\Carbon;
@@ -93,7 +94,9 @@ class Post extends Model
 
     public function renderedContent(): string
     {
-        return PostAffiliateContent::embed($this->content, $this->resolveStore());
+        $html = PostAffiliateContent::embed($this->content, $this->resolveStore());
+
+        return DynamicCouponContent::expand($html, $this->resolveStore());
     }
 
     public function scopeOwnedBy(Builder $query, int $userId): Builder

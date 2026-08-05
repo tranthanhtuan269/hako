@@ -48,7 +48,7 @@
                 data-coupon-store="{{ $coupon->store?->name }}"
                 data-coupon-expires="{{ $coupon->expiresLabel() }}"
             >
-                Show Code
+                Copy Code
             </button>
             <a href="{{ route('coupons.go', $coupon->slug) }}" class="btn btn-outline" target="_blank" rel="noopener sponsored">Shop Now</a>
         @else
