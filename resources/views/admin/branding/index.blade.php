@@ -5,7 +5,7 @@
 @section('content')
 <h1 style="margin-bottom:.5rem;">Site Logo &amp; Social</h1>
 <p style="color:#64748b;margin-bottom:2rem;">
-    Manage the public site logo, display name, slogan, and social profile links shown in the header, footer, and contact page.
+    Manage the public site logo, display name, slogan, contact emails, and social profile links shown in the header, footer, About, and Contact pages.
 </p>
 
 <form action="{{ route('admin.branding.update') }}" method="POST" enctype="multipart/form-data">
@@ -90,6 +90,43 @@
                 Remove current logo (revert to default icon)
             </label>
         @endif
+    </div>
+
+    <div class="branding-section">
+        <h2>Contact emails</h2>
+        <p class="form-hint" style="margin-bottom:1rem;">
+            Shown on About Us, Contact Us, and legal pages. Leave blank to use the default from site config.
+        </p>
+
+        <div class="form-group">
+            <label for="contact_email">Contact email (About / Contact)</label>
+            <input
+                type="email"
+                id="contact_email"
+                name="contact_email"
+                value="{{ old('contact_email', $contactEmail) }}"
+                maxlength="255"
+                placeholder="{{ $defaultContactEmail }}"
+                autocomplete="off"
+            >
+            <p class="form-hint">Used for general inquiries on About Us and Contact Us.</p>
+            @error('contact_email')<p class="form-error">{{ $message }}</p>@enderror
+        </div>
+
+        <div class="form-group">
+            <label for="privacy_email">Privacy email</label>
+            <input
+                type="email"
+                id="privacy_email"
+                name="privacy_email"
+                value="{{ old('privacy_email', $privacyEmail) }}"
+                maxlength="255"
+                placeholder="{{ $defaultPrivacyEmail }}"
+                autocomplete="off"
+            >
+            <p class="form-hint">Used for privacy requests on Contact Us and Privacy Policy.</p>
+            @error('privacy_email')<p class="form-error">{{ $message }}</p>@enderror
+        </div>
     </div>
 
     <div class="branding-section">

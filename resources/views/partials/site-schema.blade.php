@@ -5,6 +5,6 @@
     "name": @json($siteName),
     "url": @json(config('site.url')),
     "description": @json(config('site.default_description')),
-    "email": @json(config('site.contact_email'))
+    "email": @json($contactEmail)
 }
 </script>

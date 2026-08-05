@@ -27,8 +27,24 @@
     'clearUrl' => route('admin.stores.index', array_filter([
         'sort' => ($sort ?? 'order') !== 'order' ? $sort : null,
         'dir' => ($sort ?? 'order') !== 'order' ? $dir : null,
+        'date' => $statsDate ?? null,
     ])),
-    'hiddenFields' => ($sort ?? 'order') !== 'order' ? ['sort' => $sort, 'dir' => $dir] : [],
+    'hiddenFields' => array_filter([
+        'sort' => ($sort ?? 'order') !== 'order' ? $sort : null,
+        'dir' => ($sort ?? 'order') !== 'order' ? $dir : null,
+        'date' => $statsDate ?? null,
+    ]),
+])
+
+@include('partials.click-stats-date-filter', [
+    'action' => route('admin.stores.index'),
+    'statsDate' => $statsDate ?? now()->toDateString(),
+    'period' => $period ?? null,
+    'preserve' => array_filter([
+        'q' => $q ?? null,
+        'sort' => ($sort ?? 'order') !== 'order' ? $sort : null,
+        'dir' => ($sort ?? 'order') !== 'order' ? $dir : null,
+    ]),
 ])
 
 <div class="coupon-sort-table-wrap">
@@ -42,7 +58,10 @@
             <th>Home</th>
             <th>On /stores</th>
             @include('partials.table-sort-th', ['column' => 'coupons', 'label' => 'Coupons', 'currentSort' => $sort ?? 'order', 'currentDir' => $dir ?? 'desc'])
-            @include('partials.table-sort-th', ['column' => 'clicks', 'label' => 'Clicks', 'currentSort' => $sort ?? 'order', 'currentDir' => $dir ?? 'desc'])
+            <th>Day</th>
+            <th>Month</th>
+            <th>Year</th>
+            @include('partials.table-sort-th', ['column' => 'clicks', 'label' => 'Total', 'currentSort' => $sort ?? 'order', 'currentDir' => $dir ?? 'desc'])
             @include('partials.table-sort-th', ['column' => 'created_at', 'label' => 'Created', 'currentSort' => $sort ?? 'order', 'currentDir' => $dir ?? 'desc'])
             <th>Status</th>
             <th class="table-actions-col">Actions</th>
@@ -73,7 +92,7 @@
                     <form action="{{ route('admin.stores.toggle-home-pin', $store) }}" method="POST" style="display:inline;">
                         @csrf
                         @method('PATCH')
-                        @foreach(request()->only(['q', 'sort', 'dir']) as $key => $value)
+                        @foreach(request()->only(['q', 'sort', 'dir', 'date']) as $key => $value)
                             @if(filled($value))
                                 <input type="hidden" name="{{ $key }}" value="{{ $value }}">
                             @endif
@@ -85,6 +104,9 @@
                 </td>
                 <td>{{ $store->show_on_stores ? 'Yes' : 'No' }}</td>
                 <td>{{ number_format($store->coupons_count) }}</td>
+                <td><strong>{{ number_format((int) ($store->day_clicks ?? 0)) }}</strong></td>
+                <td>{{ number_format((int) ($store->month_clicks ?? 0)) }}</td>
+                <td>{{ number_format((int) ($store->year_clicks ?? 0)) }}</td>
                 <td><strong>{{ number_format((int) ($store->coupons_click_sum ?? 0)) }}</strong></td>
                 <td>{{ $store->created_at?->format('M j, Y') }}</td>
                 <td>{{ $store->is_active ? 'Active' : 'Inactive' }}</td>
@@ -98,7 +120,7 @@
             </tr>
         @empty
             <tr>
-                <td colspan="11">
+                <td colspan="14">
                     @if(filled($q ?? null))
                         No stores match your search.
                     @else

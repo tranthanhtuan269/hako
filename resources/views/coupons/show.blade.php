@@ -68,7 +68,7 @@
 
         @if($coupon->code)
             <button type="button" class="btn btn-copy btn-primary" data-reveal-url="{{ route('coupons.reveal', $coupon->slug) }}" data-affiliate-url="{{ $coupon->affiliateClickUrl() }}" data-shop-url="{{ route('coupons.go', $coupon->slug) }}" data-coupon-title="{{ $coupon->title }}" data-coupon-discount="{{ $coupon->discountLabel() }}" data-coupon-store="{{ $coupon->store->name }}" data-coupon-expires="{{ $coupon->expiresLabel() }}" style="width:100%;margin-bottom:.5rem;">
-                Show &amp; Copy Code
+                Copy Code
             </button>
         @endif
 

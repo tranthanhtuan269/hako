@@ -40,8 +40,8 @@
                 data-coupon-store="{{ $coupon->store?->name }}"
                 data-coupon-expires="{{ $coupon->expiresLabel() }}"
                 data-shop-url="{{ route('coupons.go', $coupon->slug) }}"
-                aria-label="Show promo code">
-                Show Code
+                aria-label="Copy promo code">
+                Copy Code
             </button>
         @else
             <a href="{{ route('coupons.go', $coupon->slug) }}" class="btn btn-primary sp-get-deal-btn" target="_blank" rel="noopener sponsored">Get Deal</a>

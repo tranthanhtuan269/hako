@@ -51,7 +51,7 @@
                                     data-coupon-store="{{ $coupon->store?->name }}"
                                     data-coupon-expires="{{ $coupon->expiresLabel() }}"
                                 >
-                                    Show Coupon Code <span aria-hidden="true">→</span>
+                                    Copy Coupon Code <span aria-hidden="true">→</span>
                                 </button>
                             @else
                                 <a href="{{ route('coupons.go', $coupon->slug) }}" class="gc-exclusive-cta" target="_blank" rel="noopener sponsored">

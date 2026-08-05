@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Support\HtmlCleaner;
 use App\Support\PublicImage;
 use App\Support\Seo;
+use App\Support\DynamicCouponContent;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
@@ -64,6 +65,11 @@ class Store extends Model
     public function coupons(): HasMany
     {
         return $this->hasMany(Coupon::class);
+    }
+
+    public function clickDailies(): HasMany
+    {
+        return $this->hasMany(CouponClickDaily::class);
     }
 
     public function posts(): HasMany
@@ -149,6 +155,17 @@ class Store extends Model
             ->orderByDesc('coupons_sort_order')
             ->orderByDesc('is_featured')
             ->latest();
+    }
+
+    public function renderedDescription(): string
+    {
+        $html = (string) ($this->description ?? '');
+
+        if ($html === '') {
+            return '';
+        }
+
+        return DynamicCouponContent::expand($html, $this, null, false);
     }
 
     public function visibleStoreCouponsCount(): int

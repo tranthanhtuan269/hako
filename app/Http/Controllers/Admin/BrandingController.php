@@ -22,8 +22,12 @@ class BrandingController extends Controller
             'footerTagline' => SiteBranding::footerTagline(),
             'footerSubTagline' => SiteBranding::footerSubTagline(),
             'footerDescriptionTagline' => SiteBranding::footerDescriptionTagline(),
+            'contactEmail' => SiteBranding::contactEmail(),
+            'privacyEmail' => SiteBranding::privacyEmail(),
             'socialUrls' => SiteBranding::socialUrls(),
             'networks' => SiteBranding::networks(),
+            'defaultContactEmail' => config('site.contact_email'),
+            'defaultPrivacyEmail' => config('site.privacy_email'),
         ]);
     }
 
@@ -43,6 +47,8 @@ class BrandingController extends Controller
             'footer_tagline' => ['nullable', 'string', 'max:200'],
             'footer_sub_tagline' => ['nullable', 'string', 'max:200'],
             'footer_description_tagline' => ['nullable', 'string', 'max:200'],
+            'contact_email' => ['nullable', 'email', 'max:255'],
+            'privacy_email' => ['nullable', 'email', 'max:255'],
         ];
 
         foreach ($networkKeys as $key) {
@@ -68,9 +74,11 @@ class BrandingController extends Controller
         SiteBranding::setFooterTagline($validated['footer_tagline'] ?? '');
         SiteBranding::setFooterSubTagline($validated['footer_sub_tagline'] ?? '');
         SiteBranding::setFooterDescriptionTagline($validated['footer_description_tagline'] ?? '');
-        
+        SiteBranding::setContactEmail($validated['contact_email'] ?? '');
+        SiteBranding::setPrivacyEmail($validated['privacy_email'] ?? '');
+
         return redirect()
             ->route('admin.branding.index')
-            ->with('success', 'Branding, homepage copy, and social links saved.');
+            ->with('success', 'Branding, homepage copy, emails, and social links saved.');
     }
 }

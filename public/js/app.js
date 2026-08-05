@@ -172,6 +172,63 @@ document.addEventListener('DOMContentLoaded', function () {
     initStoreAutoplaySlider();
 });
 
+function writeClipboardText(text) {
+    if (!text) {
+        return Promise.resolve(false);
+    }
+
+    if (navigator.clipboard && window.isSecureContext) {
+        return navigator.clipboard.writeText(text).then(function () {
+            return true;
+        }).catch(function () {
+            return copyWithTextarea(text);
+        });
+    }
+
+    return Promise.resolve(copyWithTextarea(text));
+}
+
+function copyWithTextarea(text) {
+    const area = document.createElement('textarea');
+    area.value = text;
+    area.setAttribute('readonly', '');
+    area.style.position = 'fixed';
+    area.style.top = '0';
+    area.style.left = '0';
+    area.style.width = '1px';
+    area.style.height = '1px';
+    area.style.padding = '0';
+    area.style.border = '0';
+    area.style.outline = '0';
+    area.style.boxShadow = 'none';
+    area.style.background = 'transparent';
+    area.style.opacity = '0';
+    document.body.appendChild(area);
+
+    const selection = document.getSelection();
+    const selected = selection && selection.rangeCount > 0 ? selection.getRangeAt(0) : null;
+
+    area.focus();
+    area.select();
+    area.setSelectionRange(0, area.value.length);
+
+    let ok = false;
+    try {
+        ok = document.execCommand('copy');
+    } catch (error) {
+        ok = false;
+    }
+
+    document.body.removeChild(area);
+
+    if (selected && selection) {
+        selection.removeAllRanges();
+        selection.addRange(selected);
+    }
+
+    return ok;
+}
+
 function initCouponRevealModal() {
     const modal = document.getElementById('sp-coupon-modal');
     if (!modal) {
@@ -191,39 +248,67 @@ function initCouponRevealModal() {
     let pendingAffiliateUrl = '';
     let modalWasShown = false;
     let affiliateTabOpened = false;
+    let copyInFlight = false;
+
+    function redirectFlowFlags() {
+        const flow = window.__couponRedirectFlow || 'close';
+
+        return {
+            onCopy: flow === 'copy' || flow === 'both',
+            onClose: flow === 'close' || flow === 'both',
+        };
+    }
 
     function openAffiliateTab(url) {
         const targetUrl = url || pendingAffiliateUrl;
 
         if (!targetUrl || affiliateTabOpened) {
-            return;
+            return false;
         }
 
         affiliateTabOpened = true;
         window.openBackgroundTab(targetUrl);
+
+        return true;
     }
 
     function primeAffiliateTabOnClose() {
-        if (modalWasShown && pendingAffiliateUrl) {
-            openAffiliateTab(pendingAffiliateUrl);
+        if (!modalWasShown || !pendingAffiliateUrl || !redirectFlowFlags().onClose || affiliateTabOpened) {
+            return;
         }
+
+        openAffiliateTab(pendingAffiliateUrl);
     }
 
     async function copyText(text, btn) {
+        const affiliateUrl = pendingAffiliateUrl;
+        const shouldOpenOnCopy = redirectFlowFlags().onCopy;
+
+        copyInFlight = true;
+
         try {
-            await navigator.clipboard.writeText(text);
-            if (!btn) {
-                return;
+            const copied = await writeClipboardText(text);
+
+            if (btn) {
+                const original = btn.dataset.copyLabel || btn.textContent;
+                btn.dataset.copyLabel = original;
+                btn.textContent = copied ? 'Copied!' : 'Copy failed';
+                btn.classList.toggle('copied', copied);
+                setTimeout(function () {
+                    btn.textContent = btn.dataset.copyLabel || original;
+                    btn.classList.remove('copied');
+                }, 2000);
             }
-            const original = btn.textContent;
-            btn.textContent = 'Copied!';
-            btn.classList.add('copied');
-            setTimeout(function () {
-                btn.textContent = original;
-                btn.classList.remove('copied');
-            }, 2000);
-        } catch (e) {
-            prompt('Copy this code:', text);
+
+            // Copy first, then open destination so the clipboard write is not interrupted.
+            if (copied && shouldOpenOnCopy && affiliateUrl) {
+                await new Promise(function (resolve) {
+                    setTimeout(resolve, 80);
+                });
+                openAffiliateTab(affiliateUrl);
+            }
+        } finally {
+            copyInFlight = false;
         }
     }
 
@@ -232,6 +317,7 @@ function initCouponRevealModal() {
         pendingAffiliateUrl = data.affiliateUrl || data.shopUrl || '';
         modalWasShown = true;
         affiliateTabOpened = false;
+        copyInFlight = false;
 
         if (titleEl) {
             titleEl.textContent = data.title || data.discount || 'Special Offer';
@@ -264,8 +350,15 @@ function initCouponRevealModal() {
     }
 
     function closeModal(openAffiliate) {
-        const shouldOpenAffiliate = openAffiliate && modalWasShown && pendingAffiliateUrl;
+        const flags = redirectFlowFlags();
         const affiliateUrl = pendingAffiliateUrl;
+        // Flow 3: if destination already opened on copy (or copy is about to open it), skip close redirect.
+        const shouldOpenAffiliate = openAffiliate
+            && flags.onClose
+            && modalWasShown
+            && !!affiliateUrl
+            && !affiliateTabOpened
+            && !(flags.onCopy && copyInFlight);
 
         modal.hidden = true;
         modal.setAttribute('aria-hidden', 'true');
@@ -280,6 +373,7 @@ function initCouponRevealModal() {
         }
 
         affiliateTabOpened = false;
+        copyInFlight = false;
     }
 
     function bindCloseWithBackgroundTab(element, openAffiliate) {
@@ -363,9 +457,36 @@ function initCouponRevealModal() {
                 document.body.classList.remove('scroll-coupon-popup-open');
             }
 
+            const flags = redirectFlowFlags();
+            const affiliateUrl = result.affiliateUrl || btn.dataset.affiliateUrl || btn.dataset.shopUrl || btn.dataset.goUrl || '';
+
+            // Flow 2/3: copy code then open destination — no intermediate coupon popup.
+            if (flags.onCopy) {
+                const originalLabel = btn.dataset.copyLabel || btn.textContent;
+                btn.dataset.copyLabel = originalLabel;
+
+                const copied = await writeClipboardText(result.code);
+                btn.textContent = copied ? 'Copied!' : 'Copy failed';
+                btn.classList.toggle('copied', copied);
+                setTimeout(function () {
+                    btn.textContent = btn.dataset.copyLabel || originalLabel;
+                    btn.classList.remove('copied');
+                }, 2000);
+
+                if (copied && affiliateUrl) {
+                    await new Promise(function (resolve) {
+                        setTimeout(resolve, 80);
+                    });
+                    window.openBackgroundTab(affiliateUrl);
+                }
+
+                return;
+            }
+
+            // Flow 1: show popup; destination opens when the popup is closed.
             openModal({
                 code: result.code,
-                affiliateUrl: result.affiliateUrl,
+                affiliateUrl: affiliateUrl,
                 title: result.title || btn.dataset.couponTitle || '',
                 discount: btn.dataset.couponDiscount || '',
                 store: btn.dataset.couponStore || '',

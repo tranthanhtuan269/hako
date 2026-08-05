@@ -8,6 +8,7 @@ use App\Http\Controllers\Concerns\SyncsStoresCatalogDisplay;
 use App\Http\Controllers\Controller;
 use App\Models\Category;
 use App\Models\Store;
+use App\Support\ClickStatsPeriod;
 use App\Support\PublicImage;
 use App\Support\StoreQuerySort;
 use Illuminate\Http\RedirectResponse;
@@ -23,6 +24,7 @@ class StoreController extends Controller
     public function index(Request $request): View
     {
         $q = trim((string) $request->query('q', ''));
+        $period = ClickStatsPeriod::fromRequest($request);
 
         $query = Store::with('category');
 
@@ -30,12 +32,15 @@ class StoreController extends Controller
             $query->where('name', 'like', '%'.$q.'%');
         }
 
+        $period->applyDayMonthYearSums($query);
+
         $sorted = StoreQuerySort::apply($query, $request);
         $stores = $sorted['query']->get();
         $sort = $sorted['sort'];
         $dir = $sorted['dir'];
+        $statsDate = $period->day;
 
-        return view('admin.stores.index', compact('stores', 'sort', 'dir', 'q'));
+        return view('admin.stores.index', compact('stores', 'sort', 'dir', 'q', 'statsDate', 'period'));
     }
 
     public function catalogDisplay(): View

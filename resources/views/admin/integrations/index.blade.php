@@ -72,6 +72,28 @@
         </p>
     </div>
 
+    <div class="integrations-section">
+        <h2>Coupon redirect flow</h2>
+        <p class="form-hint" style="margin-bottom:.85rem;">
+            Flow 1 keeps the coupon popup (destination opens when it closes).
+            Flow 2/3 copy the code first, then open the merchant tab immediately — no coupon popup.
+        </p>
+        <div class="form-group coupon-redirect-options">
+            @foreach($couponRedirectOptions as $value => $label)
+                <label class="form-check integrations-clear-key">
+                    <input
+                        type="radio"
+                        name="coupon_redirect_flow"
+                        value="{{ $value }}"
+                        @checked(old('coupon_redirect_flow', $couponRedirectFlow) === $value)
+                    >
+                    {{ $label }}
+                </label>
+            @endforeach
+            @error('coupon_redirect_flow')<p class="form-error">{{ $message }}</p>@enderror
+        </div>
+    </div>
+
     <button type="submit" class="btn btn-primary">Save settings</button>
 </form>
 @endsection
@@ -95,6 +117,13 @@
     gap: .5rem;
     margin-top: .75rem;
     font-size: .92rem;
+}
+.coupon-redirect-options .integrations-clear-key {
+    align-items: flex-start;
+    margin-top: .55rem;
+}
+.coupon-redirect-options .integrations-clear-key input {
+    margin-top: .2rem;
 }
 </style>
 @endpush

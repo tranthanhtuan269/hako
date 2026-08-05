@@ -141,7 +141,7 @@ final class AffiliateImportContentBuilder
             $content .= "\n\n".$this->sectionCheckoutChecklist($store);
         }
 
-        return $content;
+        return DynamicCouponContent::ensurePlaceholder($content, $store->name);
     }
 
     private function ensureAffiliateLinks(string $html, Store $store, int $minimum): string
@@ -266,6 +266,7 @@ final class AffiliateImportContentBuilder
 
         if ($store !== null) {
             $content = PostAffiliateContent::embed($content, $store);
+            $content = DynamicCouponContent::ensurePlaceholder($content, $store->name);
         }
 
         return [
@@ -1236,10 +1237,6 @@ final class AffiliateImportContentBuilder
             if (filled($offer['description'])) {
                 $parts[] = '<p>' . nl2br(e($offer['description'])) . '</p>';
             }
-
-            if ($offer['type'] === 'coupon' && filled($offer['code'])) {
-                $parts[] = '<p><strong>Promo code:</strong> <code>' . e($offer['code']) . '</code></p>';
-            }
         }
 
         $parts[] = '<p>See every active listing on our <a href="' . e($storeUrl) . '">' . e($name) . ' store page</a> for the most up-to-date mix of coupon codes and automatic discounts.</p>';
@@ -1252,31 +1249,7 @@ final class AffiliateImportContentBuilder
      */
     private function sectionCurrentOffers(string $name, array $offers, string $storeUrl, string $monthYear, ?string $affiliateUrl = null): string
     {
-        $parts = [];
-        $parts[] = '<h2>Current ' . e($name) . ' Coupon Codes &amp; Deals (' . e($monthYear) . ')</h2>';
-        $parts[] = '<p>These are the offers we feature today on ' . e(config('site.name')) . '. Copy any code listed, or use automatic discounts as noted:</p>';
-
-        foreach ($offers as $index => $offer) {
-            $parts[] = '<h3>Deal ' . ($index + 1) . ': ' . e($offer['title']) . '</h3>';
-
-            if ($offer['type'] === 'coupon' && filled($offer['code'])) {
-                $parts[] = '<p><strong>Type:</strong> Coupon code — <code>' . e($offer['code']) . '</code></p>';
-            } else {
-                $parts[] = '<p><strong>Type:</strong> Automatic discount (no code required)</p>';
-            }
-
-            if (filled($offer['description'])) {
-                $parts[] = '<p>' . nl2br(e($offer['description'])) . '</p>';
-            }
-        }
-
-        $parts[] = '<p><a href="' . e($storeUrl) . '">View all ' . e($name) . ' offers →</a></p>';
-
-        if (filled($affiliateUrl)) {
-            $parts[] = '<p><a href="' . e($affiliateUrl) . '" rel="nofollow sponsored">Shop at ' . e($name) . ' with our affiliate link →</a></p>';
-        }
-
-        return implode("\n", $parts);
+        return DynamicCouponContent::placeholderMarkup($name);
     }
 
     private function sectionHowToSave(string $name, string $storeUrl, ?string $affiliateUrl = null): string

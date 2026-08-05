@@ -6,6 +6,7 @@ use App\Http\Controllers\Concerns\SyncsCouponsCatalogDisplay;
 use App\Http\Controllers\Controller;
 use App\Models\Coupon;
 use App\Models\Store;
+use App\Support\ClickStatsPeriod;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -19,16 +20,22 @@ class CouponController extends Controller
     {
         $title = trim((string) $request->query('title', ''));
         $storeId = $request->integer('store_id') ?: null;
+        $period = ClickStatsPeriod::fromRequest($request);
 
-        $coupons = Coupon::with(['store.category'])
-            ->filterSearch($title !== '' ? $title : null, $storeId)
+        $query = Coupon::with(['store.category'])
+            ->filterSearch($title !== '' ? $title : null, $storeId);
+
+        $period->applyDayMonthYearSums($query);
+
+        $coupons = $query
             ->orderByDesc('coupons_sort_order')
             ->orderByDesc('created_at')
             ->get();
 
         $stores = Store::orderBy('name')->get(['id', 'name']);
+        $statsDate = $period->day;
 
-        return view('admin.coupons.index', compact('coupons', 'stores'));
+        return view('admin.coupons.index', compact('coupons', 'stores', 'statsDate', 'period'));
     }
 
     public function updateSortOrder(Request $request)

@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Str;
 
 class Coupon extends Model
@@ -64,6 +65,11 @@ class Coupon extends Model
     public function store(): BelongsTo
     {
         return $this->belongsTo(Store::class);
+    }
+
+    public function clickDailies(): HasMany
+    {
+        return $this->hasMany(CouponClickDaily::class);
     }
 
     public function scopeOwnedBy(Builder $query, int $userId): Builder
@@ -214,6 +220,7 @@ class Coupon extends Model
     public function incrementClicks(): void
     {
         $this->increment('click_count');
+        CouponClickDaily::recordClick($this);
     }
 
     public function seoTitle(): string

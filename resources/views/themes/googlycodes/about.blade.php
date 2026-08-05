@@ -45,5 +45,14 @@
                 <p>Maximize your savings on every purchase</p>
             </article>
         </div>
+
+        <div class="gc-about-panel gc-about-contact">
+            <h2>Contact Us</h2>
+            <p>
+                Questions or feedback? Email us at
+                <a href="mailto:{{ $contactEmail }}">{{ $contactEmail }}</a>
+                or visit our <a href="{{ route('pages.contact') }}">Contact</a> page.
+            </p>
+        </div>
     </div>
 </section>

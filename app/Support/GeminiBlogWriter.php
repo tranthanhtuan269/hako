@@ -445,7 +445,7 @@ Article rules:
   - "Does {$storeName} offer student discounts?"
   - "How often does {$storeName} release coupon codes?"
   Plus practical coupon FAQs (promo code required?, code not working?). Do not invent materials, origin, shipping policy, or student discounts.
-- List every offer from the JSON with codes in <code> tags when type is coupon.
+- Do not paste a full list of current coupon codes in the article body. Mention offer themes/titles if useful, then tell readers live codes appear in the dynamic coupons block (we inject [store_coupons] automatically). Never invent codes.
 - HTML only in content: <h2>, <h3>, <p>, <ul>, <li>, <ol>, <table>, <strong>, <em>, <a>, <code>, <img>, <figure>, <figcaption>. No <h1>, no markdown.
 - Do not claim star ratings or verified customer reviews unless explicitly in the JSON.
 
@@ -545,7 +545,7 @@ Description rules:
 - Ground major sections in prices, distinct product facts, offer titles/codes, meta_description, or FAQs from the JSON — not by repeating the same product-name string in every paragraph.
 - Mention {$siteName} naturally and link to store_url when pointing readers to browse coupons on our site.
 - When affiliate_url is provided, include at least 2 natural in-text links to affiliate_url with rel="nofollow sponsored" and target="_blank" when directing readers to shop at the merchant.
-- List current offers from the JSON when relevant; use <code> tags for coupon codes.
+- Do not paste a full list of current coupon codes in the description body. You may mention offer themes/titles; live codes are injected via [store_coupons]. Never invent codes.
 - HTML only: <h2>, <h3>, <p>, <ul>, <li>, <ol>, <table>, <thead>, <tbody>, <tr>, <th>, <td>, <strong>, <em>, <a>, <code>, <img>, <figure>, <figcaption>. No <h1>, no markdown.
 - Do not claim star ratings or verified customer reviews unless explicitly in the JSON.
 
