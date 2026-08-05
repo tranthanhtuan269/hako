@@ -130,6 +130,13 @@ php artisan db:seed --class=CategorySeeder --force
 
 php artisan tinker --execute="\App\Models\User::updateOrCreate(['email' => '${ADMIN_EMAIL}'], ['name' => 'Admin', 'password' => bcrypt('${ADMIN_PASS}'), 'is_admin' => true]);"
 
+php artisan tinker --execute="
+\App\Models\SiteSetting::set('scan_api_url', 'https://scan.thuoc360.com/api/coupons');
+\App\Models\SiteSetting::set('scan_affiliate_signups_api_url', 'https://scan.thuoc360.com/api/affiliate-signups');
+\App\Models\SiteSetting::set('scan_api_limit', '20');
+\App\Models\SiteSetting::set('scan_site', 'honestreviews24h');
+"
+
 rm -f public/storage
 ln -sfn "${APP_DIR}/storage/app/public" "${APP_DIR}/public/storage"
 
