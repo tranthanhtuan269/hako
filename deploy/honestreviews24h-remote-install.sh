@@ -147,6 +147,10 @@ sudo -u www-data php artisan config:cache
 sudo -u www-data php artisan view:cache
 sudo -u www-data php artisan route:cache 2>/dev/null || true
 
+# Ensure FPM can write cache/sessions after any root artisan runs above.
+chown -R www-data:www-data storage bootstrap/cache
+chmod -R ug+rwx storage bootstrap/cache
+
 NGINX_SITE="/etc/nginx/sites-available/honestreviews24h"
 cat > "${NGINX_SITE}" <<NGINX
 server {
