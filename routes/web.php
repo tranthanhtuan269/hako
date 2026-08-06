@@ -28,6 +28,7 @@ use App\Http\Controllers\Admin\TrackingController;
 use App\Http\Controllers\Admin\BrandingController;
 use App\Http\Controllers\Admin\DomainChangeController;
 use App\Http\Controllers\Admin\IntegrationsController;
+use App\Http\Controllers\Admin\AffiliateExcelImportController;
 use App\Http\Controllers\Admin\AffiliateSignupController;
 use App\Http\Controllers\Admin\AccountController;
 use App\Http\Controllers\Admin\AdsSettingsController;
@@ -130,6 +131,16 @@ Route::middleware(['auth', 'admin', 'noindex'])->prefix('admin')->name('admin.')
     Route::get('affiliate-signups', [AffiliateSignupController::class, 'index'])->name('affiliate-signups.index');
     Route::get('affiliate-signups/feed', [AffiliateSignupController::class, 'feed'])->name('affiliate-signups.feed');
     Route::post('affiliate-signups/{project}/register', [AffiliateSignupController::class, 'register'])->name('affiliate-signups.register');
+
+    Route::get('affiliate-excel-import', [AffiliateExcelImportController::class, 'index'])->name('affiliate-excel-import.index');
+    Route::get('affiliate-excel-import/template', [AffiliateExcelImportController::class, 'template'])->name('affiliate-excel-import.template');
+    Route::post('affiliate-excel-import/upload', [AffiliateExcelImportController::class, 'upload'])->name('affiliate-excel-import.upload');
+    Route::post('affiliate-excel-import/process-next', [AffiliateExcelImportController::class, 'processNext'])->name('affiliate-excel-import.process-next');
+    Route::post('affiliate-excel-import/items/{item}/process', [AffiliateExcelImportController::class, 'processItem'])->name('affiliate-excel-import.process-item');
+    Route::post('affiliate-excel-import/items/{item}/process-step', [AffiliateExcelImportController::class, 'processStep'])->name('affiliate-excel-import.process-step');
+    Route::delete('affiliate-excel-import/items/{item}', [AffiliateExcelImportController::class, 'destroyItem'])->name('affiliate-excel-import.destroy-item');
+    Route::post('affiliate-excel-import/clear-pending', [AffiliateExcelImportController::class, 'clearPending'])->name('affiliate-excel-import.clear-pending');
+
     Route::get('ads-settings', [AdsSettingsController::class, 'index'])->name('ads-settings.index');
     Route::put('ads-settings', [AdsSettingsController::class, 'update'])->name('ads-settings.update');
     Route::post('ads-settings/reset', [AdsSettingsController::class, 'reset'])->name('ads-settings.reset');

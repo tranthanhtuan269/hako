@@ -247,20 +247,26 @@ final class PublicImage
 
     /**
      * Try primary URL, then common logo sources — all saved locally.
-     * Scan logos are stored as-is (no resize, no Clearbit fallback).
+     * Scan logos are preferred as-is; if download fails, fall back to Clearbit/favicon.
      */
     public static function ingestStoreLogo(?string $primaryUrl, ?string $domain, int|string $userId): ?string
     {
         $directory = "stores/{$userId}/logos";
+        $domain = $domain ? preg_replace('/^www\./', '', (string) $domain) : null;
 
         if (self::isScanAssetUrl($primaryUrl)) {
-            return self::ingestRemote($primaryUrl, $directory);
+            $stored = self::ingestRemote($primaryUrl, $directory);
+
+            if ($stored) {
+                return $stored;
+            }
+
+            // Scan returned a logo URL but the file is missing/unreachable (common on local).
+            // Continue with merchant/Clearbit fallbacks below.
         }
 
-        $domain = $domain ? preg_replace('/^www\./', '', $domain) : null;
-
         $candidates = array_values(array_unique(array_filter([
-            $primaryUrl,
+            self::isScanAssetUrl($primaryUrl) ? null : $primaryUrl,
             $domain ? "https://{$domain}/apple-touch-icon.png" : null,
             $domain ? "https://logo.clearbit.com/{$domain}" : null,
             $domain ? "https://www.google.com/s2/favicons?domain={$domain}&sz=128" : null,
