@@ -14,6 +14,7 @@ class BrandingController extends Controller
     {
         return view('admin.branding.index', [
             'logoUrl' => SiteBranding::logoUrl(),
+            'faviconUrl' => SiteBranding::faviconUrl(),
             'customName' => SiteBranding::customName(),
             'customTagline' => SiteBranding::customTagline(),
             'homeH1' => SiteBranding::homeH1(),
@@ -39,6 +40,8 @@ class BrandingController extends Controller
             'logo_file' => ['nullable', 'image', 'max:2048'],
             'logo_url' => ['nullable', 'url', 'max:500'],
             'remove_logo' => ['nullable', 'boolean'],
+            'favicon_file' => ['nullable', 'image', 'max:4096'],
+            'remove_favicon' => ['nullable', 'boolean'],
             'site_name' => ['nullable', 'string', 'max:120'],
             'site_tagline' => ['nullable', 'string', 'max:200'],
             'home_h1' => ['nullable', 'string', 'max:180'],
@@ -65,6 +68,12 @@ class BrandingController extends Controller
             SiteBranding::setLogoFromUrl($validated['logo_url']);
         }
 
+        if ($request->boolean('remove_favicon')) {
+            SiteBranding::removeFavicon();
+        } elseif ($request->hasFile('favicon_file')) {
+            SiteBranding::setFaviconFromUpload($request->file('favicon_file'));
+        }
+
         SiteBranding::setSocialUrls($validated['social'] ?? []);
         SiteBranding::setCustomName($validated['site_name'] ?? '');
         SiteBranding::setCustomTagline($validated['site_tagline'] ?? '');
@@ -79,6 +88,6 @@ class BrandingController extends Controller
 
         return redirect()
             ->route('admin.branding.index')
-            ->with('success', 'Branding, homepage copy, emails, and social links saved.');
+            ->with('success', 'Branding, favicon, homepage copy, emails, and social links saved.');
     }
 }

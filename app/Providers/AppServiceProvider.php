@@ -27,6 +27,7 @@ class AppServiceProvider extends ServiceProvider
 
         try {
             $siteLogoUrl = SiteBranding::logoUrl();
+            $siteFaviconUrl = SiteBranding::faviconUrl();
             $siteSocialLinks = SiteBranding::socialLinks();
             $siteBrandShowText = SiteBranding::hasCustomBrandText();
             $siteName = SiteBranding::resolvedName();
@@ -43,6 +44,7 @@ class AppServiceProvider extends ServiceProvider
             $privacyEmail = SiteBranding::resolvedPrivacyEmail();
         } catch (\Throwable) {
             $siteLogoUrl = null;
+            $siteFaviconUrl = null;
             $siteSocialLinks = [];
             $siteBrandShowText = false;
             $siteName = config('site.name');
@@ -79,6 +81,7 @@ class AppServiceProvider extends ServiceProvider
             'lastUpdated' => config('site.legal_last_updated'),
             'activeTheme' => ThemeManager::current(),
             'siteLogoUrl' => $siteLogoUrl,
+            'siteFaviconUrl' => $siteFaviconUrl,
             'siteSocialLinks' => $siteSocialLinks,
         ]);
     }

@@ -9,6 +9,8 @@ final class SiteBranding
 {
     private const LOGO_KEY = 'site_logo';
 
+    private const FAVICON_KEY = 'site_favicon';
+
     private const NAME_KEY = 'site_display_name';
 
     private const TAGLINE_KEY = 'site_display_tagline';
@@ -73,6 +75,24 @@ final class SiteBranding
     public static function logoUrl(): ?string
     {
         $path = self::logoPath();
+
+        if (! $path || ! PublicImage::isValidImage($path)) {
+            return null;
+        }
+
+        return PublicImage::url($path);
+    }
+
+    public static function faviconPath(): ?string
+    {
+        $path = trim((string) SiteSetting::get(self::FAVICON_KEY, ''));
+
+        return $path !== '' ? $path : null;
+    }
+
+    public static function faviconUrl(): ?string
+    {
+        $path = self::faviconPath();
 
         if (! $path || ! PublicImage::isValidImage($path)) {
             return null;
@@ -328,6 +348,18 @@ final class SiteBranding
         SiteSetting::set(self::LOGO_KEY, '');
     }
 
+    public static function setFaviconFromUpload(UploadedFile $file): void
+    {
+        self::deleteStoredFavicon();
+        SiteSetting::set(self::FAVICON_KEY, PublicImage::storeSquarePng($file, 'site/branding', 512));
+    }
+
+    public static function removeFavicon(): void
+    {
+        self::deleteStoredFavicon();
+        SiteSetting::set(self::FAVICON_KEY, '');
+    }
+
     /**
      * @param  array<string, mixed>  $urls
      */
@@ -349,6 +381,15 @@ final class SiteBranding
     private static function deleteStoredLogo(): void
     {
         $path = self::logoPath();
+
+        if ($path && PublicImage::isStored($path)) {
+            PublicImage::delete($path);
+        }
+    }
+
+    private static function deleteStoredFavicon(): void
+    {
+        $path = self::faviconPath();
 
         if ($path && PublicImage::isStored($path)) {
             PublicImage::delete($path);

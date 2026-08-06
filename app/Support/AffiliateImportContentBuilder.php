@@ -100,7 +100,6 @@ final class AffiliateImportContentBuilder
     private function buildStoreDescriptionWithoutAi(Store $store, array $offers, array $merchant): string
     {
         $category = $store->category?->name ?? ($merchant['category_name'] ?? 'online retail');
-        $monthYear = now()->format('F Y');
         $faqs = is_array($merchant['faqs'] ?? null) ? $merchant['faqs'] : [];
 
         $content = $this->buildLongFormContent(
@@ -109,7 +108,6 @@ final class AffiliateImportContentBuilder
             $category,
             $merchant['meta_description'] ?? null,
             $faqs,
-            $monthYear,
             $merchant
         );
 
@@ -354,7 +352,6 @@ final class AffiliateImportContentBuilder
      */
     private function comparisonBlogPost(Store $store, array $offers, array $merchant, array $products): array
     {
-        $monthYear = now()->format('F Y');
         $category = $store->category?->name ?? ($merchant['category_name'] ?? 'online retail');
         $metaDescription = $merchant['meta_description'] ?? null;
         $faqs = is_array($merchant['faqs'] ?? null) ? $merchant['faqs'] : [];
@@ -367,11 +364,11 @@ final class AffiliateImportContentBuilder
             $comparisonTitle .= ' & more';
         }
 
-        $title = Post::normalizeTitle("{$comparisonTitle}: Which Is Best? ({$monthYear})");
+        $title = Post::normalizeTitle("{$comparisonTitle}: Which Is Best?");
         $excerpt = "Side-by-side comparison of top {$name} products for U.S. shoppers — features, pricing, pros and cons, plus {$offerCount} current coupon codes.";
-        $metaTitle = Str::limit("{$name} Product Comparison {$monthYear} | " . config('site.name'), 70, '');
+        $metaTitle = Str::limit("{$name} Product Comparison | " . config('site.name'), 70, '');
         $metaDescriptionSeo = Str::limit(
-            "Compare {$comparisonTitle} from {$name}. See prices, strengths, drawbacks, and the best deals for {$monthYear}.",
+            "Compare {$comparisonTitle} from {$name}. See prices, strengths, drawbacks, and the best current deals.",
             320,
             ''
         );
@@ -392,7 +389,7 @@ final class AffiliateImportContentBuilder
         $parts[] = $this->sectionProductComparisonTable($name, $products, $category);
         $parts[] = $this->sectionProductDeepDives($name, $products, $storeUrl);
         $parts[] = $this->sectionWhichProductToChoose($name, $products, $category);
-        $parts[] = $this->sectionCurrentOffers($name, $offers, $storeUrl, $monthYear, $store->affiliate_url);
+        $parts[] = $this->sectionCurrentOffers($name, $offers, $storeUrl, $store->affiliate_url);
         $parts[] = $this->sectionHowToSave($name, $storeUrl, $store->affiliate_url);
         $parts[] = $this->sectionFaq($name, $faqs, $storeUrl, $products, $offers, $merchant);
         $parts[] = $this->sectionCheckoutChecklist($store);
@@ -418,17 +415,16 @@ final class AffiliateImportContentBuilder
      */
     private function spotlightBlogPost(Store $store, array $offers, array $merchant, array $product): array
     {
-        $monthYear = now()->format('F Y');
         $name = $store->name;
         $storeUrl = route('stores.show', $store->slug);
         $faqs = is_array($merchant['faqs'] ?? null) ? $merchant['faqs'] : [];
         $productName = $product['name'];
 
-        $title = Post::normalizeTitle("{$productName} Review: Is It Worth It? ({$monthYear})");
-        $excerpt = "Hands-on style breakdown of {$productName} from {$name} — key features, pros, cons, and the best coupons this month.";
-        $metaTitle = Str::limit("{$productName} Review {$monthYear} | " . config('site.name'), 70, '');
+        $title = Post::normalizeTitle("{$productName} Review: Is It Worth It?");
+        $excerpt = "Hands-on style breakdown of {$productName} from {$name} — key features, pros, cons, and the best current coupons.";
+        $metaTitle = Str::limit("{$productName} Review | " . config('site.name'), 70, '');
         $metaDescriptionSeo = Str::limit(
-            "Read our {$productName} review with pricing, pros, cons, and verified {$name} coupon codes for {$monthYear}.",
+            "Read our {$productName} review with pricing, pros, cons, and verified {$name} coupon codes.",
             320,
             ''
         );
@@ -465,7 +461,7 @@ final class AffiliateImportContentBuilder
         }
 
         $parts[] = $this->sectionSingleProductProsCons($productName, $product);
-        $parts[] = $this->sectionCurrentOffers($name, $offers, $storeUrl, $monthYear, $store->affiliate_url);
+        $parts[] = $this->sectionCurrentOffers($name, $offers, $storeUrl, $store->affiliate_url);
         $parts[] = $this->sectionHowToSave($name, $storeUrl, $store->affiliate_url);
         $parts[] = $this->sectionFaq($name, $faqs, $storeUrl, [$product], $offers, $merchant);
         $parts[] = $this->sectionCheckoutChecklist($store);
@@ -486,21 +482,20 @@ final class AffiliateImportContentBuilder
      */
     private function classicBlogPost(Store $store, array $offers, array $merchant = []): array
     {
-        $monthYear = now()->format('F Y');
         $category = $store->category?->name ?? ($merchant['category_name'] ?? 'online retail');
         $metaDescription = $merchant['meta_description'] ?? null;
         $faqs = $merchant['faqs'] ?? [];
         $offerCount = count($offers);
 
-        $title = Post::normalizeTitle("{$store->name} Review: Products, Pros, Coupons & FAQ ({$monthYear})");
+        $title = Post::normalizeTitle("{$store->name} Review: Products, Pros, Coupons & FAQ");
 
         $excerpt = "In-depth {$store->name} guide for U.S. shoppers: brand overview, five key advantages, "
             . "best current deals, category comparisons, shopper insights, and {$offerCount} featured offers on "
             . config('site.name') . '.';
 
-        $metaTitle = Str::limit("{$store->name} Review & Coupons {$monthYear} | " . config('site.name'), 70, '');
+        $metaTitle = Str::limit("{$store->name} Review & Coupons | " . config('site.name'), 70, '');
         $metaDescriptionSeo = Str::limit(
-            "Read our {$store->name} review with pros, product highlights, comparisons, FAQs, and {$offerCount} verified coupon codes for {$monthYear}.",
+            "Read our {$store->name} review with pros, product highlights, comparisons, FAQs, and {$offerCount} verified coupon codes.",
             320,
             ''
         );
@@ -511,7 +506,6 @@ final class AffiliateImportContentBuilder
             $category,
             $metaDescription,
             is_array($faqs) ? $faqs : [],
-            $monthYear,
             $merchant
         );
 
@@ -991,7 +985,6 @@ final class AffiliateImportContentBuilder
         string $category,
         ?string $metaDescription,
         array $merchantFaqs,
-        string $monthYear,
         array $merchant = []
     ): string {
         $name = $store->name;
@@ -1009,7 +1002,7 @@ final class AffiliateImportContentBuilder
         $productCount = collect($products)->pluck('name')->filter()->count();
         $offerLabel = collect($offers)->pluck('title')->filter()->take(2)->implode(', ');
 
-        $intro = 'This '.e($monthYear).' guide covers shopping at <strong>'.e($name).'</strong>';
+        $intro = 'This guide covers shopping at <strong>'.e($name).'</strong>';
         if ($productCount > 0) {
             $intro .= ', with '.$productCount.' featured product'.($productCount === 1 ? '' : 's').' researched from the merchant catalog';
         }
@@ -1041,10 +1034,10 @@ final class AffiliateImportContentBuilder
             $parts[] = $this->sectionProductDeepDives($name, $products, $storeUrl);
             $parts[] = $this->sectionSingleProductProsCons($products[0]['name'], $products[0]);
         } else {
-            $parts[] = $this->sectionBestSellers($name, $offers, $monthYear, $storeUrl);
+            $parts[] = $this->sectionBestSellers($name, $offers, $storeUrl);
         }
 
-        $parts[] = $this->sectionCurrentOffers($name, $offers, $storeUrl, $monthYear, $store->affiliate_url);
+        $parts[] = $this->sectionCurrentOffers($name, $offers, $storeUrl, $store->affiliate_url);
         $parts[] = $this->sectionHowToSave($name, $storeUrl, $store->affiliate_url);
         $parts[] = $this->sectionFaq($name, $merchantFaqs, $storeUrl, $products, $offers, $merchant);
         $parts[] = $this->sectionCheckoutChecklist($store);
@@ -1222,13 +1215,13 @@ final class AffiliateImportContentBuilder
     /**
      * @param  array<int, array{code: ?string, title: string, description: ?string, type: string}>  $offers
      */
-    private function sectionBestSellers(string $name, array $offers, string $monthYear, string $storeUrl): string
+    private function sectionBestSellers(string $name, array $offers, string $storeUrl): string
     {
         $parts = [];
-        $parts[] = '<h2>Popular Products &amp; Best-Selling Offers (' . e($monthYear) . ')</h2>';
+        $parts[] = '<h2>Popular Products &amp; Best-Selling Offers</h2>';
         $parts[] = '<p>While exact bestseller rankings change week to week, the offers below reflect what '
             . e(config('site.name')) . ' shoppers are clicking most often right now. Treat them as a snapshot of high-interest '
-            . 'deals — product names, bundles, and promo types the brand is actively pushing this month.</p>';
+            . 'deals — product names, bundles, and promo types the brand is actively pushing.</p>';
 
         foreach ($offers as $index => $offer) {
             $rank = $index + 1;
@@ -1247,7 +1240,7 @@ final class AffiliateImportContentBuilder
     /**
      * @param  array<int, array{code: ?string, title: string, description: ?string, type: string}>  $offers
      */
-    private function sectionCurrentOffers(string $name, array $offers, string $storeUrl, string $monthYear, ?string $affiliateUrl = null): string
+    private function sectionCurrentOffers(string $name, array $offers, string $storeUrl, ?string $affiliateUrl = null): string
     {
         return DynamicCouponContent::placeholderMarkup($name);
     }
@@ -1502,7 +1495,6 @@ final class AffiliateImportContentBuilder
             ->filter(fn ($name) => filled($name))
             ->count();
         $offerCount = count($offers);
-        $monthYear = now()->format('F Y');
 
         $researchLine = $productCount > 0
             ? 'We researched '.e($storeName).' products'
@@ -1519,7 +1511,7 @@ final class AffiliateImportContentBuilder
             .($productCount > 0 ? ' for the products compared below.' : '.');
         $parts[] = '</li>';
         $parts[] = '<li><strong>Coupon verification:</strong> Featured offers on this page are reviewed for format and availability when we publish'
-            .($offerCount > 0 ? ' ('.$offerCount.' offer'.($offerCount === 1 ? '' : 's').' listed for '.$monthYear.')' : '')
+            .($offerCount > 0 ? ' ('.$offerCount.' offer'.($offerCount === 1 ? '' : 's').' featured)' : '')
             .'. Always confirm terms on the merchant checkout page before paying.</li>';
         $parts[] = '<li><strong>Transparent affiliate links:</strong> Some links may earn '.e($site).' a commission at no extra cost to you. That support helps us keep deal pages updated.</li>';
         $parts[] = '<li><strong>Practical buying advice:</strong> We highlight shipping, return, and promo-stacking considerations that affect the final cart total — not just sticker price.</li>';

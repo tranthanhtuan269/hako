@@ -136,6 +136,57 @@ final class PublicImage
     }
 
     /**
+     * Store an uploaded image as a square PNG (for favicons / app icons).
+     */
+    public static function storeSquarePng(UploadedFile $file, string $directory, int $size = 512): string
+    {
+        self::ensureDirectory($directory);
+
+        $binary = @file_get_contents($file->getRealPath());
+
+        if (! is_string($binary) || $binary === '' || ! function_exists('imagecreatefromstring')) {
+            return self::store($file, $directory);
+        }
+
+        $source = @imagecreatefromstring($binary);
+
+        if (! $source) {
+            return self::store($file, $directory);
+        }
+
+        $srcW = imagesx($source);
+        $srcH = imagesy($source);
+        $size = max(16, min(1024, $size));
+
+        if ($srcW < 1 || $srcH < 1) {
+            imagedestroy($source);
+
+            return self::store($file, $directory);
+        }
+
+        $dest = imagecreatetruecolor($size, $size);
+        imagealphablending($dest, false);
+        imagesavealpha($dest, true);
+        $transparent = imagecolorallocatealpha($dest, 0, 0, 0, 127);
+        imagefilledrectangle($dest, 0, 0, $size, $size, $transparent);
+        imagealphablending($dest, true);
+        imagecopyresampled($dest, $source, 0, 0, 0, 0, $size, $size, $srcW, $srcH);
+
+        $filename = trim($directory, '/') . '/favicon-' . Str::uuid() . '.png';
+        $fullPath = Storage::disk('public')->path($filename);
+        $saved = imagepng($dest, $fullPath, 8);
+
+        imagedestroy($source);
+        imagedestroy($dest);
+
+        if (! $saved) {
+            return self::store($file, $directory);
+        }
+
+        return $filename;
+    }
+
+    /**
      * Store under stores/{userId}/ (creates folder if missing).
      */
     public static function storeForUser(UploadedFile $file, int|string $userId, string $base = 'stores'): string
