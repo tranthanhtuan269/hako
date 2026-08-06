@@ -93,6 +93,73 @@
     </div>
 
     <div class="branding-section">
+        <h2>Favicon</h2>
+        <p class="form-hint" style="margin-bottom:1rem;">
+            Browser tab icon for the public site and admin. Upload any image, then crop to a square for a clean result.
+            Best results: a simple mark on a transparent or solid background.
+        </p>
+
+        <div class="branding-favicon-row">
+            <div class="branding-favicon-preview-wrap" id="favicon-preview-wrap" @if(!$faviconUrl) hidden @endif>
+                <span class="form-hint branding-preview-label">Preview</span>
+                <div class="branding-favicon-previews">
+                    <div class="branding-favicon-chip branding-favicon-chip--light">
+                        <img src="{{ $faviconUrl }}" alt="" id="favicon-preview-light" class="branding-favicon-img">
+                    </div>
+                    <div class="branding-favicon-chip branding-favicon-chip--dark">
+                        <img src="{{ $faviconUrl }}" alt="" id="favicon-preview-dark" class="branding-favicon-img">
+                    </div>
+                    <div class="branding-favicon-tab" aria-hidden="true">
+                        <img src="{{ $faviconUrl }}" alt="" id="favicon-preview-tab" class="branding-favicon-tab-img">
+                        <span>{{ $siteName ?? config('site.name') }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="favicon_picker">Upload &amp; crop favicon</label>
+            <input type="file" id="favicon_picker" accept="image/png,image/jpeg,image/webp,image/gif" aria-describedby="favicon_hint">
+            <input type="file" id="favicon_file" name="favicon_file" accept="image/png" hidden>
+            <p class="form-hint" id="favicon_hint">Choose an image to open the crop tool (1:1 square). The cropped PNG is saved when you click Save.</p>
+            @error('favicon_file')<p class="form-error">{{ $message }}</p>@enderror
+        </div>
+
+        @if($faviconUrl)
+            <label class="form-check branding-remove-logo">
+                <input type="checkbox" name="remove_favicon" value="1" id="remove_favicon" @checked(old('remove_favicon'))>
+                Remove current favicon
+            </label>
+        @endif
+    </div>
+
+    <div class="branding-favicon-modal" id="favicon-crop-modal" hidden>
+        <div class="branding-favicon-modal__backdrop" data-favicon-modal-close></div>
+        <div class="branding-favicon-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="favicon-crop-title">
+            <div class="branding-favicon-modal__header">
+                <h3 id="favicon-crop-title">Crop favicon</h3>
+                <button type="button" class="branding-favicon-modal__close" data-favicon-modal-close aria-label="Close">&times;</button>
+            </div>
+            <div class="branding-favicon-modal__body">
+                <div class="branding-favicon-crop-stage">
+                    <img id="favicon-crop-image" alt="Image to crop" src="">
+                </div>
+                <div class="branding-favicon-crop-tools">
+                    <button type="button" class="btn btn-outline" id="favicon-zoom-out" title="Zoom out">−</button>
+                    <button type="button" class="btn btn-outline" id="favicon-zoom-in" title="Zoom in">+</button>
+                    <button type="button" class="btn btn-outline" id="favicon-rotate" title="Rotate 90°">↻</button>
+                    <button type="button" class="btn btn-outline" id="favicon-reset" title="Reset">Reset</button>
+                </div>
+                <p class="form-hint" style="margin:0;">Drag to reposition. Use the handles to resize the square crop.</p>
+            </div>
+            <div class="branding-favicon-modal__footer">
+                <button type="button" class="btn btn-outline" data-favicon-modal-close>Cancel</button>
+                <button type="button" class="btn btn-primary" id="favicon-crop-apply">Use this crop</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="branding-section">
         <h2>Contact emails</h2>
         <p class="form-hint" style="margin-bottom:1rem;">
             Shown on About Us, Contact Us, and legal pages. Leave blank to use the default from site config.
@@ -245,6 +312,7 @@
 @endsection
 
 @push('scripts')
+<script src="https://cdn.jsdelivr.net/npm/cropperjs@1.6.2/dist/cropper.min.js" crossorigin="anonymous"></script>
 <script>
 (() => {
     const nameInput = document.getElementById('site_name');
@@ -269,11 +337,152 @@
 
     nameInput?.addEventListener('input', syncBrandPreview);
     taglineInput?.addEventListener('input', syncBrandPreview);
+
+    const picker = document.getElementById('favicon_picker');
+    const fileInput = document.getElementById('favicon_file');
+    const removeFavicon = document.getElementById('remove_favicon');
+    const modal = document.getElementById('favicon-crop-modal');
+    const cropImage = document.getElementById('favicon-crop-image');
+    const previewWrap = document.getElementById('favicon-preview-wrap');
+    const previewImgs = [
+        document.getElementById('favicon-preview-light'),
+        document.getElementById('favicon-preview-dark'),
+        document.getElementById('favicon-preview-tab'),
+    ].filter(Boolean);
+
+    let cropper = null;
+    let objectUrl = null;
+
+    function openModal() {
+        if (!modal) return;
+        modal.hidden = false;
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeModal() {
+        if (!modal) return;
+        modal.hidden = true;
+        document.body.style.overflow = '';
+        if (cropper) {
+            cropper.destroy();
+            cropper = null;
+        }
+        if (objectUrl) {
+            URL.revokeObjectURL(objectUrl);
+            objectUrl = null;
+        }
+        cropImage.removeAttribute('src');
+        if (picker) picker.value = '';
+    }
+
+    function setPreview(url) {
+        previewImgs.forEach((img) => { img.src = url; });
+        if (previewWrap) previewWrap.hidden = false;
+    }
+
+    function initCropper() {
+        if (typeof Cropper === 'undefined') {
+            alert('Crop tool failed to load. Please refresh and try again.');
+            closeModal();
+            return;
+        }
+
+        cropper = new Cropper(cropImage, {
+            aspectRatio: 1,
+            viewMode: 1,
+            dragMode: 'move',
+            autoCropArea: 1,
+            responsive: true,
+            background: false,
+            movable: true,
+            zoomable: true,
+            rotatable: true,
+            scalable: false,
+            cropBoxMovable: true,
+            cropBoxResizable: true,
+            guides: true,
+            center: true,
+            highlight: false,
+        });
+    }
+
+    picker?.addEventListener('change', () => {
+        const file = picker.files?.[0];
+        if (!file) return;
+
+        if (!file.type.startsWith('image/')) {
+            alert('Please choose an image file.');
+            picker.value = '';
+            return;
+        }
+
+        if (objectUrl) URL.revokeObjectURL(objectUrl);
+        objectUrl = URL.createObjectURL(file);
+        cropImage.src = objectUrl;
+        openModal();
+
+        cropImage.onload = () => {
+            if (cropper) {
+                cropper.destroy();
+                cropper = null;
+            }
+            initCropper();
+        };
+    });
+
+    document.querySelectorAll('[data-favicon-modal-close]').forEach((el) => {
+        el.addEventListener('click', closeModal);
+    });
+
+    document.getElementById('favicon-zoom-in')?.addEventListener('click', () => cropper?.zoom(0.1));
+    document.getElementById('favicon-zoom-out')?.addEventListener('click', () => cropper?.zoom(-0.1));
+    document.getElementById('favicon-rotate')?.addEventListener('click', () => cropper?.rotate(90));
+    document.getElementById('favicon-reset')?.addEventListener('click', () => cropper?.reset());
+
+    document.getElementById('favicon-crop-apply')?.addEventListener('click', () => {
+        if (!cropper || !fileInput) return;
+
+        const canvas = cropper.getCroppedCanvas({
+            width: 512,
+            height: 512,
+            imageSmoothingEnabled: true,
+            imageSmoothingQuality: 'high',
+            fillColor: 'transparent',
+        });
+
+        if (!canvas) {
+            alert('Could not crop this image. Try another file.');
+            return;
+        }
+
+        canvas.toBlob((blob) => {
+            if (!blob) {
+                alert('Could not create favicon. Try another image.');
+                return;
+            }
+
+            const cropped = new File([blob], 'favicon.png', { type: 'image/png' });
+            const dt = new DataTransfer();
+            dt.items.add(cropped);
+            fileInput.files = dt.files;
+
+            if (removeFavicon) removeFavicon.checked = false;
+            setPreview(URL.createObjectURL(blob));
+            closeModal();
+        }, 'image/png');
+    });
+
+    document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape' && modal && !modal.hidden) {
+            closeModal();
+        }
+    });
 })();
 </script>
 @endpush
 
 @push('styles')
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/cropperjs@1.6.2/dist/cropper.min.css" crossorigin="anonymous">
 <style>
 .branding-section {
     background: var(--card);
@@ -360,6 +569,132 @@
     font-weight: 600;
     color: #64748b;
     letter-spacing: .04em;
+}
+.branding-favicon-row {
+    margin-bottom: 1rem;
+}
+.branding-favicon-previews {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: .75rem;
+}
+.branding-favicon-chip {
+    width: 56px;
+    height: 56px;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: .4rem;
+}
+.branding-favicon-chip--light {
+    background: #fff;
+}
+.branding-favicon-chip--dark {
+    background: #0f172a;
+}
+.branding-favicon-img {
+    width: 32px;
+    height: 32px;
+    object-fit: contain;
+}
+.branding-favicon-tab {
+    display: inline-flex;
+    align-items: center;
+    gap: .4rem;
+    padding: .35rem .7rem .35rem .45rem;
+    border-radius: 8px 8px 0 0;
+    background: #e2e8f0;
+    color: #334155;
+    font-size: .78rem;
+    font-weight: 600;
+}
+.branding-favicon-tab-img {
+    width: 16px;
+    height: 16px;
+    object-fit: contain;
+}
+.branding-favicon-modal[hidden] {
+    display: none !important;
+}
+.branding-favicon-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+}
+.branding-favicon-modal__backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(15, 23, 42, .55);
+}
+.branding-favicon-modal__dialog {
+    position: relative;
+    width: min(640px, 100%);
+    background: #fff;
+    border-radius: 14px;
+    box-shadow: 0 20px 50px rgba(15, 23, 42, .25);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    max-height: calc(100vh - 2rem);
+}
+.branding-favicon-modal__header,
+.branding-favicon-modal__footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: .75rem;
+    padding: .9rem 1.1rem;
+    border-bottom: 1px solid var(--border);
+}
+.branding-favicon-modal__footer {
+    border-bottom: 0;
+    border-top: 1px solid var(--border);
+    justify-content: flex-end;
+}
+.branding-favicon-modal__header h3 {
+    margin: 0;
+    font-size: 1.05rem;
+}
+.branding-favicon-modal__close {
+    border: 0;
+    background: transparent;
+    font-size: 1.5rem;
+    line-height: 1;
+    cursor: pointer;
+    color: #64748b;
+}
+.branding-favicon-modal__body {
+    padding: 1rem 1.1rem;
+    display: flex;
+    flex-direction: column;
+    gap: .75rem;
+    overflow: auto;
+}
+.branding-favicon-crop-stage {
+    width: 100%;
+    height: min(360px, 55vh);
+    background: #0f172a;
+    border-radius: 10px;
+    overflow: hidden;
+}
+.branding-favicon-crop-stage img {
+    display: block;
+    max-width: 100%;
+}
+.branding-favicon-crop-tools {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .5rem;
+}
+.branding-favicon-crop-tools .btn {
+    min-width: 2.5rem;
 }
 </style>
 @endpush

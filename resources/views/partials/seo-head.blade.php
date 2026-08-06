@@ -28,6 +28,7 @@
 <title>{{ $metaTitle }}</title>
 <meta name="description" content="{{ $metaDescription }}">
 <meta name="robots" content="{{ $robots }}">
+@include('partials.favicon')
 <link rel="canonical" href="{{ $canonical }}">
 
 <meta property="og:locale" content="{{ str_replace('_', '-', config('site.locale')) }}">

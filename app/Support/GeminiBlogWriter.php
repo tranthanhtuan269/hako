@@ -364,7 +364,6 @@ PROMPT;
     private function buildPrompt(array $context): string
     {
         $siteName = (string) config('site.name');
-        $monthYear = now()->format('F Y');
         $storeName = $context['store_name'];
         $category = $context['category_name'] ?? 'online retail';
         $storeUrl = url('/stores/' . $context['store_slug']);
@@ -376,7 +375,6 @@ PROMPT;
 
         $payload = [
             'site_name' => $siteName,
-            'month_year' => $monthYear,
             'store_name' => $storeName,
             'store_url' => $storeUrl,
             'affiliate_url' => $affiliateUrl,
@@ -424,6 +422,7 @@ JSON facts:
 
 Article rules:
 - Audience: U.S. online shoppers comparing products and coupons before checkout.
+- CRITICAL: Do NOT use specific calendar dates, months, or years in the title, excerpt, meta fields, headings, or body (e.g. ban "July 2026", "August 2025", "offers listed for July 2026", "this July guide"). Prefer evergreen phrasing like "current deals", "right now", or "featured offers".
 - Length: 1,000–1,600 words preferred. Prefer a shorter, specific article over padded filler. Never invent content just to hit a word count.
 {$productFocusRules}
 - Include sections: intro, Why Trust Us (EEAT), at-a-glance comparison table, product comparison or highlights, pros/cons, how to save with coupons, FAQ, final verdict.
@@ -473,7 +472,6 @@ PROMPT;
     private function buildStoreDescriptionPrompt(array $context): string
     {
         $siteName = (string) config('site.name');
-        $monthYear = now()->format('F Y');
         $storeName = $context['store_name'];
         $category = $context['category_name'] ?? 'online retail';
         $storeUrl = url('/stores/'.$context['store_slug']);
@@ -485,7 +483,6 @@ PROMPT;
 
         $payload = [
             'site_name' => $siteName,
-            'month_year' => $monthYear,
             'store_name' => $storeName,
             'store_url' => $storeUrl,
             'affiliate_url' => $affiliateUrl,
@@ -524,6 +521,7 @@ JSON facts:
 
 Description rules:
 - Audience: U.S. online shoppers researching this merchant before they buy.
+- CRITICAL: Do NOT use specific calendar dates, months, or years in headings or body (e.g. ban "July 2026", "offers listed for July 2026", "this July guide"). Prefer evergreen phrasing like "current deals", "right now", or "featured offers".
 - Length: 700–1,000 words preferred. Prefer specific, useful copy over padded filler. Never invent content just to hit a word count.
 {$focusNote}- Include sections: Why Trust Us (EEAT), at-a-glance comparison table, what this store sells (with product headings when products exist), current savings, shopping tips tied to the listed offers, FAQ, short summary.
 - REQUIRED: include at least one HTML <table class="comparison-table"> titled like "{$storeName} at a glance" with columns Feature | {$storeName}. Rows must be grounded in JSON (Category, product types such as Wallet/Bags/Belt only if supported by product names, Featured products, Sample listed price, Offers tracked, Shipping, Returns). Unknown shipping/returns => "Confirm on merchant site".
