@@ -18,6 +18,7 @@
         'admin.stores.*',
         'admin.coupons.*',
         'member.import-affiliate.*',
+        'admin.affiliate-excel-import.*',
         'member.posts.*',
         'member.stores.*',
         'member.coupons.*',
@@ -84,6 +85,8 @@
                     @class(['sidebar-nav-sublink', 'active' => request()->routeIs('admin.coupons.*')])>Coupons</a>
                 <a href="{{ route('member.import-affiliate.create') }}"
                     @class(['sidebar-nav-sublink', 'active' => request()->routeIs('member.import-affiliate.*')])>Import from Affiliate Link</a>
+                <a href="{{ route('admin.affiliate-excel-import.index') }}"
+                    @class(['sidebar-nav-sublink', 'active' => request()->routeIs('admin.affiliate-excel-import.*')])>Auto Import (Excel)</a>
             @include('partials.dashboard-sidebar-collapsible-section-end')
         </div>
 
@@ -144,9 +147,10 @@
                         @class(['sidebar-nav-sublink', 'active' => request()->routeIs('member.coupons.*')])>Coupons</a>
                     <a href="{{ route('member.import-affiliate.create') }}"
                         @class(['sidebar-nav-sublink', 'active' => request()->routeIs('member.import-affiliate.*')])>Import from Affiliate Link</a>
+                    <a href="{{ route('admin.affiliate-excel-import.index') }}"
+                        @class(['sidebar-nav-sublink', 'active' => request()->routeIs('admin.affiliate-excel-import.*')])>Auto Import (Excel)</a>
                 @include('partials.dashboard-sidebar-collapsible-section-end')
             </div>
-
             <hr class="sidebar-divider" aria-hidden="true">
 
             <div class="sidebar-nav-group">
