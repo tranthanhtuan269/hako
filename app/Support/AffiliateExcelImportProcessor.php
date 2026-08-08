@@ -126,6 +126,7 @@ final class AffiliateExcelImportProcessor
             'store_name' => $storeName,
             'affiliate_url' => $affiliateUrl,
             'website' => $website,
+            'excel_logo' => filled($item->logo) ? trim((string) $item->logo) : null,
             'offers' => $offers,
             'excel_offers' => $offers,
             'include_detected_coupons' => $includeDetectedCoupons,
@@ -425,6 +426,7 @@ final class AffiliateExcelImportProcessor
         $affiliateUrl = (string) $workspace['affiliate_url'];
         $website = $workspace['website'] ?? null;
         $userId = (int) $workspace['user_id'];
+        $excelLogo = filled($workspace['excel_logo'] ?? null) ? (string) $workspace['excel_logo'] : null;
         $scanBundle = is_array($workspace['scan_bundle'] ?? null) ? $workspace['scan_bundle'] : [];
         $profileUsable = $this->couponSpeak->profileIsUsable($scanBundle['store_profile'] ?? null);
         $scanLogo = filled($scanBundle['scan_logo'] ?? null) ? (string) $scanBundle['scan_logo'] : null;
@@ -501,12 +503,32 @@ final class AffiliateExcelImportProcessor
             $domain = $host ? preg_replace('/^www\./', '', $host) : null;
         }
 
+        // Excel Logo column wins when provided; otherwise keep Scan/detect behavior.
         $logoUrl = $merchant['logo'] ?? $scanLogo;
-        $storedLogo = PublicImage::ingestStoreLogo(
-            is_string($logoUrl) ? $logoUrl : null,
-            $domain,
-            $userId
-        );
+        $storedLogo = null;
+
+        if ($excelLogo) {
+            $excelStored = PublicImage::ingestRemote($excelLogo, "stores/{$userId}/logos");
+
+            if ($excelStored) {
+                $storedLogo = PublicImage::resizeRasterToWidth($excelStored, PublicImage::STORE_LOGO_WIDTH) ?? $excelStored;
+                $logoUrl = $excelLogo;
+                $sourceNote = 'Excel logo';
+            } else {
+                $storedLogo = PublicImage::ingestStoreLogo(
+                    is_string($logoUrl) ? $logoUrl : null,
+                    $domain,
+                    $userId
+                );
+                $sourceNote .= ' (Excel logo download failed, used detect)';
+            }
+        } else {
+            $storedLogo = PublicImage::ingestStoreLogo(
+                is_string($logoUrl) ? $logoUrl : null,
+                $domain,
+                $userId
+            );
+        }
 
         if ($storedLogo && ($localLogoUrl = PublicImage::url($storedLogo))) {
             $merchant['logo'] = $localLogoUrl;

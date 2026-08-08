@@ -43,10 +43,12 @@
     }
     .article-content table.comparison-table,
     .article-content table {
-        width: 100%;
+        width: max-content;
+        min-width: 100%;
         border-collapse: collapse;
         margin: 1rem 0 1.5rem;
         font-size: .95rem;
+        table-layout: auto;
     }
     .article-content table.comparison-table th,
     .article-content table.comparison-table td,
@@ -56,8 +58,18 @@
         padding: .65rem .75rem;
         text-align: left;
         vertical-align: top;
-        overflow-wrap: anywhere;
-        word-break: break-word;
+        overflow-wrap: normal;
+        word-break: normal;
+        hyphens: manual;
+        min-width: 10rem;
+        max-width: 16rem;
+    }
+    .article-content table.comparison-table th:first-child,
+    .article-content table.comparison-table td:first-child,
+    .article-content table th:first-child,
+    .article-content table td:first-child {
+        min-width: 7.5rem;
+        max-width: 10rem;
     }
     .article-content table.comparison-table th,
     .article-content table th {

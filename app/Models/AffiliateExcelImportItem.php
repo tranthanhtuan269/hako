@@ -26,6 +26,7 @@ class AffiliateExcelImportItem extends Model
         'category_name',
         'store_name',
         'website',
+        'logo',
         'affiliate_url',
         'offers',
         'status',
