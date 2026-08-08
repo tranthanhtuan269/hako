@@ -7,10 +7,12 @@ use App\Http\Controllers\Concerns\SyncsStoreCouponDisplay;
 use App\Http\Controllers\Concerns\SyncsStoresCatalogDisplay;
 use App\Http\Controllers\Controller;
 use App\Models\Category;
+use App\Models\Coupon;
 use App\Models\Store;
 use App\Support\ClickStatsPeriod;
 use App\Support\PublicImage;
 use App\Support\StoreQuerySort;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -146,6 +148,108 @@ class StoreController extends Controller
         ]);
 
         return back()->with('success', "{$store->name} pinned to homepage.");
+    }
+
+    public function coupons(Store $store): JsonResponse
+    {
+        $coupons = $this->storeCouponsForDisplayForm($store)->map(fn (Coupon $coupon) => [
+            'id' => $coupon->id,
+            'title' => $coupon->title,
+            'description' => $coupon->description,
+            'code' => $coupon->code,
+            'type' => $coupon->type,
+            'type_label' => $coupon->typeLabel(),
+            'is_active' => (bool) $coupon->is_active,
+            'is_featured' => (bool) $coupon->is_featured,
+            'show_on_store' => (bool) $coupon->show_on_store,
+            'store_sort_order' => (int) $coupon->store_sort_order,
+            'expires_at' => $coupon->expires_at?->format('Y-m-d\TH:i'),
+            'is_expired' => $coupon->isExpired(),
+            'edit_url' => route('admin.coupons.edit', $coupon),
+            'update_url' => route('admin.stores.coupons.update', [$store, $coupon]),
+        ]);
+
+        return response()->json([
+            'store' => [
+                'id' => $store->id,
+                'name' => $store->name,
+            ],
+            'sort_url' => route('admin.stores.coupons.sort-order', $store),
+            'create_url' => route('admin.coupons.create', ['store_id' => $store->id]),
+            'coupons' => $coupons,
+        ]);
+    }
+
+    public function updateCouponsSortOrder(Request $request, Store $store)
+    {
+        $data = $request->validate([
+            'order' => ['required', 'array', 'min:1'],
+            'order.*' => ['integer', 'exists:coupons,id'],
+        ]);
+
+        $orderedIds = collect($data['order'])
+            ->map(fn ($id) => (int) $id)
+            ->intersect($store->coupons()->pluck('id'))
+            ->values()
+            ->all();
+
+        $count = count($orderedIds);
+
+        foreach ($orderedIds as $index => $id) {
+            Coupon::whereKey($id)->where('store_id', $store->id)->update([
+                'store_sort_order' => max(1, $count - $index),
+            ]);
+        }
+
+        if ($request->expectsJson()) {
+            return response()->json(['ok' => true]);
+        }
+
+        return redirect()
+            ->route('admin.stores.index')
+            ->with('success', 'Store coupon order saved.');
+    }
+
+    public function updateCoupon(Request $request, Store $store, Coupon $coupon): JsonResponse
+    {
+        abort_unless((int) $coupon->store_id === (int) $store->id, 404);
+
+        $data = $request->validate([
+            'title' => ['required', 'string', 'max:255'],
+            'description' => ['nullable', 'string'],
+            'code' => ['nullable', 'string', 'max:100'],
+            'is_featured' => ['boolean'],
+            'is_active' => ['boolean'],
+            'show_on_store' => ['boolean'],
+            'expires_at' => ['nullable', 'date'],
+        ]);
+
+        $data['description'] = filled($data['description'] ?? null) ? $data['description'] : null;
+        $data['code'] = filled($data['code'] ?? null) ? trim($data['code']) : null;
+        $data['type'] = filled($data['code']) ? 'coupon' : 'discount';
+        $data['is_featured'] = $request->boolean('is_featured');
+        $data['is_active'] = $request->boolean('is_active');
+        $data['show_on_store'] = $request->boolean('show_on_store');
+        $data['expires_at'] = filled($data['expires_at'] ?? null) ? $data['expires_at'] : null;
+
+        $coupon->update($data);
+
+        return response()->json([
+            'ok' => true,
+            'coupon' => [
+                'id' => $coupon->id,
+                'title' => $coupon->title,
+                'description' => $coupon->description,
+                'code' => $coupon->code,
+                'type' => $coupon->type,
+                'type_label' => $coupon->typeLabel(),
+                'is_active' => (bool) $coupon->is_active,
+                'is_featured' => (bool) $coupon->is_featured,
+                'show_on_store' => (bool) $coupon->show_on_store,
+                'expires_at' => $coupon->expires_at?->format('Y-m-d\TH:i'),
+                'is_expired' => $coupon->isExpired(),
+            ],
+        ]);
     }
 
     private function resolveLogo(Request $request, ?string $logoUrl, ?string $existing = null, ?Store $store = null): ?string

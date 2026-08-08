@@ -73,12 +73,17 @@ class CouponController extends Controller
             ->with('success', 'Coupons page display settings saved.');
     }
 
-    public function create(): View
+    public function create(Request $request): View
     {
         $stores = Store::orderBy('name')->get();
+        $coupon = new Coupon();
+
+        if ($request->filled('store_id')) {
+            $coupon->store_id = $request->integer('store_id') ?: null;
+        }
 
         return view('admin.coupons.form', [
-            'coupon' => new Coupon(),
+            'coupon' => $coupon,
             'stores' => $stores,
         ]);
     }

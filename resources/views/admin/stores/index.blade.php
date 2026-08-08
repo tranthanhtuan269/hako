@@ -103,7 +103,17 @@
                     </form>
                 </td>
                 <td>{{ $store->show_on_stores ? 'Yes' : 'No' }}</td>
-                <td>{{ number_format($store->coupons_count) }}</td>
+                <td>
+                    <button
+                        type="button"
+                        class="btn btn-outline btn-sm js-store-coupons-open"
+                        data-coupons-url="{{ route('admin.stores.coupons', $store) }}"
+                        data-store-name="{{ $store->name }}"
+                        title="Manage coupons for {{ $store->name }}"
+                    >
+                        {{ number_format($store->coupons_count) }}
+                    </button>
+                </td>
                 <td><strong>{{ number_format((int) ($store->day_clicks ?? 0)) }}</strong></td>
                 <td>{{ number_format((int) ($store->month_clicks ?? 0)) }}</td>
                 <td>{{ number_format((int) ($store->year_clicks ?? 0)) }}</td>
@@ -134,6 +144,7 @@
 </div>
 
 @include('partials.table-actions-assets')
+@include('partials.admin-store-coupons-modal')
 @endsection
 
 @push('styles')
@@ -169,9 +180,128 @@
 .coupon-sort-status[data-type="success"] { color: #047857; }
 .coupon-sort-status[data-type="error"] { color: #dc2626; }
 .btn-sm { padding: .25rem .55rem; font-size: .8125rem; }
+
+.store-coupons-modal[hidden] { display: none !important; }
+.store-coupons-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+}
+.store-coupons-modal__backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(15, 23, 42, .45);
+}
+.store-coupons-modal__dialog {
+    position: relative;
+    z-index: 1;
+    width: min(1100px, 100%);
+    max-height: min(90vh, 900px);
+    display: flex;
+    flex-direction: column;
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 20px 50px rgba(15, 23, 42, .25);
+    overflow: hidden;
+}
+.store-coupons-modal__header,
+.store-coupons-modal__footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: .75rem;
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid var(--border);
+    background: #f8fafc;
+}
+.store-coupons-modal__footer {
+    border-bottom: 0;
+    border-top: 1px solid var(--border);
+    justify-content: flex-end;
+}
+.store-coupons-modal__header h3 {
+    margin: 0;
+    font-size: 1.1rem;
+}
+.store-coupons-modal__close {
+    border: 0;
+    background: transparent;
+    font-size: 1.5rem;
+    line-height: 1;
+    color: var(--muted);
+    cursor: pointer;
+    padding: .15rem .4rem;
+}
+.store-coupons-modal__body {
+    padding: 1rem 1.25rem;
+    overflow: auto;
+}
+.store-coupons-modal__loading,
+.store-coupons-modal__empty {
+    color: var(--muted);
+    margin: .5rem 0;
+}
+.store-coupons-table-wrap { overflow-x: auto; }
+.store-coupons-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: .875rem;
+}
+.store-coupons-table th,
+.store-coupons-table td {
+    border: 1px solid var(--border);
+    padding: .55rem .6rem;
+    vertical-align: top;
+    text-align: left;
+}
+.store-coupons-table th {
+    background: #f8fafc;
+    font-size: .75rem;
+    text-transform: uppercase;
+    letter-spacing: .03em;
+    color: var(--muted);
+    white-space: nowrap;
+}
+.store-coupons-input {
+    width: 100%;
+    min-width: 8rem;
+    padding: .4rem .5rem;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font: inherit;
+}
+.store-coupons-input--desc {
+    margin-top: .4rem;
+    min-width: 14rem;
+    resize: vertical;
+}
+.store-coupons-input--date { min-width: 11rem; }
+.store-coupons-flags {
+    display: grid;
+    gap: .35rem;
+    white-space: nowrap;
+}
+.store-coupons-flags label {
+    display: flex;
+    align-items: center;
+    gap: .35rem;
+    font-size: .8125rem;
+    margin: 0;
+}
+.store-coupons-row-actions {
+    display: flex;
+    flex-direction: column;
+    gap: .35rem;
+    min-width: 5.5rem;
+}
 </style>
 @endpush
 
 @push('scripts')
 <script src="{{ asset('js/admin-store-sort.js') }}?v={{ filemtime(public_path('js/admin-store-sort.js')) }}" defer></script>
+<script src="{{ asset('js/admin-store-coupons-popup.js') }}?v={{ filemtime(public_path('js/admin-store-coupons-popup.js')) }}" defer></script>
 @endpush
