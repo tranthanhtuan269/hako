@@ -58,16 +58,15 @@ body.theme-savingspro .header-inner {
 }
 
 body.theme-savingspro .search-form {
-    order: 3;
-    flex: 1 1 100%;
-    max-width: none;
+    flex: 1;
+    max-width: 360px;
 }
 
-@media (min-width: 900px) {
+@media (max-width: 768px) {
     body.theme-savingspro .search-form {
-        order: 0;
-        flex: 1;
-        max-width: 360px;
+        order: unset;
+        flex: unset;
+        max-width: none;
     }
 }
 

@@ -176,6 +176,60 @@ a:hover { text-decoration: underline; }
     cursor: pointer;
 }
 
+.nav-toggle {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    width: 2.35rem;
+    height: 2.35rem;
+    padding: 0;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--card);
+    color: var(--text);
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+.nav-toggle-bars,
+.nav-toggle-bars::before,
+.nav-toggle-bars::after {
+    display: block;
+    width: 1.1rem;
+    height: 2px;
+    background: currentColor;
+    border-radius: 2px;
+    transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.nav-toggle-bars {
+    position: relative;
+}
+
+.nav-toggle-bars::before,
+.nav-toggle-bars::after {
+    content: '';
+    position: absolute;
+    left: 0;
+}
+
+.nav-toggle-bars::before { top: -6px; }
+.nav-toggle-bars::after { top: 6px; }
+
+.nav-toggle[aria-expanded="true"] .nav-toggle-bars {
+    background: transparent;
+}
+
+.nav-toggle[aria-expanded="true"] .nav-toggle-bars::before {
+    top: 0;
+    transform: rotate(45deg);
+}
+
+.nav-toggle[aria-expanded="true"] .nav-toggle-bars::after {
+    top: 0;
+    transform: rotate(-45deg);
+}
+
 .main-nav {
     display: flex;
     gap: 1rem;
@@ -1918,9 +1972,101 @@ div.pagination > nav.paginator-nav .pagination {
 @media (max-width: 768px) {
     .contact-grid { grid-template-columns: 1fr; }
     .legal-content { padding: 1.25rem 1rem; }
-    .header-inner { flex-direction: column; align-items: stretch; }
-    .search-form { max-width: none; }
-    .main-nav { justify-content: center; }
+
+    /* One row: logo | search | menu */
+    .header-inner {
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr) auto;
+        grid-template-areas:
+            "brand search toggle"
+            "nav nav nav";
+        align-items: center;
+        column-gap: 0.5rem;
+        row-gap: 0;
+        padding: 0.65rem 0.85rem;
+        flex-direction: unset;
+        flex-wrap: unset;
+    }
+
+    .site-brand {
+        grid-area: brand;
+        min-width: 0;
+    }
+
+    .site-brand-text {
+        display: none;
+    }
+
+    .site-brand-logo,
+    .site-brand-icon,
+    .site-brand--logo-only .site-brand-logo {
+        width: 2.35rem;
+        height: 2.35rem;
+        max-width: 2.35rem;
+        object-fit: contain;
+    }
+
+    .search-form {
+        grid-area: search;
+        width: 100%;
+        min-width: 0;
+        max-width: none;
+        flex: unset;
+        order: unset;
+        gap: 0.35rem;
+    }
+
+    .search-form input {
+        min-width: 0;
+        height: 2.35rem;
+        padding: 0 0.75rem;
+        font-size: 0.82rem;
+    }
+
+    .search-form button {
+        flex: 0 0 auto;
+        height: 2.35rem;
+        min-width: 2.35rem;
+        padding: 0 0.55rem;
+        font-size: 0.72rem;
+    }
+
+    .nav-toggle {
+        display: inline-flex;
+        grid-area: toggle;
+    }
+
+    .main-nav {
+        display: none;
+        grid-area: nav;
+        width: 100%;
+        margin-top: 0.55rem;
+        flex-direction: column;
+        align-items: stretch;
+        justify-content: flex-start;
+        gap: 0.25rem;
+        padding: 0.65rem 0 0.15rem;
+        border-top: 1px solid var(--border);
+    }
+
+    .main-nav.is-open {
+        display: flex;
+    }
+
+    .main-nav a,
+    .main-nav .nav-logout-btn {
+        width: 100%;
+        min-height: 2.65rem;
+        padding: 0 0.85rem;
+        display: inline-flex;
+        align-items: center;
+        border-radius: 10px;
+    }
+
+    .main-nav .nav-logout-form {
+        width: 100%;
+    }
+
     .admin-layout { flex-direction: column; }
     .admin-sidebar { width: 100%; }
 }
