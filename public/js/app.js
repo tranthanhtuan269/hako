@@ -1,36 +1,133 @@
-window.openBackgroundTab = function (url) {
+window.openBackgroundTab = function (url, options) {
+    options = options || {};
+    const keepCurrentTab = options.keepCurrentTab !== false;
+
     if (!url || url === '#') {
-        return;
+        return null;
     }
 
     const newWin = window.open(url, '_blank', 'noopener,noreferrer');
 
     if (newWin) {
-        newWin.opener = null;
-
         try {
-            newWin.blur();
+            newWin.opener = null;
         } catch (error) {
-            // Ignore cross-browser blur restrictions.
+            // Ignore cross-browser opener restrictions.
         }
-    }
 
-    function refocusCurrentTab() {
-        window.focus();
-
-        if (newWin) {
+        if (keepCurrentTab) {
             try {
                 newWin.blur();
             } catch (error) {
                 // Ignore cross-browser blur restrictions.
             }
+
+            function refocusCurrentTab() {
+                window.focus();
+
+                try {
+                    newWin.blur();
+                } catch (error) {
+                    // Ignore cross-browser blur restrictions.
+                }
+            }
+
+            refocusCurrentTab();
+            requestAnimationFrame(refocusCurrentTab);
+            setTimeout(refocusCurrentTab, 0);
+            setTimeout(refocusCurrentTab, 50);
         }
     }
 
-    refocusCurrentTab();
-    requestAnimationFrame(refocusCurrentTab);
-    setTimeout(refocusCurrentTab, 0);
-    setTimeout(refocusCurrentTab, 50);
+    return newWin;
+};
+
+/**
+ * Open a blank tab synchronously during a user gesture so mobile browsers
+ * allow navigating it later after async reveal/copy work.
+ */
+window.primeBackgroundTab = function () {
+    try {
+        const win = window.open('about:blank', '_blank');
+
+        if (win) {
+            try {
+                win.opener = null;
+            } catch (error) {
+                // Ignore cross-browser opener restrictions.
+            }
+
+            return win;
+        }
+    } catch (error) {
+        // Popup blocked.
+    }
+
+    return null;
+};
+
+window.navigateBackgroundTab = function (win, url, options) {
+    options = options || {};
+    const keepCurrentTab = !!options.keepCurrentTab;
+    const fallbackNavigate = !!options.fallbackNavigate;
+
+    if (!url || url === '#') {
+        if (win && !win.closed) {
+            try {
+                win.close();
+            } catch (error) {
+                // Ignore.
+            }
+        }
+
+        return false;
+    }
+
+    if (win && !win.closed) {
+        try {
+            win.location.replace(url);
+
+            if (keepCurrentTab) {
+                function refocusCurrentTab() {
+                    window.focus();
+
+                    try {
+                        win.blur();
+                    } catch (error) {
+                        // Ignore.
+                    }
+                }
+
+                refocusCurrentTab();
+                requestAnimationFrame(refocusCurrentTab);
+                setTimeout(refocusCurrentTab, 0);
+                setTimeout(refocusCurrentTab, 50);
+            }
+
+            return true;
+        } catch (error) {
+            // Fall through to a fresh open.
+        }
+    }
+
+    const opened = window.openBackgroundTab(url, { keepCurrentTab: keepCurrentTab });
+
+    if (opened) {
+        return true;
+    }
+
+    if (fallbackNavigate) {
+        window.location.assign(url);
+
+        return true;
+    }
+
+    return false;
+};
+
+window.isLikelyMobileViewport = function () {
+    return window.matchMedia('(max-width: 768px)').matches
+        || /Android|iPhone|iPad|iPod/i.test(navigator.userAgent || '');
 };
 
 document.addEventListener('DOMContentLoaded', function () {
@@ -304,7 +401,9 @@ function initCouponRevealModal() {
         }
 
         affiliateTabOpened = true;
-        window.openBackgroundTab(targetUrl);
+        window.openBackgroundTab(targetUrl, {
+            keepCurrentTab: !window.isLikelyMobileViewport(),
+        });
 
         return true;
     }
@@ -337,11 +436,8 @@ function initCouponRevealModal() {
                 }, 2000);
             }
 
-            // Copy first, then open destination so the clipboard write is not interrupted.
-            if (copied && shouldOpenOnCopy && affiliateUrl) {
-                await new Promise(function (resolve) {
-                    setTimeout(resolve, 80);
-                });
+            // Open even when clipboard fails (common on mobile without gesture/permission).
+            if (shouldOpenOnCopy && affiliateUrl) {
                 openAffiliateTab(affiliateUrl);
             }
         } finally {
@@ -457,10 +553,14 @@ function initCouponRevealModal() {
         });
     }
 
-    async function handleRevealClick(btn) {
+    async function handleRevealClick(btn, primedTab) {
         if (btn.id === 'sp-modal-copy' || btn.closest('#sp-coupon-modal')) {
             return;
         }
+
+        const flags = redirectFlowFlags();
+        const isMobile = window.isLikelyMobileViewport();
+        let activePrimedTab = primedTab || null;
 
         try {
             let result = null;
@@ -479,6 +579,14 @@ function initCouponRevealModal() {
             }
 
             if (!result?.code) {
+                if (activePrimedTab && !activePrimedTab.closed) {
+                    try {
+                        activePrimedTab.close();
+                    } catch (error) {
+                        // Ignore.
+                    }
+                }
+
                 alert('Could not retrieve the code. Please try again.');
                 return;
             }
@@ -494,7 +602,6 @@ function initCouponRevealModal() {
                 document.body.classList.remove('scroll-coupon-popup-open');
             }
 
-            const flags = redirectFlowFlags();
             const affiliateUrl = result.affiliateUrl || btn.dataset.affiliateUrl || btn.dataset.shopUrl || btn.dataset.goUrl || '';
 
             // Flow 2/3: copy code then open destination — no intermediate coupon popup.
@@ -510,14 +617,29 @@ function initCouponRevealModal() {
                     btn.classList.remove('copied');
                 }, 2000);
 
-                if (copied && affiliateUrl) {
-                    await new Promise(function (resolve) {
-                        setTimeout(resolve, 80);
+                // Always attempt redirect for flow 2/3, even if clipboard write fails on mobile.
+                if (affiliateUrl) {
+                    window.navigateBackgroundTab(activePrimedTab, affiliateUrl, {
+                        keepCurrentTab: !isMobile,
+                        fallbackNavigate: isMobile,
                     });
-                    window.openBackgroundTab(affiliateUrl);
+                } else if (activePrimedTab && !activePrimedTab.closed) {
+                    try {
+                        activePrimedTab.close();
+                    } catch (error) {
+                        // Ignore.
+                    }
                 }
 
                 return;
+            }
+
+            if (activePrimedTab && !activePrimedTab.closed) {
+                try {
+                    activePrimedTab.close();
+                } catch (error) {
+                    // Ignore.
+                }
             }
 
             // Flow 1: show popup; destination opens when the popup is closed.
@@ -531,14 +653,35 @@ function initCouponRevealModal() {
                 shopUrl: btn.dataset.shopUrl || btn.dataset.goUrl || '',
             });
         } catch (e) {
+            if (activePrimedTab && !activePrimedTab.closed) {
+                try {
+                    activePrimedTab.close();
+                } catch (error) {
+                    // Ignore.
+                }
+            }
+
             alert('Could not retrieve the code. Please try again.');
         }
+    }
+
+    function startRevealClick(btn) {
+        const flags = redirectFlowFlags();
+        let primedTab = null;
+
+        // Must run synchronously in the click handler before any await,
+        // otherwise mobile browsers block the destination tab.
+        if (flags.onCopy) {
+            primedTab = window.primeBackgroundTab();
+        }
+
+        handleRevealClick(btn, primedTab);
     }
 
     document.querySelectorAll('.btn-copy, .sp-code-copy, .scroll-coupon-popup-copy').forEach(function (btn) {
         btn.addEventListener('click', function (event) {
             event.preventDefault();
-            handleRevealClick(btn);
+            startRevealClick(btn);
         });
     });
 
@@ -558,7 +701,7 @@ function initCouponRevealModal() {
             }
 
             event.preventDefault();
-            handleRevealClick(revealBtn);
+            startRevealClick(revealBtn);
         });
     });
 

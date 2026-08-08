@@ -77,6 +77,7 @@
         <p class="form-hint" style="margin-bottom:.85rem;">
             Flow 1 keeps the coupon popup (destination opens when it closes).
             Flow 2/3 copy the code first, then open the merchant tab immediately — no coupon popup.
+            On mobile, Flow 2/3 open the merchant right away (same-tab fallback if the browser blocks a new tab).
         </p>
         <div class="form-group coupon-redirect-options">
             @foreach($couponRedirectOptions as $value => $label)
