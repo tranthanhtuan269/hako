@@ -1951,7 +1951,8 @@ div.pagination > nav.paginator-nav .pagination {
     max-width: 100%;
     width: 100%;
     box-sizing: border-box;
-    overflow-wrap: break-word;
+    overflow-wrap: anywhere;
+    word-break: break-word;
 }
 
 .article-table-scroll {
@@ -1960,46 +1961,11 @@ div.pagination > nav.paginator-nav .pagination {
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
     margin: 1rem 0 1.5rem;
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    background:
-        linear-gradient(to right, #fff 30%, rgba(255,255,255,0)) left center / 2rem 100% no-repeat,
-        linear-gradient(to left, #fff 30%, rgba(255,255,255,0)) right center / 2rem 100% no-repeat,
-        linear-gradient(to right, rgba(15, 23, 42, .12), transparent) left center / .75rem 100% no-repeat,
-        linear-gradient(to left, rgba(15, 23, 42, .12), transparent) right center / .75rem 100% no-repeat;
-    background-attachment: local, local, scroll, scroll;
 }
 
 .article-table-scroll > table {
-    width: max-content;
+    margin: 0;
     min-width: 100%;
-    margin: 0 !important;
-    border-collapse: collapse;
-}
-
-.article-table-scroll th,
-.article-table-scroll td {
-    overflow-wrap: normal !important;
-    word-break: normal !important;
-    white-space: normal;
-    min-width: 10rem;
-    max-width: 16rem;
-}
-
-.article-table-scroll th:first-child,
-.article-table-scroll td:first-child {
-    min-width: 7.5rem;
-    max-width: 10rem;
-    position: sticky;
-    left: 0;
-    z-index: 1;
-    background: #fff;
-    box-shadow: 1px 0 0 var(--border);
-}
-
-.article-table-scroll thead th:first-child,
-.article-table-scroll th:first-child {
-    background: #f8fafc;
 }
 
 .blog-sidebar .sidebar-box {
@@ -2092,26 +2058,14 @@ div.pagination > nav.paginator-nav .pagination {
 
     .article-content table.comparison-table,
     .article-content table {
-        font-size: .85rem;
+        font-size: .82rem;
     }
 
     .article-content table.comparison-table th,
     .article-content table.comparison-table td,
     .article-content table th,
     .article-content table td {
-        padding: .55rem .65rem;
-    }
-
-    .article-table-scroll th,
-    .article-table-scroll td {
-        min-width: 9.5rem;
-        max-width: 14rem;
-    }
-
-    .article-table-scroll th:first-child,
-    .article-table-scroll td:first-child {
-        min-width: 6.75rem;
-        max-width: 9rem;
+        padding: .5rem .55rem;
     }
 
     /* One row: logo | search | menu */
@@ -2217,7 +2171,6 @@ div.pagination > nav.paginator-nav .pagination {
     color: #374151;
     line-height: 1.75;
     max-width: 72ch;
-    overflow-wrap: break-word;
 }
 .store-description-content h2,
 .store-description-content h3,
@@ -2239,39 +2192,20 @@ div.pagination > nav.paginator-nav .pagination {
     font-size: .875rem;
     color: #64748b;
 }
-.store-description-content .article-table-scroll {
-    max-width: 100%;
-}
-.store-description-content table.comparison-table,
-.store-description-content table {
-    width: max-content;
-    min-width: 100%;
+.store-description-content table.comparison-table {
+    width: 100%;
     border-collapse: collapse;
     margin: 1rem 0 1.5rem;
     font-size: .95rem;
 }
 .store-description-content table.comparison-table th,
-.store-description-content table.comparison-table td,
-.store-description-content table th,
-.store-description-content table td {
+.store-description-content table.comparison-table td {
     border: 1px solid var(--border, #e5e7eb);
     padding: .65rem .75rem;
     text-align: left;
     vertical-align: top;
-    overflow-wrap: normal;
-    word-break: normal;
-    min-width: 10rem;
-    max-width: 16rem;
 }
-.store-description-content table.comparison-table th:first-child,
-.store-description-content table.comparison-table td:first-child,
-.store-description-content table th:first-child,
-.store-description-content table td:first-child {
-    min-width: 7.5rem;
-    max-width: 10rem;
-}
-.store-description-content table.comparison-table th,
-.store-description-content table th {
+.store-description-content table.comparison-table th {
     background: #f8fafc;
     font-weight: 600;
 }
