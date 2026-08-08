@@ -21,7 +21,7 @@
     .article-content li { margin-bottom: .4rem; }
     .article-content a { color: var(--primary); }
     .article-content img { max-width: 100%; height: auto; border-radius: 8px; display: block; margin: .75rem 0 1rem; }
-    .article-content .article-media { margin: 1rem 0 1.25rem; }
+    .article-content .article-media { margin: 1rem 0 1.25rem; max-width: 100%; }
     .article-content .article-media img { margin: 0; }
     .article-content .article-media--logo { max-width: 160px; }
     .article-content .article-media--logo img { width: 160px; height: auto; object-fit: contain; }
@@ -30,22 +30,43 @@
         font-size: .875rem;
         color: #64748b;
     }
-    .article-content table.comparison-table {
+    .article-content pre,
+    .article-content code {
+        max-width: 100%;
+        overflow-x: auto;
+        white-space: pre-wrap;
+        word-break: break-word;
+    }
+    .article-content iframe,
+    .article-content video {
+        max-width: 100%;
+    }
+    .article-content table.comparison-table,
+    .article-content table {
         width: 100%;
         border-collapse: collapse;
         margin: 1rem 0 1.5rem;
         font-size: .95rem;
     }
     .article-content table.comparison-table th,
-    .article-content table.comparison-table td {
+    .article-content table.comparison-table td,
+    .article-content table th,
+    .article-content table td {
         border: 1px solid var(--border);
         padding: .65rem .75rem;
         text-align: left;
         vertical-align: top;
+        overflow-wrap: anywhere;
+        word-break: break-word;
     }
-    .article-content table.comparison-table th {
+    .article-content table.comparison-table th,
+    .article-content table th {
         background: #f8fafc;
         font-weight: 600;
+    }
+    .article-content .embedded-coupon-list {
+        max-width: 100%;
+        min-width: 0;
     }
 </style>
 @endpush

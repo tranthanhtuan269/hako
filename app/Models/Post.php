@@ -95,8 +95,26 @@ class Post extends Model
     public function renderedContent(): string
     {
         $html = PostAffiliateContent::embed($this->content, $this->resolveStore());
+        $html = DynamicCouponContent::expand($html, $this->resolveStore());
 
-        return DynamicCouponContent::expand($html, $this->resolveStore());
+        return self::wrapTablesForMobile($html);
+    }
+
+    private static function wrapTablesForMobile(string $html): string
+    {
+        if ($html === '' || ! str_contains(strtolower($html), '<table')) {
+            return $html;
+        }
+
+        return (string) preg_replace_callback(
+            '/<div class="article-table-scroll">\s*(<table\b[^>]*>.*?<\/table>)\s*<\/div>|(<table\b[^>]*>.*?<\/table>)/is',
+            static function (array $matches): string {
+                $table = $matches[1] !== '' ? $matches[1] : $matches[2];
+
+                return '<div class="article-table-scroll">'.$table.'</div>';
+            },
+            $html
+        ) ?: $html;
     }
 
     public function scopeOwnedBy(Builder $query, int $userId): Builder

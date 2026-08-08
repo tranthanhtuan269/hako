@@ -7,7 +7,7 @@
     @if($coupons->isEmpty())
         <p class="embedded-coupon-list__empty">No active coupons for {{ $store->name }} right now. Check back soon.</p>
     @else
-        <div class="embedded-coupon-list__grid coupon-grid">
+        <div class="embedded-coupon-list__grid">
             @foreach($coupons as $coupon)
                 @include('partials.coupon-card', [
                     'coupon' => $coupon,
@@ -24,10 +24,20 @@
     @endif
 </section>
 <style>
-.embedded-coupon-list { margin: 1.5rem 0 2rem; }
-.embedded-coupon-list__grid { display: grid; gap: 1rem; grid-template-columns: 1fr; }
+.embedded-coupon-list {
+    margin: 1.5rem 0 2rem;
+    max-width: 100%;
+    min-width: 0;
+}
+.embedded-coupon-list__grid {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: minmax(0, 1fr);
+}
 @media (min-width: 720px) {
-    .embedded-coupon-list__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .embedded-coupon-list__grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
 }
 .embedded-coupon-list__more { margin: 1rem 0 0; }
 .embedded-coupon-list__empty { margin: 0; color: #64748b; }
