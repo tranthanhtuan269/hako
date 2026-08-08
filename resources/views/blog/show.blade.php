@@ -21,7 +21,7 @@
     .article-content li { margin-bottom: .4rem; }
     .article-content a { color: var(--primary); }
     .article-content img { max-width: 100%; height: auto; border-radius: 8px; display: block; margin: .75rem 0 1rem; }
-    .article-content .article-media { margin: 1rem 0 1.25rem; }
+    .article-content .article-media { margin: 1rem 0 1.25rem; max-width: 100%; }
     .article-content .article-media img { margin: 0; }
     .article-content .article-media--logo { max-width: 160px; }
     .article-content .article-media--logo img { width: 160px; height: auto; object-fit: contain; }
@@ -30,64 +30,55 @@
         font-size: .875rem;
         color: #64748b;
     }
-    .article-content table.comparison-table {
-        width: 100%;
+    .article-content pre,
+    .article-content code {
+        max-width: 100%;
+        overflow-x: auto;
+        white-space: pre-wrap;
+        word-break: break-word;
+    }
+    .article-content iframe,
+    .article-content video {
+        max-width: 100%;
+    }
+    .article-content table.comparison-table,
+    .article-content table {
+        width: max-content;
+        min-width: 100%;
         border-collapse: collapse;
         margin: 1rem 0 1.5rem;
         font-size: .95rem;
+        table-layout: auto;
     }
     .article-content table.comparison-table th,
-    .article-content table.comparison-table td {
+    .article-content table.comparison-table td,
+    .article-content table th,
+    .article-content table td {
         border: 1px solid var(--border);
         padding: .65rem .75rem;
         text-align: left;
         vertical-align: top;
+        overflow-wrap: normal;
+        word-break: normal;
+        hyphens: manual;
+        min-width: 10rem;
+        max-width: 16rem;
     }
-    .article-content table.comparison-table th {
+    .article-content table.comparison-table th:first-child,
+    .article-content table.comparison-table td:first-child,
+    .article-content table th:first-child,
+    .article-content table td:first-child {
+        min-width: 7.5rem;
+        max-width: 10rem;
+    }
+    .article-content table.comparison-table th,
+    .article-content table th {
         background: #f8fafc;
         font-weight: 600;
     }
-
-    body.theme-googlycodes .article-content h2,
-    body.theme-googlycodes .article-content h3 {
-        color: #e63946;
-    }
-    body.theme-googlycodes .article-content p,
-    body.theme-googlycodes .article-content ul,
-    body.theme-googlycodes .article-content ol,
-    body.theme-googlycodes .article-content li {
-        color: #1d3557;
-    }
-    body.theme-googlycodes .article-content a {
-        color: #e63946;
-    }
-    body.theme-googlycodes .article-content .article-media figcaption {
-        color: #6B7280;
-    }
-    body.theme-googlycodes .article-content table,
-    body.theme-googlycodes .article-content table.comparison-table {
-        width: 100%;
-        border-collapse: collapse;
-        margin: 1rem 0 1.5rem;
-        font-size: .95rem;
-        color: #1d3557;
-    }
-    body.theme-googlycodes .article-content table th,
-    body.theme-googlycodes .article-content table td,
-    body.theme-googlycodes .article-content table.comparison-table th,
-    body.theme-googlycodes .article-content table.comparison-table td {
-        border: 1px solid rgba(29, 53, 87, 0.18);
-        padding: .65rem .75rem;
-        text-align: left;
-        vertical-align: top;
-        color: #1d3557;
-        background: #fff;
-    }
-    body.theme-googlycodes .article-content table th,
-    body.theme-googlycodes .article-content table.comparison-table th {
-        background: #FFF5F5;
-        color: #1d3557;
-        font-weight: 700;
+    .article-content .embedded-coupon-list {
+        max-width: 100%;
+        min-width: 0;
     }
 </style>
 @endpush

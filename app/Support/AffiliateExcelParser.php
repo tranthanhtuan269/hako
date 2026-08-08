@@ -21,6 +21,7 @@ final class AffiliateExcelParser
      *     category_name: ?string,
      *     store_name: string,
      *     website: ?string,
+     *     logo: ?string,
      *     affiliate_url: string,
      *     offers: list<array{code: ?string, title: string, description: ?string, type: string}>
      * }>
@@ -85,6 +86,7 @@ final class AffiliateExcelParser
                         'category_name' => $this->nullable($this->cell($row, $map['category'] ?? null)),
                         'store_name' => $resolvedName,
                         'website' => $website,
+                        'logo' => $this->normalizeUrl($this->cell($row, $map['logo'] ?? null)),
                         'affiliate_url' => $affiliateUrl ?? '',
                         'offers' => [],
                     ];
@@ -105,6 +107,10 @@ final class AffiliateExcelParser
                     $maybeWeb = $this->normalizeUrl($this->cell($row, $map['website'] ?? null));
                     if ($maybeWeb && empty($current['website'])) {
                         $current['website'] = $maybeWeb;
+                    }
+                    $maybeLogo = $this->normalizeUrl($this->cell($row, $map['logo'] ?? null));
+                    if ($maybeLogo && empty($current['logo'])) {
+                        $current['logo'] = $maybeLogo;
                     }
                     $maybeCat = $this->nullable($this->cell($row, $map['category'] ?? null));
                     if ($maybeCat && empty($current['category_name'])) {
@@ -175,6 +181,7 @@ final class AffiliateExcelParser
                 in_array($header, ['danh mục', 'danh muc', 'category', 'categories'], true) => 'category',
                 in_array($header, ['tên store', 'ten store', 'store', 'store name', 'merchant'], true) => 'store_name',
                 in_array($header, ['link web', 'website', 'web', 'site'], true) => 'website',
+                in_array($header, ['logo', 'logo url', 'logo link', 'store logo', 'link logo', 'ảnh logo', 'anh logo'], true) => 'logo',
                 in_array($header, ['link affiliate', 'affiliate', 'affiliate link', 'aff link', 'affiliate url'], true) => 'affiliate_url',
                 in_array($header, ['mã coupon', 'ma coupon', 'coupon', 'code', 'coupon code'], true) => 'code',
                 in_array($header, ['ofer', 'offer', 'offers', 'deal', 'title'], true) => 'offer',
@@ -421,6 +428,12 @@ final class AffiliateExcelParser
                     $existing['offers'][] = $offer;
                 }
                 $existing['offers'] = $this->uniqueOffers($existing['offers']);
+                if (empty($existing['logo']) && ! empty($store['logo'])) {
+                    $existing['logo'] = $store['logo'];
+                }
+                if (empty($existing['website']) && ! empty($store['website'])) {
+                    $existing['website'] = $store['website'];
+                }
                 unset($existing);
                 continue;
             }

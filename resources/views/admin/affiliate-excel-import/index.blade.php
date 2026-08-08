@@ -21,8 +21,9 @@
     <h2 style="margin-top:0;">Upload Excel</h2>
     <p class="form-hint" style="margin-bottom:1rem;">
         Supports multi-sheet workbooks (Kickbooster, Goaffpro, CJ…). Columns:
-        <code>Tên Store</code>, <code>Link Web</code>, <code>Link affiliate</code>,
-        <code>Mã Coupon</code>, <code>Ofer</code>, description.
+        <code>Tên Store</code>, <code>Link Web</code>, <code>Logo</code> (optional image URL),
+        <code>Link affiliate</code>, <code>Mã Coupon</code>, <code>Ofer</code>, description.
+        If <code>Logo</code> is filled, that image is downloaded and stored; otherwise logo is detected as usual.
         User/Pass columns are ignored. Rows for the same store are grouped by STT / name.
     </p>
     <form method="POST" action="{{ route('admin.affiliate-excel-import.upload') }}" enctype="multipart/form-data" class="excel-upload-form">

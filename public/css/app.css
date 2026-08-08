@@ -176,6 +176,60 @@ a:hover { text-decoration: underline; }
     cursor: pointer;
 }
 
+.nav-toggle {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    width: 2.35rem;
+    height: 2.35rem;
+    padding: 0;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--card);
+    color: var(--text);
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+.nav-toggle-bars,
+.nav-toggle-bars::before,
+.nav-toggle-bars::after {
+    display: block;
+    width: 1.1rem;
+    height: 2px;
+    background: currentColor;
+    border-radius: 2px;
+    transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.nav-toggle-bars {
+    position: relative;
+}
+
+.nav-toggle-bars::before,
+.nav-toggle-bars::after {
+    content: '';
+    position: absolute;
+    left: 0;
+}
+
+.nav-toggle-bars::before { top: -6px; }
+.nav-toggle-bars::after { top: 6px; }
+
+.nav-toggle[aria-expanded="true"] .nav-toggle-bars {
+    background: transparent;
+}
+
+.nav-toggle[aria-expanded="true"] .nav-toggle-bars::before {
+    top: 0;
+    transform: rotate(45deg);
+}
+
+.nav-toggle[aria-expanded="true"] .nav-toggle-bars::after {
+    top: 0;
+    transform: rotate(-45deg);
+}
+
 .main-nav {
     display: flex;
     gap: 1rem;
@@ -245,7 +299,7 @@ a:hover { text-decoration: underline; }
 /* Grid */
 .coupon-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(min(280px, 100%), 1fr));
     gap: 1.25rem;
 }
 
@@ -638,7 +692,7 @@ a:hover { text-decoration: underline; }
 }
 
 .store-grid--cards {
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(min(300px, 100%), 1fr));
     gap: 1.25rem;
 }
 
@@ -1564,7 +1618,7 @@ div.pagination > nav.paginator-nav .pagination {
 
 .blog-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(min(300px, 100%), 1fr));
     gap: 1.5rem;
 }
 
@@ -1784,7 +1838,7 @@ div.pagination > nav.paginator-nav .pagination {
 
 .author-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(min(280px, 100%), 1fr));
     gap: 1.25rem;
 }
 
@@ -1883,10 +1937,69 @@ div.pagination > nav.paginator-nav .pagination {
 
 .blog-article-layout {
     display: grid;
-    grid-template-columns: 1fr 280px;
+    grid-template-columns: minmax(0, 1fr) 280px;
     gap: 2rem;
     padding: 2rem 0 3rem;
     align-items: start;
+}
+
+.blog-article-layout > * {
+    min-width: 0;
+}
+
+.article-content.legal-content {
+    max-width: 100%;
+    width: 100%;
+    box-sizing: border-box;
+    overflow-wrap: break-word;
+}
+
+.article-table-scroll {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    margin: 1rem 0 1.5rem;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background:
+        linear-gradient(to right, #fff 30%, rgba(255,255,255,0)) left center / 2rem 100% no-repeat,
+        linear-gradient(to left, #fff 30%, rgba(255,255,255,0)) right center / 2rem 100% no-repeat,
+        linear-gradient(to right, rgba(15, 23, 42, .12), transparent) left center / .75rem 100% no-repeat,
+        linear-gradient(to left, rgba(15, 23, 42, .12), transparent) right center / .75rem 100% no-repeat;
+    background-attachment: local, local, scroll, scroll;
+}
+
+.article-table-scroll > table {
+    width: max-content;
+    min-width: 100%;
+    margin: 0 !important;
+    border-collapse: collapse;
+}
+
+.article-table-scroll th,
+.article-table-scroll td {
+    overflow-wrap: normal !important;
+    word-break: normal !important;
+    white-space: normal;
+    min-width: 10rem;
+    max-width: 16rem;
+}
+
+.article-table-scroll th:first-child,
+.article-table-scroll td:first-child {
+    min-width: 7.5rem;
+    max-width: 10rem;
+    position: sticky;
+    left: 0;
+    z-index: 1;
+    background: #fff;
+    box-shadow: 1px 0 0 var(--border);
+}
+
+.article-table-scroll thead th:first-child,
+.article-table-scroll th:first-child {
+    background: #f8fafc;
 }
 
 .blog-sidebar .sidebar-box {
@@ -1918,9 +2031,183 @@ div.pagination > nav.paginator-nav .pagination {
 @media (max-width: 768px) {
     .contact-grid { grid-template-columns: 1fr; }
     .legal-content { padding: 1.25rem 1rem; }
-    .header-inner { flex-direction: column; align-items: stretch; }
-    .search-form { max-width: none; }
-    .main-nav { justify-content: center; }
+
+    .blog-article-header {
+        padding: 1.25rem 0;
+    }
+
+    .blog-article-header h1 {
+        font-size: clamp(1.35rem, 6vw, 1.85rem);
+        overflow-wrap: anywhere;
+        word-break: break-word;
+    }
+
+    .blog-featured-img-wrap {
+        margin: 1rem 0;
+        min-height: 0;
+        max-height: 240px;
+        padding: 1rem;
+    }
+
+    .blog-featured-img {
+        max-height: 200px;
+    }
+
+    .blog-article-layout {
+        gap: 1.25rem;
+        padding: 1.25rem 0 2rem;
+    }
+
+    .article-content.legal-content {
+        padding: 1.1rem .9rem;
+        border-radius: 10px;
+    }
+
+    .article-content h2 {
+        font-size: 1.15rem;
+        margin: 1.35rem 0 .55rem;
+    }
+
+    .article-content h3 {
+        font-size: 1.02rem;
+        margin: 1.1rem 0 .45rem;
+    }
+
+    .article-content p,
+    .article-content li {
+        font-size: .95rem;
+        line-height: 1.65;
+    }
+
+    .article-content ul,
+    .article-content ol {
+        margin-left: 1.1rem;
+    }
+
+    .article-content .article-media--logo,
+    .article-content .article-media--logo img {
+        max-width: min(140px, 100%);
+        width: auto;
+    }
+
+    .article-content table.comparison-table,
+    .article-content table {
+        font-size: .85rem;
+    }
+
+    .article-content table.comparison-table th,
+    .article-content table.comparison-table td,
+    .article-content table th,
+    .article-content table td {
+        padding: .55rem .65rem;
+    }
+
+    .article-table-scroll th,
+    .article-table-scroll td {
+        min-width: 9.5rem;
+        max-width: 14rem;
+    }
+
+    .article-table-scroll th:first-child,
+    .article-table-scroll td:first-child {
+        min-width: 6.75rem;
+        max-width: 9rem;
+    }
+
+    /* One row: logo | search | menu */
+    .header-inner {
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr) auto;
+        grid-template-areas:
+            "brand search toggle"
+            "nav nav nav";
+        align-items: center;
+        column-gap: 0.5rem;
+        row-gap: 0;
+        padding: 0.65rem 0.85rem;
+        flex-direction: unset;
+        flex-wrap: unset;
+    }
+
+    .site-brand {
+        grid-area: brand;
+        min-width: 0;
+    }
+
+    .site-brand-text {
+        display: none;
+    }
+
+    .site-brand-logo,
+    .site-brand-icon,
+    .site-brand--logo-only .site-brand-logo {
+        width: 2.35rem;
+        height: 2.35rem;
+        max-width: 2.35rem;
+        object-fit: contain;
+    }
+
+    .search-form {
+        grid-area: search;
+        width: 100%;
+        min-width: 0;
+        max-width: none;
+        flex: unset;
+        order: unset;
+        gap: 0.35rem;
+    }
+
+    .search-form input {
+        min-width: 0;
+        height: 2.35rem;
+        padding: 0 0.75rem;
+        font-size: 0.82rem;
+    }
+
+    .search-form button {
+        flex: 0 0 auto;
+        height: 2.35rem;
+        min-width: 2.35rem;
+        padding: 0 0.55rem;
+        font-size: 0.72rem;
+    }
+
+    .nav-toggle {
+        display: inline-flex;
+        grid-area: toggle;
+    }
+
+    .main-nav {
+        display: none;
+        grid-area: nav;
+        width: 100%;
+        margin-top: 0.55rem;
+        flex-direction: column;
+        align-items: stretch;
+        justify-content: flex-start;
+        gap: 0.25rem;
+        padding: 0.65rem 0 0.15rem;
+        border-top: 1px solid var(--border);
+    }
+
+    .main-nav.is-open {
+        display: flex;
+    }
+
+    .main-nav a,
+    .main-nav .nav-logout-btn {
+        width: 100%;
+        min-height: 2.65rem;
+        padding: 0 0.85rem;
+        display: inline-flex;
+        align-items: center;
+        border-radius: 10px;
+    }
+
+    .main-nav .nav-logout-form {
+        width: 100%;
+    }
+
     .admin-layout { flex-direction: column; }
     .admin-sidebar { width: 100%; }
 }
@@ -1930,6 +2217,7 @@ div.pagination > nav.paginator-nav .pagination {
     color: #374151;
     line-height: 1.75;
     max-width: 72ch;
+    overflow-wrap: break-word;
 }
 .store-description-content h2,
 .store-description-content h3,
@@ -1951,20 +2239,39 @@ div.pagination > nav.paginator-nav .pagination {
     font-size: .875rem;
     color: #64748b;
 }
-.store-description-content table.comparison-table {
-    width: 100%;
+.store-description-content .article-table-scroll {
+    max-width: 100%;
+}
+.store-description-content table.comparison-table,
+.store-description-content table {
+    width: max-content;
+    min-width: 100%;
     border-collapse: collapse;
     margin: 1rem 0 1.5rem;
     font-size: .95rem;
 }
 .store-description-content table.comparison-table th,
-.store-description-content table.comparison-table td {
+.store-description-content table.comparison-table td,
+.store-description-content table th,
+.store-description-content table td {
     border: 1px solid var(--border, #e5e7eb);
     padding: .65rem .75rem;
     text-align: left;
     vertical-align: top;
+    overflow-wrap: normal;
+    word-break: normal;
+    min-width: 10rem;
+    max-width: 16rem;
 }
-.store-description-content table.comparison-table th {
+.store-description-content table.comparison-table th:first-child,
+.store-description-content table.comparison-table td:first-child,
+.store-description-content table th:first-child,
+.store-description-content table td:first-child {
+    min-width: 7.5rem;
+    max-width: 10rem;
+}
+.store-description-content table.comparison-table th,
+.store-description-content table th {
     background: #f8fafc;
     font-weight: 600;
 }

@@ -165,7 +165,9 @@ class Store extends Model
             return '';
         }
 
-        return DynamicCouponContent::expand($html, $this, null, false);
+        return HtmlCleaner::wrapTablesForScroll(
+            DynamicCouponContent::expand($html, $this, null, false)
+        );
     }
 
     public function visibleStoreCouponsCount(): int

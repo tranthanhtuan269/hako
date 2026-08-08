@@ -96,6 +96,7 @@ class AffiliateExcelImportController extends Controller
                 'category_name' => $row['category_name'] ?? null,
                 'store_name' => $row['store_name'],
                 'website' => $row['website'] ?? null,
+                'logo' => $row['logo'] ?? null,
                 'affiliate_url' => $row['affiliate_url'],
                 'offers' => $row['offers'] ?? [],
                 'status' => AffiliateExcelImportItem::STATUS_PENDING,
@@ -235,16 +236,16 @@ class AffiliateExcelImportController extends Controller
         $sheet = $spreadsheet->getActiveSheet();
         $sheet->setTitle('Kickbooster');
         $headers = [
-            'STT', 'Danh Mục', 'Tên Store', 'Link Web', 'Link Login', 'User', 'Pass',
+            'STT', 'Danh Mục', 'Tên Store', 'Link Web', 'Logo', 'Link Login', 'User', 'Pass',
             'Link affiliate', 'Mã Coupon', 'Ofer', 'Mô Tả Coupons',
         ];
         $sheet->fromArray($headers, null, 'A1');
         $sheet->fromArray([
-            '1', '', 'example-store', 'https://example.com', '', '', '',
+            '1', '', 'example-store', 'https://example.com', 'https://example.com/logo.png', '', '', '',
             'https://example.com/?ref=YOURID', 'SAVE10', '10% OFF', 'Get 10% Off Entire Order',
         ], null, 'A2');
         $sheet->fromArray([
-            '1', '', 'example-store', 'https://example.com', '', '', '',
+            '1', '', 'example-store', 'https://example.com', '', '', '', '',
             'https://example.com/?ref=YOURID', 'No Need Code', 'Free Ship', 'Free shipping on orders over $50',
         ], null, 'A3');
 

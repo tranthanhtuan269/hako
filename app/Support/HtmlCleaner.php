@@ -189,4 +189,24 @@ final class HtmlCleaner
 
         return trim(preg_replace('/\s+/u', ' ', self::decodeEntities($text)));
     }
+
+    /**
+     * Wrap tables so wide comparison grids can scroll horizontally on mobile.
+     */
+    public static function wrapTablesForScroll(string $html): string
+    {
+        if ($html === '' || ! str_contains(strtolower($html), '<table')) {
+            return $html;
+        }
+
+        return (string) preg_replace_callback(
+            '/<div class="article-table-scroll">\s*(<table\b[^>]*>.*?<\/table>)\s*<\/div>|(<table\b[^>]*>.*?<\/table>)/is',
+            static function (array $matches): string {
+                $table = ($matches[1] ?? '') !== '' ? $matches[1] : ($matches[2] ?? '');
+
+                return '<div class="article-table-scroll">'.$table.'</div>';
+            },
+            $html
+        ) ?: $html;
+    }
 }
