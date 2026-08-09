@@ -68,7 +68,13 @@ final class SiteIntegrations
 
     public static function scanApiUrl(): string
     {
-        return trim((string) SiteSetting::get(self::SCAN_API_URL_KEY, ''));
+        $stored = trim((string) SiteSetting::get(self::SCAN_API_URL_KEY, ''));
+
+        if ($stored !== '') {
+            return $stored;
+        }
+
+        return rtrim(self::SCAN_DEFAULT_BASE_URL, '/') . '/api/coupons';
     }
 
     public static function scanSyncUrl(): string
