@@ -16,19 +16,40 @@ final class GoogleAdsKeywordExport
         'Max CPC',
         'Final URL',
         'Status',
+        'EU political ads',
     ];
+
+    /** Campaign-level CSV so Editor can set EU political ads before location targeting. */
+    public const CAMPAIGN_HEADERS = [
+        'Campaign',
+        'Campaign Type',
+        'Campaign Status',
+        'Budget',
+        'Budget type',
+        'Bid Strategy Type',
+        'Networks',
+        'Languages',
+        'EU political ads',
+    ];
+
+    /** Coupon/search campaigns: declare no EU political advertising. */
+    public const EU_POLITICAL_ADS = 'No';
+
+    public const BUDGET_TYPE = 'Daily';
+
+    public const BID_STRATEGY_TYPE = 'Manual CPC';
 
     /** @var list<string> */
     public const MATCH_TYPES = ['Broad', 'Phrase', 'Exact'];
 
     /** @var list<string> */
-    public const AD_GROUP_MODES = ['single', 'brand_and_products'];
+    public const AD_GROUP_MODES = ['single', 'standard'];
 
     /** @var list<string> */
     public const STATUSES = ['Enabled', 'Paused'];
 
     /** @var list<string> */
-    public const CPC_CURRENCIES = ['USD', 'VND'];
+    public const CPC_CURRENCIES = ['VND', 'USD'];
 
     /** @var list<string> */
     public const TARGETING_TYPES = ['Location', 'Excluded location', 'Language', 'Network'];
@@ -56,12 +77,18 @@ final class GoogleAdsKeywordExport
      */
     public function defaultsForStore(Store $store): array
     {
-        $brand = trim($store->name);
-
         return array_merge($this->emptyDefaults(), [
-            'campaign_name' => $brand !== '' ? "{$brand} - Search Coupons" : 'Search Coupons',
+            'campaign_name' => $this->defaultCampaignName($store),
             'final_url' => $this->resolveFinalUrl($store),
         ]);
+    }
+
+    public function defaultCampaignName(Store $store, ?\DateTimeInterface $date = null): string
+    {
+        $brand = trim((string) $store->name);
+        $dateStr = ($date ?? now())->format('Y-m-d');
+
+        return $brand !== '' ? "{$brand} {$dateStr}" : $dateStr;
     }
 
     /**
@@ -89,14 +116,17 @@ final class GoogleAdsKeywordExport
     {
         return [
             'campaign_name' => '',
-            'ad_group_mode' => 'brand_and_products',
+            'ad_group_mode' => 'standard',
             'ad_group_name' => 'All Keywords',
             'brand_ad_group_suffix' => 'Brand',
             'match_type' => 'Phrase',
             'all_match_types' => false,
             'keyword_status' => 'Enabled',
+            'budget' => '250000',
+            'budget_type' => self::BUDGET_TYPE,
+            'bid_strategy_type' => self::BID_STRATEGY_TYPE,
             'max_cpc' => '',
-            'max_cpc_currency' => 'USD',
+            'max_cpc_currency' => 'VND',
             'final_url' => '',
             'target_locations' => ['United States'],
             'excluded_locations' => [],
@@ -151,16 +181,23 @@ final class GoogleAdsKeywordExport
     {
         $defaults = $this->defaultsForStore($store);
 
-        $campaignName = trim((string) ($input['campaign_name'] ?? $defaults['campaign_name']));
+        $campaignName = $this->defaultCampaignName($store);
         $adGroupMode = strtolower(trim((string) ($input['ad_group_mode'] ?? $defaults['ad_group_mode'])));
+        if ($adGroupMode === 'brand_and_products') {
+            $adGroupMode = 'standard';
+        }
         $adGroupName = trim((string) ($input['ad_group_name'] ?? $defaults['ad_group_name']));
         $brandSuffix = trim((string) ($input['brand_ad_group_suffix'] ?? $defaults['brand_ad_group_suffix']));
-        $matchType = $this->normalizeMatchType((string) ($input['match_type'] ?? $defaults['match_type']));
-        $allMatchTypes = filter_var($input['all_match_types'] ?? false, FILTER_VALIDATE_BOOL);
+        $matchType = 'Phrase';
+        $allMatchTypes = false;
         $status = $this->normalizeStatus((string) ($input['keyword_status'] ?? $defaults['keyword_status']));
         $targetingStatus = $this->normalizeStatus((string) ($input['targeting_status'] ?? $defaults['targeting_status']));
-        $maxCpc = $this->normalizeMaxCpc($input['max_cpc'] ?? '', $input['max_cpc_currency'] ?? 'USD');
-        $maxCpcCurrency = $this->normalizeMaxCpcCurrency((string) ($input['max_cpc_currency'] ?? 'USD'));
+        $maxCpc = $this->normalizeMaxCpc($input['max_cpc'] ?? '', $input['max_cpc_currency'] ?? 'VND');
+        $maxCpcCurrency = $this->normalizeMaxCpcCurrency((string) ($input['max_cpc_currency'] ?? 'VND'));
+        $budget = $this->normalizeBudget($input['budget'] ?? $defaults['budget'], $maxCpcCurrency);
+        if ($budget === '') {
+            $budget = $maxCpcCurrency === 'VND' ? '250000' : '10.00';
+        }
         $finalUrl = trim((string) ($input['final_url'] ?? $defaults['final_url']));
 
         if ($finalUrl === '') {
@@ -168,7 +205,7 @@ final class GoogleAdsKeywordExport
         }
 
         return [
-            'campaign_name' => $campaignName !== '' ? $campaignName : $defaults['campaign_name'],
+            'campaign_name' => $campaignName,
             'ad_group_mode' => in_array($adGroupMode, self::AD_GROUP_MODES, true)
                 ? $adGroupMode
                 : $defaults['ad_group_mode'],
@@ -177,6 +214,9 @@ final class GoogleAdsKeywordExport
             'match_type' => $matchType,
             'all_match_types' => $allMatchTypes,
             'keyword_status' => $status,
+            'budget' => $budget,
+            'budget_type' => self::BUDGET_TYPE,
+            'bid_strategy_type' => self::BID_STRATEGY_TYPE,
             'max_cpc' => $maxCpc,
             'max_cpc_currency' => $maxCpcCurrency,
             'final_url' => $finalUrl,
@@ -249,6 +289,7 @@ final class GoogleAdsKeywordExport
                 $row['Max CPC'],
                 $row['Final URL'],
                 $row['Status'],
+                $row['EU political ads'] ?? self::EU_POLITICAL_ADS,
             ]);
         }
 
@@ -271,6 +312,61 @@ final class GoogleAdsKeywordExport
         $slug = Str::slug($store->name) ?: 'store';
 
         return "google-ads-assets-{$slug}.csv";
+    }
+
+    public function campaignDownloadFilename(Store $store): string
+    {
+        $slug = Str::slug($store->name) ?: 'store';
+
+        return "google-ads-campaign-{$slug}.csv";
+    }
+
+    /**
+     * Campaign settings CSV for Google Ads Editor (budget + EU political ads declaration).
+     *
+     * @param  array<string, mixed>  $settings
+     */
+    public function toCampaignCsv(array $settings): string
+    {
+        $handle = fopen('php://temp', 'r+');
+
+        if ($handle === false) {
+            return '';
+        }
+
+        $campaignName = trim((string) ($settings['campaign_name'] ?? ''));
+        $status = (string) ($settings['keyword_status'] ?? 'Enabled');
+        if (! in_array($status, self::STATUSES, true)) {
+            $status = 'Enabled';
+        }
+
+        $budget = trim((string) ($settings['budget'] ?? ''));
+        if ($budget === '') {
+            $currency = $this->normalizeMaxCpcCurrency((string) ($settings['max_cpc_currency'] ?? 'VND'));
+            $budget = $currency === 'VND' ? '250000' : '10.00';
+        }
+
+        fwrite($handle, "\xEF\xBB\xBF");
+        fputcsv($handle, self::CAMPAIGN_HEADERS);
+        fputcsv($handle, [
+            $campaignName,
+            'Search',
+            $status,
+            $budget,
+            self::BUDGET_TYPE,
+            self::BID_STRATEGY_TYPE,
+            GoogleAdsTargetingCatalog::networksCsv($settings),
+            GoogleAdsTargetingCatalog::languageCodesCsv(
+                is_array($settings['languages'] ?? null) ? $settings['languages'] : []
+            ),
+            self::EU_POLITICAL_ADS,
+        ]);
+
+        rewind($handle);
+        $csv = stream_get_contents($handle);
+        fclose($handle);
+
+        return is_string($csv) ? $csv : '';
     }
 
     /** @var list<string> */
@@ -334,23 +430,23 @@ final class GoogleAdsKeywordExport
         return "google-ads-targeting-{$slug}.csv";
     }
 
-    /** @var list<string> */
+    /** @var list<string> Google Ads Editor location import columns. */
     public const TARGETING_HEADERS = [
         'Campaign',
+        'Location',
         'Type',
-        'Value',
-        'Bid adjustment',
-        'Status',
     ];
 
     /**
+     * Location targeting CSV for Google Ads Editor.
+     * Languages/networks belong on Campaign CSV — Editor rejects mixed Type/Value rows.
+     *
      * @param  array<string, mixed>  $settings
      */
     public function toTargetingCsv(array $settings, Store $store): string
     {
         $settings = $this->normalizeSettings($settings, $store);
         $campaign = $settings['campaign_name'];
-        $status = $settings['targeting_status'];
 
         $handle = fopen('php://temp', 'r+');
 
@@ -362,21 +458,11 @@ final class GoogleAdsKeywordExport
         fputcsv($handle, self::TARGETING_HEADERS);
 
         foreach ($settings['target_locations'] as $location) {
-            fputcsv($handle, [$campaign, 'Location', $location, '', $status]);
+            fputcsv($handle, [$campaign, $location, '']);
         }
 
         foreach ($settings['excluded_locations'] as $location) {
-            fputcsv($handle, [$campaign, 'Excluded location', $location, '', $status]);
-        }
-
-        foreach ($settings['languages'] as $language) {
-            fputcsv($handle, [$campaign, 'Language', $language, '', $status]);
-        }
-
-        foreach (GoogleAdsTargetingCatalog::NETWORKS as $key => $label) {
-            if (! empty($settings[$key])) {
-                fputcsv($handle, [$campaign, 'Network', $label, '', $status]);
-            }
+            fputcsv($handle, [$campaign, $location, 'Negative']);
         }
 
         rewind($handle);
@@ -410,6 +496,7 @@ final class GoogleAdsKeywordExport
                 'Max CPC' => $maxCpc,
                 'Final URL' => $finalUrl,
                 'Status' => $status,
+                'EU political ads' => self::EU_POLITICAL_ADS,
             ];
         }
 
@@ -425,8 +512,9 @@ final class GoogleAdsKeywordExport
             return $settings['ad_group_name'];
         }
 
+        // Legacy product-keyword export: brand group + one group per product.
         if ($product === null) {
-            return trim($brandLabel.' - '.$settings['brand_ad_group_suffix']);
+            return trim($brandLabel.' - '.($settings['brand_ad_group_suffix'] ?: 'Brand'));
         }
 
         return trim($brandLabel.' - '.Str::title($product));
@@ -466,11 +554,22 @@ final class GoogleAdsKeywordExport
         return number_format((float) $normalized, 2, '.', '');
     }
 
+    private function normalizeBudget(mixed $value, mixed $currency = 'USD'): string
+    {
+        $normalized = $this->normalizeMaxCpc($value, $currency);
+
+        if ($normalized === '' || (float) $normalized <= 0) {
+            return '';
+        }
+
+        return $normalized;
+    }
+
     private function normalizeMaxCpcCurrency(string $value): string
     {
         $value = strtoupper(trim($value));
 
-        return in_array($value, self::CPC_CURRENCIES, true) ? $value : 'USD';
+        return in_array($value, self::CPC_CURRENCIES, true) ? $value : 'VND';
     }
 
     /**
@@ -517,7 +616,7 @@ final class GoogleAdsKeywordExport
         }
 
         if (in_array('All languages', $normalized, true)) {
-            return ['All languages'];
+            return GoogleAdsTargetingCatalog::concreteLanguages();
         }
 
         $allowed = GoogleAdsTargetingCatalog::concreteLanguages();

@@ -11,58 +11,69 @@
     <h2>Languages and Target Settings</h2>
     <p class="form-hint" style="margin-bottom:1rem;">
         Per-store geo and language targeting for Google Ads Editor. Saved with each keyword set.
+        Tick multiple items in each list.
     </p>
 
     <div class="keyword-ads-grid">
         <div class="form-group">
             <div class="keyword-multi-toolbar">
-                <label for="target_locations">Target locations</label>
+                <label for="target_locations_filter">Target locations</label>
                 <span class="keyword-multi-actions">
                     <button type="button" class="keyword-multi-action" data-action="all" data-target="target_locations">Select all</button>
                     <button type="button" class="keyword-multi-action" data-action="clear" data-target="target_locations">Clear</button>
                 </span>
             </div>
-            <input type="search" class="keyword-multi-filter" data-target="target_locations" placeholder="Filter countries…" autocomplete="off">
-            <select id="target_locations" name="target_locations[]" multiple size="10" class="keyword-multi-select">
+            <input type="search" id="target_locations_filter" class="keyword-multi-filter" data-target="target_locations" placeholder="Filter countries…" autocomplete="off">
+            <div id="target_locations" class="keyword-multi-box" data-multi-name="target_locations" role="group" aria-label="Target locations">
                 @foreach(GoogleAdsTargetingCatalog::LOCATIONS as $location)
-                    <option value="{{ $location }}" @selected(in_array($location, $selectedTargets, true))>{{ $location }}</option>
+                    <label class="keyword-multi-option" data-label="{{ strtolower($location) }}">
+                        <input type="checkbox" name="target_locations[]" value="{{ $location }}"
+                            @checked(in_array($location, $selectedTargets, true))>
+                        <span>{{ $location }}</span>
+                    </label>
                 @endforeach
-            </select>
-            <p class="form-hint">Ctrl/Cmd + click for multiple. Use filter or Select all for long lists.</p>
+            </div>
         </div>
 
         <div class="form-group">
             <div class="keyword-multi-toolbar">
-                <label for="excluded_locations">Excluded locations (optional)</label>
+                <label for="excluded_locations_filter">Excluded locations (optional)</label>
                 <span class="keyword-multi-actions">
                     <button type="button" class="keyword-multi-action" data-action="all" data-target="excluded_locations">Select all</button>
                     <button type="button" class="keyword-multi-action" data-action="clear" data-target="excluded_locations">Clear</button>
                 </span>
             </div>
-            <input type="search" class="keyword-multi-filter" data-target="excluded_locations" placeholder="Filter countries…" autocomplete="off">
-            <select id="excluded_locations" name="excluded_locations[]" multiple size="10" class="keyword-multi-select">
+            <input type="search" id="excluded_locations_filter" class="keyword-multi-filter" data-target="excluded_locations" placeholder="Filter countries…" autocomplete="off">
+            <div id="excluded_locations" class="keyword-multi-box" data-multi-name="excluded_locations" role="group" aria-label="Excluded locations">
                 @foreach(GoogleAdsTargetingCatalog::LOCATIONS as $location)
-                    <option value="{{ $location }}" @selected(in_array($location, $selectedExcluded, true))>{{ $location }}</option>
+                    <label class="keyword-multi-option" data-label="{{ strtolower($location) }}">
+                        <input type="checkbox" name="excluded_locations[]" value="{{ $location }}"
+                            @checked(in_array($location, $selectedExcluded, true))>
+                        <span>{{ $location }}</span>
+                    </label>
                 @endforeach
-            </select>
+            </div>
         </div>
 
         <div class="form-group">
             <div class="keyword-multi-toolbar">
-                <label for="languages">Languages</label>
+                <label for="languages_filter">Languages</label>
                 <span class="keyword-multi-actions">
                     <button type="button" class="keyword-multi-action" data-action="all-languages" data-target="languages">All languages</button>
-                    <button type="button" class="keyword-multi-action" data-action="each-language" data-target="languages">Each language</button>
                     <button type="button" class="keyword-multi-action" data-action="clear" data-target="languages">Clear</button>
                 </span>
             </div>
-            <input type="search" class="keyword-multi-filter" data-target="languages" placeholder="Filter languages…" autocomplete="off">
-            <select id="languages" name="languages[]" multiple size="10" class="keyword-multi-select">
-                @foreach(GoogleAdsTargetingCatalog::LANGUAGES as $language)
-                    <option value="{{ $language }}" @selected(in_array($language, $selectedLanguages, true))>{{ $language }}</option>
+            <input type="search" id="languages_filter" class="keyword-multi-filter" data-target="languages" placeholder="Filter languages…" autocomplete="off">
+            <div id="languages" class="keyword-multi-box" data-multi-name="languages" role="group" aria-label="Languages">
+                @foreach(GoogleAdsTargetingCatalog::concreteLanguages() as $language)
+                    <label class="keyword-multi-option" data-label="{{ strtolower($language) }}">
+                        <input type="checkbox" name="languages[]" value="{{ $language }}"
+                            @checked(in_array($language, $selectedLanguages, true) || in_array('All languages', $selectedLanguages, true))>
+                        <span>{{ $language }}</span>
+                    </label>
                 @endforeach
-            </select>
-            <p class="form-hint"><strong>All languages</strong> = one Google Ads target for every language. <strong>Each language</strong> = one row per language in CSV.</p>
+            </div>
+            <p class="form-hint"><strong>All languages</strong> selects every language in the list. Clear to reset.</p>
         </div>
 
         <div class="form-group">

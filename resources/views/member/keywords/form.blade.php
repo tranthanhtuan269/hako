@@ -5,7 +5,8 @@
 @section('content')
 <h1 style="margin-bottom:.5rem;">Keyword Generator</h1>
 <p style="color:var(--muted);margin-bottom:1.5rem;">
-    Part of <strong>Google Ads Builder</strong> — generate keywords per store and export CSV for Google Ads Editor.
+    Part of <strong>Google Ads Builder</strong> — generate a standard
+    Coupons / Discounts / Promo campaign (with RSA) and export CSV for Google Ads Editor.
     Global sitelinks and callouts are managed in
     @if(auth()->user()->isAdmin())
         <a href="{{ route('admin.ads-settings.index') }}">Ads Settings</a>.
@@ -43,37 +44,6 @@
         </div>
     </div>
 
-    <div class="import-card">
-        <div class="import-card-header">
-            <h2>Bestselling Products</h2>
-            <button type="button" class="btn btn-outline btn-sm" id="add-product-btn">+ Add product</button>
-        </div>
-        <p class="form-hint" style="margin-bottom:1rem;">Optional. Each product adds {{ count($engine->productTemplates()) }} keyword phrases.</p>
-        <div id="product-list">
-            @php
-                $productRows = $products ?? old('products', ['']);
-                if ($productRows === []) {
-                    $productRows = [''];
-                }
-            @endphp
-            @foreach($productRows as $index => $productName)
-                <div class="product-row" data-index="{{ $index }}">
-                    <div class="form-group" style="margin-bottom:.75rem;">
-                        <label>Product {{ $index + 1 }}</label>
-                        <div class="import-detect-row">
-                            <input type="text" name="products[]" value="{{ $productName }}" maxlength="120" placeholder="e.g. SSD, power bank, USB hub">
-                            @if($index > 0)
-                                <button type="button" class="btn btn-outline btn-sm remove-product-btn">Remove</button>
-                            @endif
-                        </div>
-                    </div>
-                </div>
-            @endforeach
-        </div>
-        @error('products')<p class="form-error">{{ $message }}</p>@enderror
-        @error('products.*')<p class="form-error">{{ $message }}</p>@enderror
-    </div>
-
     @include('member.keywords.partials.ads-settings', [
         'adsExport' => $adsExport,
         'adsSettings' => $adsSettings ?? null,
@@ -85,59 +55,52 @@
         'adsSettings' => $adsSettings ?? null,
         'selectedStore' => $selectedStore ?? null,
     ])
-
-    <div class="import-card">
-        <h2>Templates Used</h2>
-        <div class="keyword-templates-grid">
-            <div>
-                <h3 style="font-size:1rem;margin:0 0 .5rem;">Brand ({{ count($engine->brandTemplates()) }})</h3>
-                <ul class="keyword-template-list">
-                    @foreach($engine->brandTemplates() as $template)
-                        <li><code>{{ $template }}</code></li>
-                    @endforeach
-                </ul>
-            </div>
-            <div>
-                <h3 style="font-size:1rem;margin:0 0 .5rem;">Product ({{ count($engine->productTemplates()) }})</h3>
-                <ul class="keyword-template-list">
-                    @foreach($engine->productTemplates() as $template)
-                        <li><code>{{ $template }}</code></li>
-                    @endforeach
-                </ul>
-            </div>
-        </div>
-    </div>
-
-    <button type="submit" class="btn btn-primary">Generate keywords</button>
 </form>
 
-<div id="keyword-results-wrap">
-    @if(!empty($result))
-        @include('member.keywords.partials.results', [
-            'result' => $result,
-            'brandLabel' => $brandLabel,
-            'engine' => $engine,
-            'savedAt' => $savedAt ?? null,
-            'fromSaved' => $fromSaved ?? false,
-            'adsSettings' => $adsSettings ?? null,
-            'exportCsvUrl' => !empty($selectedStoreId) ? route('member.keywords.export-csv', ['store_id' => $selectedStoreId]) : null,
-            'exportAssetsCsvUrl' => !empty($selectedStoreId) ? route('member.keywords.export-assets-csv', ['store_id' => $selectedStoreId]) : null,
-            'exportTargetingCsvUrl' => !empty($selectedStoreId) ? route('member.keywords.export-targeting-csv', ['store_id' => $selectedStoreId]) : null,
-        ])
-    @endif
-</div>
+<form method="POST" action="{{ route('member.keywords.generate-standard') }}" id="standard-campaign-form" style="margin-top:1.5rem;">
+    @csrf
+    <input type="hidden" name="store_id" id="standard_store_id" value="{{ old('store_id', $selectedStoreId ?? '') }}">
 
-<template id="product-row-template">
-    <div class="product-row">
-        <div class="form-group" style="margin-bottom:.75rem;">
-            <label>Product</label>
-            <div class="import-detect-row">
-                <input type="text" name="products[]" value="" maxlength="120" placeholder="e.g. SSD, power bank">
-                <button type="button" class="btn btn-outline btn-sm remove-product-btn">Remove</button>
+    <div class="import-card">
+        <h2>Standard campaign (Coupons / Discounts / Promo)</h2>
+        <p class="form-hint" style="margin-bottom:1rem;">
+            Builds Phrase keywords + Responsive Search Ads from the “Chạy ADS Chuẩn” template.
+            Uses campaign name (store + today’s date), ad group structure, final URL, match type, CPC and targeting from the settings above.
+        </p>
+        <div class="keyword-ads-grid">
+            <div class="form-group">
+                <label for="discount_percent">Discount % for ad copy *</label>
+                <input type="number" id="discount_percent" name="discount_percent" min="1" max="90"
+                    value="{{ old('discount_percent', $suggestedDiscount ?? 40) }}" required>
+                <p class="form-hint">Suggested from store coupons when available. Used in headlines like “Get 40% Off {Store}”.</p>
+                @error('discount_percent')<p class="form-error">{{ $message }}</p>@enderror
             </div>
         </div>
+        <p class="form-hint" style="margin-bottom:1rem;">
+            Syncs campaign/final URL fields from the settings above when you generate. Select a store first.
+        </p>
+        <button type="submit" class="btn btn-primary" id="generate-standard-btn">Generate standard campaign + RSA</button>
     </div>
-</template>
+</form>
+
+<div id="keyword-results-wrap" hidden></div>
+
+<div id="standard-results-wrap">
+    @include('member.keywords.partials.standard-results', [
+        'standardCampaign' => $standardCampaign ?? null,
+        'brandLabel' => $brandLabel ?? null,
+        'exportCampaignUrl' => !empty($selectedStoreId) && !empty($standardCampaign)
+            ? route('member.keywords.export-campaign-csv', ['store_id' => $selectedStoreId]) : null,
+        'exportKeywordsUrl' => !empty($selectedStoreId) && !empty($standardCampaign)
+            ? route('member.keywords.export-standard-keywords-csv', ['store_id' => $selectedStoreId]) : null,
+        'exportAdsUrl' => !empty($selectedStoreId) && !empty($standardCampaign)
+            ? route('member.keywords.export-standard-ads-csv', ['store_id' => $selectedStoreId]) : null,
+        'exportAssetsCsvUrl' => !empty($selectedStoreId) && !empty($standardCampaign)
+            ? route('member.keywords.export-assets-csv', ['store_id' => $selectedStoreId]) : null,
+        'exportTargetingCsvUrl' => !empty($selectedStoreId) && !empty($standardCampaign)
+            ? route('member.keywords.export-targeting-csv', ['store_id' => $selectedStoreId]) : null,
+    ])
+</div>
 @endsection
 
 @push('styles')
@@ -226,6 +189,47 @@
     border-radius: 6px;
     background: #fff;
 }
+.keyword-multi-box {
+    width: 100%;
+    max-width: none;
+    max-height: 16rem;
+    overflow-y: auto;
+    padding: .35rem .45rem;
+    border: 1px solid var(--border, #e5e7eb);
+    border-radius: 8px;
+    background: #fff;
+    display: flex;
+    flex-direction: column;
+    gap: .1rem;
+}
+.keyword-multi-option {
+    display: flex;
+    align-items: center;
+    gap: .55rem;
+    margin: 0;
+    padding: .4rem .45rem;
+    border-radius: 6px;
+    font-weight: 400;
+    cursor: pointer;
+    user-select: none;
+}
+.keyword-multi-option:hover {
+    background: #f1f5f9;
+}
+.keyword-multi-option input {
+    width: 1.05rem;
+    height: 1.05rem;
+    max-width: none;
+    margin: 0;
+    flex-shrink: 0;
+    accent-color: var(--primary, #2563eb);
+}
+.keyword-multi-option span {
+    line-height: 1.3;
+}
+.keyword-multi-option[hidden] {
+    display: none !important;
+}
 .keyword-network-fieldset {
     border: 1px solid var(--border, #e5e7eb);
     border-radius: 8px;
@@ -292,39 +296,77 @@
 .keyword-ads-preview th {
     background: #f8fafc;
 }
+.keyword-cpc-group {
+    grid-column: 1 / -1;
+    max-width: 28rem;
+}
+.keyword-money-row {
+    grid-column: 1 / -1;
+}
+.keyword-money-fields {
+    display: grid;
+    grid-template-columns: minmax(10rem, 1fr) minmax(10rem, 1fr) auto;
+    gap: .85rem 1rem;
+    align-items: end;
+}
+.keyword-money-field,
+.keyword-money-currency {
+    min-width: 0;
+}
+.keyword-money-currency .keyword-cpc-currency {
+    min-width: 8.5rem;
+    width: 100%;
+    border-radius: 8px;
+    border: 1px solid var(--border, #e5e7eb);
+    padding: .7rem .75rem;
+    font: inherit;
+    font-size: 1rem;
+    background: #fff;
+}
+@media (max-width: 720px) {
+    .keyword-money-fields {
+        grid-template-columns: 1fr;
+    }
+}
 .keyword-cpc-field {
     display: flex;
     align-items: stretch;
     width: 100%;
     gap: 0;
+    min-height: 2.75rem;
 }
 .keyword-cpc-symbol {
     display: flex;
     align-items: center;
     justify-content: center;
-    min-width: 2.5rem;
-    padding: 0 .65rem;
+    min-width: 3rem;
+    padding: 0 .75rem;
     border: 1px solid var(--border, #e5e7eb);
     border-right: 0;
     border-radius: 8px 0 0 8px;
     background: #f8fafc;
     color: #475569;
     font-weight: 600;
-    font-size: .95rem;
+    font-size: 1.05rem;
 }
 .keyword-cpc-field input {
     flex: 1;
-    min-width: 0;
-    border-radius: 0;
+    min-width: 8rem;
+    padding: .7rem .9rem;
+    font-size: 1.05rem;
+    border-radius: 0 8px 8px 0;
     border-left: 0;
-    border-right: 0;
+}
+.keyword-money-field .keyword-cpc-field input {
+    border-right: 1px solid var(--border, #e5e7eb);
 }
 .keyword-cpc-currency {
-    min-width: 7.5rem;
+    min-width: 8.5rem;
     border: 1px solid var(--border, #e5e7eb);
     border-radius: 0 8px 8px 0;
-    padding: .45rem .55rem;
+    padding: .55rem .75rem;
     font: inherit;
+    font-size: 1rem;
     background: #fff;
 }
 .admin-search-field { position: relative; width: 100%; }
@@ -389,9 +431,6 @@
 @push('scripts')
 <script>
 (function () {
-    const list = document.getElementById('product-list');
-    const tpl = document.getElementById('product-row-template');
-    const addBtn = document.getElementById('add-product-btn');
     const storeIdInput = document.getElementById('store_id');
     const storeSearchInput = document.getElementById('store_search');
     const storeCombobox = document.querySelector('[data-store-combobox]');
@@ -399,56 +438,75 @@
     const storeComboboxClear = document.querySelector('[data-store-combobox-clear]');
     const stores = @json($stores->map(fn ($store) => ['id' => $store->id, 'name' => $store->name])->values());
     const loadStatus = document.getElementById('store-load-status');
-    const resultsWrap = document.getElementById('keyword-results-wrap');
     const loadUrl = @json(route('member.keywords.load'));
     const exportCsvBaseUrl = @json(route('member.keywords.export-csv'));
     const exportAssetsCsvBaseUrl = @json(route('member.keywords.export-assets-csv'));
     const exportTargetingCsvBaseUrl = @json(route('member.keywords.export-targeting-csv'));
     const csrf = document.querySelector('meta[name="csrf-token"]')?.content || '';
     const allLanguagesValue = @json('All languages');
+    const standardResultsWrap = document.getElementById('standard-results-wrap');
+    const standardStoreIdInput = document.getElementById('standard_store_id');
+    const discountPercentInput = document.getElementById('discount_percent');
+    const standardForm = document.getElementById('standard-campaign-form');
 
     function toggleAdGroupFields() {
         const mode = document.getElementById('ad_group_mode')?.value;
         const singleWrap = document.getElementById('single-ad-group-wrap');
-        const brandWrap = document.getElementById('brand-ad-group-wrap');
-        const isSingle = mode === 'single';
-        if (singleWrap) singleWrap.hidden = !isSingle;
-        if (brandWrap) brandWrap.hidden = isSingle;
+        if (singleWrap) singleWrap.hidden = mode !== 'single';
+    }
+
+    function campaignNameForStore(storeName) {
+        const today = @json(now()->format('Y-m-d'));
+        const name = (storeName || '').trim();
+        return name ? `${name} ${today}` : today;
+    }
+
+    function syncCampaignName(storeName) {
+        const el = document.getElementById('campaign_name');
+        if (el) el.value = campaignNameForStore(storeName);
     }
 
     function setMultiSelect(id, values) {
-        const el = document.getElementById(id);
-        if (!el || !Array.isArray(values)) return;
+        const box = document.getElementById(id);
+        if (!box || !Array.isArray(values)) return;
+
+        const selectAllLanguages = id === 'languages' && values.includes(allLanguagesValue);
         const selected = new Set(values);
-        Array.from(el.options).forEach((opt) => {
-            opt.selected = selected.has(opt.value);
+
+        box.querySelectorAll('input[type="checkbox"]').forEach((input) => {
+            input.checked = selectAllLanguages || selected.has(input.value);
         });
     }
 
     function selectedTargetLocations() {
-        const target = document.getElementById('target_locations');
-        if (!target) return new Set();
+        const box = document.getElementById('target_locations');
+        if (!box) return new Set();
 
-        return new Set(Array.from(target.selectedOptions).map((opt) => opt.value));
+        return new Set(
+            Array.from(box.querySelectorAll('input[type="checkbox"]:checked')).map((input) => input.value)
+        );
     }
 
     function applyExcludedLocationVisibility() {
-        const excluded = document.getElementById('excluded_locations');
-        if (!excluded) return;
+        const box = document.getElementById('excluded_locations');
+        if (!box) return;
 
         const targeted = selectedTargetLocations();
         const filterInput = document.querySelector('.keyword-multi-filter[data-target="excluded_locations"]');
         const q = filterInput?.value.trim().toLowerCase() || '';
 
-        Array.from(excluded.options).forEach((opt) => {
-            if (targeted.has(opt.value)) {
-                opt.selected = false;
-                opt.hidden = true;
+        box.querySelectorAll('.keyword-multi-option').forEach((option) => {
+            const input = option.querySelector('input[type="checkbox"]');
+            if (!input) return;
 
+            if (targeted.has(input.value)) {
+                input.checked = false;
+                option.hidden = true;
                 return;
             }
 
-            opt.hidden = q !== '' && !opt.text.toLowerCase().includes(q);
+            const label = option.dataset.label || '';
+            option.hidden = q !== '' && !label.includes(q);
         });
     }
 
@@ -457,42 +515,37 @@
             input.addEventListener('input', () => {
                 if (input.dataset.target === 'excluded_locations') {
                     applyExcludedLocationVisibility();
-
                     return;
                 }
 
-                const sel = document.getElementById(input.dataset.target);
-                if (!sel) return;
+                const box = document.getElementById(input.dataset.target);
+                if (!box) return;
                 const q = input.value.trim().toLowerCase();
-                Array.from(sel.options).forEach((opt) => {
-                    opt.hidden = q !== '' && !opt.text.toLowerCase().includes(q);
+                box.querySelectorAll('.keyword-multi-option').forEach((option) => {
+                    const label = option.dataset.label || '';
+                    option.hidden = q !== '' && !label.includes(q);
                 });
             });
         });
 
         document.querySelectorAll('.keyword-multi-action').forEach((btn) => {
             btn.addEventListener('click', () => {
-                const sel = document.getElementById(btn.dataset.target);
-                if (!sel) return;
+                const box = document.getElementById(btn.dataset.target);
+                if (!box) return;
                 const action = btn.dataset.action;
 
-                Array.from(sel.options).forEach((opt) => {
-                    if (action === 'all') {
-                        if (sel.id === 'excluded_locations') {
-                            opt.selected = !opt.hidden;
-                        } else {
-                            opt.selected = true;
-                        }
+                box.querySelectorAll('.keyword-multi-option').forEach((option) => {
+                    const input = option.querySelector('input[type="checkbox"]');
+                    if (!input) return;
+
+                    if (action === 'all' || action === 'all-languages') {
+                        input.checked = !option.hidden;
                     } else if (action === 'clear') {
-                        opt.selected = false;
-                    } else if (action === 'all-languages') {
-                        opt.selected = opt.value === allLanguagesValue;
-                    } else if (action === 'each-language') {
-                        opt.selected = opt.value !== allLanguagesValue;
+                        input.checked = false;
                     }
                 });
 
-                if (sel.id === 'target_locations') {
+                if (box.id === 'target_locations') {
                     applyExcludedLocationVisibility();
                 }
             });
@@ -506,12 +559,10 @@
     function applyAdsSettings(settings) {
         if (!settings) return;
         const map = {
-            campaign_name: 'campaign_name',
             ad_group_mode: 'ad_group_mode',
             ad_group_name: 'ad_group_name',
-            brand_ad_group_suffix: 'brand_ad_group_suffix',
-            match_type: 'match_type',
             keyword_status: 'keyword_status',
+            budget: 'budget',
             max_cpc: 'max_cpc',
             max_cpc_currency: 'max_cpc_currency',
             final_url: 'final_url',
@@ -520,9 +571,17 @@
         Object.entries(map).forEach(([key, id]) => {
             const el = document.getElementById(id);
             if (el && settings[key] !== undefined && settings[key] !== null) {
-                el.value = settings[key];
+                let value = settings[key];
+                if (key === 'ad_group_mode' && value === 'brand_and_products') {
+                    value = 'standard';
+                }
+                el.value = value;
             }
         });
+        // Always refresh campaign name to store + today's date.
+        syncCampaignName(storeSearchInput?.value || '');
+        const matchType = document.getElementById('match_type');
+        if (matchType) matchType.value = 'Phrase';
         setMultiSelect('target_locations', settings.target_locations);
         setMultiSelect('excluded_locations', settings.excluded_locations);
         setMultiSelect('languages', settings.languages);
@@ -531,8 +590,6 @@
             const el = document.querySelector(`input[name="${name}"][type="checkbox"]`);
             if (el) el.checked = !!settings[name];
         });
-        const allMatch = document.querySelector('input[name="all_match_types"]');
-        if (allMatch) allMatch.checked = !!settings.all_match_types;
         toggleAdGroupFields();
         syncMaxCpcCurrencyUi();
     }
@@ -540,13 +597,22 @@
     function syncMaxCpcCurrencyUi() {
         const currency = document.getElementById('max_cpc_currency');
         const symbol = document.getElementById('max_cpc_symbol');
+        const budgetSymbol = document.getElementById('budget_symbol');
         const input = document.getElementById('max_cpc');
-        if (!currency || !symbol || !input) return;
+        const budget = document.getElementById('budget');
+        if (!currency) return;
 
         const isVnd = currency.value === 'VND';
-        symbol.textContent = isVnd ? '₫' : '$';
-        input.placeholder = isVnd ? '25000' : '1.50';
-        input.inputMode = isVnd ? 'numeric' : 'decimal';
+        if (symbol) symbol.textContent = isVnd ? '₫' : '$';
+        if (budgetSymbol) budgetSymbol.textContent = isVnd ? '₫' : '$';
+        if (input) {
+            input.placeholder = isVnd ? '25000' : '1.50';
+            input.inputMode = isVnd ? 'numeric' : 'decimal';
+        }
+        if (budget) {
+            budget.placeholder = isVnd ? '250000' : '10.00';
+            budget.inputMode = isVnd ? 'numeric' : 'decimal';
+        }
     }
 
     function bindMaxCpcCurrencyUi() {
@@ -580,75 +646,19 @@
         });
     }
 
-    function renumberLabels() {
-        list.querySelectorAll('.product-row').forEach((row, i) => {
-            const label = row.querySelector('label');
-            if (label) label.textContent = 'Product ' + (i + 1);
-        });
-    }
-
-    function bindResultActions(scope) {
-        const root = scope || document;
-        const copyBtn = root.querySelector('.copy-all-btn');
-        const downloadBtn = root.querySelector('.download-txt-btn');
-        const exportArea = root.querySelector('.keywords-export');
-
-        copyBtn?.addEventListener('click', async () => {
-            if (!exportArea) return;
-            try {
-                await navigator.clipboard.writeText(exportArea.value);
-                copyBtn.textContent = 'Copied!';
-                setTimeout(() => { copyBtn.textContent = 'Copy all'; }, 2000);
-            } catch (_) {
-                exportArea.select();
-                document.execCommand('copy');
-            }
-        });
-
-        downloadBtn?.addEventListener('click', (e) => {
-            e.preventDefault();
-            if (!exportArea) return;
-            const blob = new Blob([exportArea.value], { type: 'text/plain' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'keywords.txt';
-            a.click();
-            URL.revokeObjectURL(url);
-        });
-    }
-
-    function renderProducts(products) {
-        list.innerHTML = '';
-        const rows = (products && products.length) ? products : [''];
-
-        rows.forEach((name, index) => {
-            const row = document.createElement('div');
-            row.className = 'product-row';
-            row.innerHTML = `
-                <div class="form-group" style="margin-bottom:.75rem;">
-                    <label>Product ${index + 1}</label>
-                    <div class="import-detect-row">
-                        <input type="text" name="products[]" value="${String(name).replace(/"/g, '&quot;')}" maxlength="120" placeholder="e.g. SSD, power bank, USB hub">
-                        ${index > 0 ? '<button type="button" class="btn btn-outline btn-sm remove-product-btn">Remove</button>' : ''}
-                    </div>
-                </div>`;
-            list.appendChild(row);
-        });
-
-        renumberLabels();
-    }
-
     async function loadSavedKeywords(storeId) {
+        if (standardStoreIdInput) {
+            standardStoreIdInput.value = storeId || '';
+        }
+
         if (!storeId) {
             loadStatus.textContent = '';
-            resultsWrap.innerHTML = '';
-            renderProducts(['']);
+            if (standardResultsWrap) standardResultsWrap.innerHTML = '';
             updateExportCsvLink('');
             return;
         }
 
-        loadStatus.textContent = 'Loading saved keywords…';
+        loadStatus.textContent = 'Loading store settings…';
 
         try {
             const res = await fetch(`${loadUrl}?store_id=${encodeURIComponent(storeId)}`, {
@@ -657,28 +667,97 @@
             const data = await res.json();
 
             if (!data.ok) {
-                loadStatus.textContent = 'Could not load saved keywords.';
+                loadStatus.textContent = 'Could not load store settings.';
                 return;
             }
 
-            if (data.found) {
-                renderProducts(data.products);
-                applyAdsSettings(data.ads_settings);
-                resultsWrap.innerHTML = data.results_html;
-                bindResultActions(resultsWrap);
-                updateExportCsvLink(storeId);
-                loadStatus.textContent = `Saved set loaded (updated ${data.saved_at}).`;
-            } else {
-                renderProducts(['']);
-                applyAdsSettings(data.ads_settings);
-                resultsWrap.innerHTML = '';
-                updateExportCsvLink('');
-                loadStatus.textContent = 'No saved keywords for this store yet.';
+            if (discountPercentInput && data.suggested_discount) {
+                discountPercentInput.value = data.suggested_discount;
             }
+
+            if (standardResultsWrap) {
+                standardResultsWrap.innerHTML = data.standard_html || '';
+            }
+
+            applyAdsSettings(data.ads_settings);
+            updateExportCsvLink(data.found ? storeId : '');
+            loadStatus.textContent = data.found
+                ? `Saved campaign loaded (updated ${data.saved_at}).`
+                : 'No saved campaign for this store yet.';
         } catch (_) {
-            loadStatus.textContent = 'Could not load saved keywords.';
+            loadStatus.textContent = 'Could not load store settings.';
         }
     }
+
+    function copyAdsSettingsIntoStandardForm() {
+        if (!standardForm) return;
+
+        const fieldIds = [
+            'campaign_name', 'final_url', 'ad_group_mode', 'ad_group_name',
+            'match_type', 'keyword_status', 'budget', 'max_cpc', 'max_cpc_currency', 'targeting_status',
+        ];
+
+        fieldIds.forEach((id) => {
+            const source = document.getElementById(id);
+            if (!source) return;
+            let hidden = standardForm.querySelector(`input[name="${id}"]`);
+            if (!hidden) {
+                hidden = document.createElement('input');
+                hidden.type = 'hidden';
+                hidden.name = id;
+                standardForm.appendChild(hidden);
+            }
+            hidden.value = source.value;
+        });
+
+        ['network_search', 'network_search_partners', 'network_display'].forEach((name) => {
+            const source = document.querySelector(`#keyword-form input[name="${name}"][type="checkbox"]`);
+            let hidden = standardForm.querySelector(`input[name="${name}"]`);
+            if (!hidden) {
+                hidden = document.createElement('input');
+                hidden.type = 'hidden';
+                hidden.name = name;
+                standardForm.appendChild(hidden);
+            }
+            hidden.value = source && source.checked ? '1' : '0';
+        });
+
+        let allMatchHidden = standardForm.querySelector('input[name="all_match_types"]');
+        if (!allMatchHidden) {
+            allMatchHidden = document.createElement('input');
+            allMatchHidden.type = 'hidden';
+            allMatchHidden.name = 'all_match_types';
+            standardForm.appendChild(allMatchHidden);
+        }
+        allMatchHidden.value = '0';
+
+        ['target_locations', 'excluded_locations', 'languages'].forEach((name) => {
+            standardForm.querySelectorAll(`input[name="${name}[]"]`).forEach((el) => el.remove());
+            const box = document.getElementById(name);
+            if (!box) return;
+            box.querySelectorAll('input[type="checkbox"]:checked').forEach((input) => {
+                const hidden = document.createElement('input');
+                hidden.type = 'hidden';
+                hidden.name = `${name}[]`;
+                hidden.value = input.value;
+                standardForm.appendChild(hidden);
+            });
+        });
+
+        if (standardStoreIdInput) {
+            standardStoreIdInput.value = storeIdInput.value || '';
+        }
+    }
+
+    standardForm?.addEventListener('submit', function (event) {
+        if (!storeIdInput.value) {
+            event.preventDefault();
+            loadStatus.textContent = 'Select a store before generating the standard campaign.';
+            storeSearchInput?.focus();
+            return;
+        }
+        copyAdsSettingsIntoStandardForm();
+    });
 
     function syncStoreClearButton() {
         if (!storeComboboxClear) return;
@@ -732,6 +811,7 @@
         storeSearchInput.value = store.name;
         storeComboboxList.hidden = true;
         syncStoreClearButton();
+        syncCampaignName(store.name);
         loadSavedKeywords(store.id);
     }
 
@@ -740,6 +820,7 @@
         storeSearchInput.value = '';
         storeComboboxList.hidden = true;
         syncStoreClearButton();
+        syncCampaignName('');
         loadSavedKeywords('');
         storeSearchInput.focus();
     }
@@ -795,21 +876,6 @@
         });
     }
 
-    addBtn?.addEventListener('click', () => {
-        const node = tpl.content.cloneNode(true);
-        list.appendChild(node);
-        renumberLabels();
-    });
-
-    list?.addEventListener('click', (e) => {
-        if (!e.target.classList.contains('remove-product-btn')) return;
-        e.target.closest('.product-row')?.remove();
-        if (!list.querySelector('.product-row')) {
-            renderProducts(['']);
-        }
-        renumberLabels();
-    });
-
     bindStoreCombobox();
     bindTargetExcludedSync();
     bindMaxCpcCurrencyUi();
@@ -818,7 +884,6 @@
     bindMultiSelectTools();
     applyExcludedLocationVisibility();
     syncMaxCpcCurrencyUi();
-    bindResultActions(document);
     syncStoreClearButton();
     if (storeIdInput?.value) {
         updateExportCsvLink(storeIdInput.value);

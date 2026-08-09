@@ -27,7 +27,7 @@
         'admin.affiliate.*',
         'member.affiliate.*',
     );
-    $googleAdsOpen = request()->routeIs('member.keywords.*', 'admin.ads-settings.*');
+    $googleAdsOpen = $showGoogleAdsBuilder || request()->routeIs('member.keywords.*', 'admin.ads-settings.*');
 @endphp
 <nav class="sidebar-nav" aria-label="Dashboard menu">
     <div class="sidebar-nav-group">
@@ -186,7 +186,7 @@
                 'sectionOpen' => $googleAdsOpen,
             ])
                 <a href="{{ route('member.keywords.create') }}"
-                    @class(['sidebar-nav-sublink', 'active' => request()->routeIs('member.keywords.*')])>Keyword Generator</a>
+                    @class(['sidebar-nav-sublink', 'active' => request()->routeIs('member.keywords.*')])>Keyword &amp; Campaign Builder</a>
                 @if($isAdmin)
                     <a href="{{ route('admin.ads-settings.index') }}"
                         @class(['sidebar-nav-sublink', 'active' => request()->routeIs('admin.ads-settings.*')])>Ads Settings</a>

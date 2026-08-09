@@ -86,9 +86,16 @@ Route::middleware(['auth', 'noindex'])->prefix('dashboard')->name('member.')->gr
     Route::get('keywords', [KeywordGeneratorController::class, 'create'])->name('keywords.create');
     Route::get('keywords/load', [KeywordGeneratorController::class, 'load'])->name('keywords.load');
     Route::get('keywords/export-csv', [KeywordGeneratorController::class, 'exportCsv'])->name('keywords.export-csv');
+    Route::get('keywords/export-campaign-csv', [KeywordGeneratorController::class, 'exportCampaignCsv'])->name('keywords.export-campaign-csv');
     Route::get('keywords/export-assets-csv', [KeywordGeneratorController::class, 'exportAssetsCsv'])->name('keywords.export-assets-csv');
     Route::get('keywords/export-targeting-csv', [KeywordGeneratorController::class, 'exportTargetingCsv'])->name('keywords.export-targeting-csv');
+    Route::get('keywords/export-standard-keywords-csv', [KeywordGeneratorController::class, 'exportStandardKeywordsCsv'])->name('keywords.export-standard-keywords-csv');
+    Route::get('keywords/export-standard-ads-csv', [KeywordGeneratorController::class, 'exportStandardAdsCsv'])->name('keywords.export-standard-ads-csv');
+    Route::get('keywords/standard', function () {
+        return redirect()->route('member.keywords.create');
+    });
     Route::post('keywords', [KeywordGeneratorController::class, 'generate'])->name('keywords.generate');
+    Route::post('keywords/standard', [KeywordGeneratorController::class, 'generateStandard'])->name('keywords.generate-standard');
     Route::resource('stores', MemberStoreController::class)->except(['show']);
     Route::resource('coupons', MemberCouponController::class)->except(['show']);
     Route::resource('posts', MemberPostController::class)->except(['show']);

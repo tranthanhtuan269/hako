@@ -4,6 +4,7 @@ namespace Tests\Unit;
 
 use App\Models\Store;
 use App\Support\GoogleAdsKeywordExport;
+use App\Support\GoogleAdsTargetingCatalog;
 use App\Support\KeywordGenerationEngine;
 use PHPUnit\Framework\TestCase;
 
@@ -25,7 +26,7 @@ class GoogleAdsKeywordExportTest extends TestCase
         $rows = $exporter->rows($result, $settings, $store);
 
         $this->assertNotEmpty($rows);
-        $this->assertSame('MoveSpeed - Search Coupons', $rows[0]['Campaign']);
+        $this->assertSame('MoveSpeed '.now()->format('Y-m-d'), $rows[0]['Campaign']);
         $this->assertSame('MoveSpeed - Brand', $rows[0]['Ad Group']);
         $this->assertSame('movespeed coupon', $rows[0]['Keyword']);
         $this->assertSame('Phrase', $rows[0]['Criterion Type']);
@@ -37,7 +38,7 @@ class GoogleAdsKeywordExportTest extends TestCase
         $this->assertSame('movespeed ssd coupon', $productRows[0]['Keyword']);
     }
 
-    public function test_exports_all_match_types_when_enabled(): void
+    public function test_exports_phrase_match_only(): void
     {
         $engine = new KeywordGenerationEngine;
         $exporter = new GoogleAdsKeywordExport;
@@ -51,12 +52,13 @@ class GoogleAdsKeywordExportTest extends TestCase
         $settings = array_merge($exporter->defaultsForStore($store), [
             'ad_group_mode' => 'single',
             'all_match_types' => true,
+            'match_type' => 'Broad',
         ]);
 
         $rows = $exporter->rows($result, $settings, $store);
 
-        $this->assertCount(count($result['brand']) * 3, $rows);
-        $this->assertSame(['Broad', 'Phrase', 'Exact'], array_values(array_unique(array_column($rows, 'Criterion Type'))));
+        $this->assertCount(count($result['brand']), $rows);
+        $this->assertSame(['Phrase'], array_values(array_unique(array_column($rows, 'Criterion Type'))));
     }
 
     public function test_csv_includes_utf8_bom_and_headers(): void
@@ -95,24 +97,55 @@ class GoogleAdsKeywordExportTest extends TestCase
             'network_search' => true,
             'network_search_partners' => true,
             'network_display' => false,
+            'budget' => '20.00',
         ]);
 
         $csv = $exporter->toTargetingCsv($settings, $store);
 
         $this->assertStringStartsWith("\xEF\xBB\xBF", $csv);
-        $this->assertStringContainsString('Location', $csv);
+        $this->assertStringContainsString('Campaign,Location,Type', $csv);
         $this->assertStringContainsString('Germany', $csv);
-        $this->assertStringContainsString('Excluded location', $csv);
+        $this->assertStringContainsString('Austria', $csv);
         $this->assertStringContainsString('Switzerland', $csv);
-        $this->assertStringContainsString('Language', $csv);
-        $this->assertStringContainsString('German', $csv);
-        $this->assertStringContainsString('Network', $csv);
-        $this->assertStringContainsString('Google search', $csv);
-        $this->assertStringContainsString('Search partners', $csv);
-        $this->assertStringNotContainsString('Display Network', $csv);
+        $this->assertStringContainsString('Negative', $csv);
+        $this->assertStringNotContainsString('Language', $csv);
+        $this->assertStringNotContainsString('Network', $csv);
+
+        $campaignCsv = $exporter->toCampaignCsv($settings);
+        $this->assertStringContainsString('Networks', $campaignCsv);
+        $this->assertStringContainsString('Languages', $campaignCsv);
+        $this->assertStringContainsString('Google search;Search partners', $campaignCsv);
+        $this->assertStringContainsString('de;en', $campaignCsv);
+        $this->assertStringNotContainsString('Display Network', $campaignCsv);
     }
 
-    public function test_all_languages_normalizes_to_single_target(): void
+    public function test_campaign_csv_declares_no_eu_political_ads(): void
+    {
+        $exporter = new GoogleAdsKeywordExport;
+        $store = new Store([
+            'name' => 'Acme',
+            'slug' => 'acme',
+            'website' => 'https://acme.com',
+        ]);
+
+        $settings = array_merge($exporter->defaultsForStore($store), [
+            'budget' => '25.50',
+        ]);
+        $csv = $exporter->toCampaignCsv($settings);
+
+        $this->assertStringStartsWith("\xEF\xBB\xBF", $csv);
+        $this->assertStringContainsString('Campaign', $csv);
+        $this->assertStringContainsString('Campaign Type', $csv);
+        $this->assertStringContainsString('Search', $csv);
+        $this->assertStringContainsString('Budget', $csv);
+        $this->assertStringContainsString('25.50', $csv);
+        $this->assertStringContainsString('Daily', $csv);
+        $this->assertStringContainsString('Manual CPC', $csv);
+        $this->assertStringContainsString('EU political ads', $csv);
+        $this->assertStringContainsString('No', $csv);
+    }
+
+    public function test_all_languages_expands_to_every_concrete_language(): void
     {
         $exporter = new GoogleAdsKeywordExport;
 
@@ -123,14 +156,15 @@ class GoogleAdsKeywordExportTest extends TestCase
         ]);
 
         $settings = $exporter->normalizeSettings([
-            'languages' => ['All languages', 'English', 'German'],
+            'languages' => ['All languages', 'English'],
         ], $store);
 
-        $this->assertSame(['All languages'], $settings['languages']);
+        $this->assertSame(GoogleAdsTargetingCatalog::concreteLanguages(), $settings['languages']);
 
-        $csv = $exporter->toTargetingCsv($settings, $store);
-        $this->assertStringContainsString('All languages', $csv);
-        $this->assertSame(1, substr_count($csv, 'Language'));
+        $campaignCsv = $exporter->toCampaignCsv($settings);
+        $this->assertStringContainsString('Languages', $campaignCsv);
+        // All concrete languages selected => empty Languages cell (Editor default).
+        $this->assertSame('', GoogleAdsTargetingCatalog::languageCodesCsv($settings['languages']));
     }
 
     public function test_normalizes_max_cpc_by_currency(): void
