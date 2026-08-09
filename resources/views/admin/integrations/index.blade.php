@@ -5,39 +5,12 @@
 @section('content')
 <h1>Integrations</h1>
 <p class="form-hint" style="margin-bottom:1.25rem;">
-    Configure Scan API and Gemini AI. Settings are stored in the database per site.
+    Configure Gemini AI and site import settings. Settings are stored in the database per site.
 </p>
 
 <form action="{{ route('admin.integrations.update') }}" method="POST">
     @csrf
     @method('PUT')
-
-    <div class="integrations-section">
-        <h2>Scan API</h2>
-        <div class="form-group">
-            <label for="scan_api_url">Coupons API URL</label>
-            <input type="url" id="scan_api_url" name="scan_api_url" value="{{ old('scan_api_url', $scanApiUrl) }}" maxlength="500" placeholder="https://scan.thuoc360.com/api/coupons">
-            @error('scan_api_url')<p class="form-error">{{ $message }}</p>@enderror
-        </div>
-        <div class="form-group">
-            <label for="scan_affiliate_signups_api_url">Affiliate signups API URL</label>
-            <input type="url" id="scan_affiliate_signups_api_url" name="scan_affiliate_signups_api_url" value="{{ old('scan_affiliate_signups_api_url', $scanAffiliateSignupsApiUrl) }}" maxlength="500" placeholder="https://scan.thuoc360.com/api/affiliate-signups">
-            <p class="form-hint">Used by Admin → Affiliate Signups. Must end with <code>/api/affiliate-signups</code> (not <code>/api/coupons</code>). Leave empty for default.</p>
-            @error('scan_affiliate_signups_api_url')<p class="form-error">{{ $message }}</p>@enderror
-        </div>
-        <p class="form-hint">Coupon import/sync always uses <code>https://scan.thuoc360.com/api/coupons/import</code>.</p>
-        <div class="form-group">
-            <label for="scan_api_limit">API limit per request</label>
-            <input type="number" id="scan_api_limit" name="scan_api_limit" value="{{ old('scan_api_limit', $scanApiLimit) }}" min="1" max="200">
-            @error('scan_api_limit')<p class="form-error">{{ $message }}</p>@enderror
-        </div>
-        <div class="form-group">
-            <label for="scan_site">Scan site slug</label>
-            <input type="text" id="scan_site" name="scan_site" value="{{ old('scan_site', $scanSite !== '' ? $scanSite : $defaultScanSite) }}" maxlength="80" placeholder="{{ $defaultScanSite }}" pattern="[A-Za-z0-9_-]+">
-            <p class="form-hint">Site identifier sent to Scan API. Auto-detected from domain: <code>{{ $defaultScanSite }}</code> (current effective: <code>{{ $effectiveScanSite }}</code>).</p>
-            @error('scan_site')<p class="form-error">{{ $message }}</p>@enderror
-        </div>
-    </div>
 
     <div class="integrations-section">
         <h2>Gemini AI</h2>
