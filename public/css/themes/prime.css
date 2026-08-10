@@ -1,0 +1,1511 @@
+:root {
+    --primary: #2563eb;
+    --primary-dark: #1d4ed8;
+    --secondary: #0f172a;
+    --accent: #38bdf8;
+    --bg: #f3f8ff;
+    --card: #ffffff;
+    --text: #0f172a;
+    --muted: #6b7280;
+    --border: #e5e7eb;
+    --radius: 18px;
+    --shadow: 0 10px 30px rgba(37, 99, 235, 0.08);
+    --hero-from: #eff6ff;
+    --hero-to: #f8fbff;
+    --font-body: 'Inter', system-ui, -apple-system, sans-serif;
+    --font-heading: 'Inter', system-ui, -apple-system, sans-serif;
+    --pch-topbar: #0b1220;
+    --pch-feature-from: #38bdf8;
+    --pch-feature-to: #2563eb;
+    --pch-badge-bg: #e8f1ff;
+    --pch-badge-text: #1e40af;
+    --pch-hover: #38bdf8;
+}
+
+body.theme-prime {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-body);
+}
+
+body.theme-prime h1,
+body.theme-prime h2,
+body.theme-prime h3,
+body.theme-prime .section-title {
+    font-family: var(--font-heading);
+}
+
+/* Top trust bar */
+body.theme-prime .pch-topbar {
+    background: var(--pch-topbar);
+    color: rgba(255, 255, 255, 0.92);
+    font-size: 0.78rem;
+    font-weight: 500;
+    letter-spacing: 0.01em;
+    text-align: center;
+    padding: 0.55rem 1rem;
+}
+
+body.theme-prime .pch-topbar a {
+    color: #fff;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+}
+
+body.theme-prime .pch-topbar a:hover {
+    color: #bfdbfe;
+}
+
+/* Header — logo left, nav right, no search */
+body.theme-prime .site-header {
+    background: #fff;
+    border-bottom: 1px solid rgba(226, 232, 240, 0.9);
+    box-shadow: none;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+body.theme-prime .header-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.25rem;
+    padding: 0.95rem 1rem;
+    flex-wrap: nowrap;
+}
+
+body.theme-prime .header-inner > .search-form {
+    display: none;
+}
+
+body.theme-prime .site-brand {
+    color: var(--text);
+}
+
+body.theme-prime .site-brand-icon {
+    background: linear-gradient(135deg, var(--primary), var(--accent));
+    border-radius: 12px;
+}
+
+body.theme-prime .site-brand-text strong {
+    font-size: 1.2rem;
+    font-weight: 800;
+    color: var(--text);
+    letter-spacing: -0.02em;
+}
+
+body.theme-prime .site-brand-text small {
+    display: none;
+}
+
+body.theme-prime .main-nav {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 0.35rem 1.35rem;
+}
+
+body.theme-prime .main-nav a {
+    color: #4b5563;
+    font-weight: 500;
+    font-size: 0.95rem;
+    text-decoration: none !important;
+    transition: color 0.2s ease;
+}
+
+body.theme-prime .main-nav a:hover {
+    color: var(--pch-hover);
+}
+
+body.theme-prime .main-nav .nav-register {
+    background: var(--primary) !important;
+    color: #fff !important;
+    padding: 0.45rem 1rem;
+    border-radius: 999px;
+}
+
+body.theme-prime .main-nav .nav-register:hover {
+    background: var(--primary-dark) !important;
+}
+
+body.theme-prime .nav-toggle {
+    margin-left: auto;
+}
+
+/* Hero */
+body.theme-prime .pch-hero {
+    background:
+        radial-gradient(ellipse 80% 60% at 20% 0%, rgba(191, 219, 254, 0.55), transparent 55%),
+        linear-gradient(180deg, #f5f9ff 0%, #eef5ff 45%, #f7faff 100%);
+    padding: 3.25rem 0 2.5rem;
+    color: var(--text);
+}
+
+body.theme-prime .pch-hero-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.15fr) minmax(280px, 0.85fr);
+    gap: 2.5rem 3rem;
+    align-items: center;
+}
+
+body.theme-prime .pch-trust-badge {
+    display: inline-flex;
+    align-items: center;
+    background: var(--pch-badge-bg);
+    color: var(--pch-badge-text);
+    border: 1px solid #bfdbfe;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 0.4rem 0.9rem;
+    border-radius: 999px;
+    margin-bottom: 1.15rem;
+}
+
+body.theme-prime .pch-hero-copy h1 {
+    font-size: clamp(2rem, 4.2vw, 3.15rem);
+    font-weight: 800;
+    line-height: 1.12;
+    letter-spacing: -0.03em;
+    color: var(--text);
+    margin: 0 0 1rem;
+    max-width: 16ch;
+}
+
+body.theme-prime .pch-hero-subtitle {
+    color: var(--muted);
+    font-size: 1.05rem;
+    line-height: 1.65;
+    max-width: 36rem;
+    margin: 0 0 0.85rem;
+}
+
+body.theme-prime .pch-disclosure {
+    color: #94a3b8;
+    font-size: 0.85rem;
+    margin: 0 0 1.5rem;
+}
+
+body.theme-prime .pch-disclosure a {
+    color: #64748b;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+}
+
+body.theme-prime .pch-disclosure a:hover {
+    color: var(--primary);
+}
+
+body.theme-prime .pch-hero-search {
+    max-width: 520px;
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 999px;
+    padding: 0.35rem 0.35rem 0.35rem 1.15rem;
+    box-shadow: 0 12px 32px rgba(15, 23, 42, 0.08);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+body.theme-prime .pch-hero-search input {
+    border: none;
+    background: transparent;
+    box-shadow: none;
+    flex: 1;
+    min-width: 0;
+    padding: 0.75rem 0;
+    font-size: 0.98rem;
+    color: var(--text);
+}
+
+body.theme-prime .pch-hero-search input:focus {
+    outline: none;
+}
+
+body.theme-prime .pch-hero-search input::placeholder {
+    color: #94a3b8;
+}
+
+body.theme-prime .pch-hero-search button {
+    border: none;
+    border-radius: 999px;
+    background: var(--primary);
+    color: #fff;
+    font-weight: 700;
+    font-size: 0.82rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    padding: 0.85rem 1.35rem;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+body.theme-prime .pch-hero-search button:hover {
+    background: var(--primary-dark);
+}
+
+/* Feature card carousel */
+body.theme-prime .pch-feature {
+    position: relative;
+    background: linear-gradient(145deg, var(--pch-feature-from) 0%, var(--pch-feature-to) 100%);
+    border-radius: 28px;
+    min-height: 280px;
+    padding: 2.25rem 2rem 3rem;
+    color: #fff;
+    box-shadow: 0 24px 48px rgba(37, 99, 235, 0.28);
+    overflow: hidden;
+}
+
+body.theme-prime .pch-feature::after {
+    content: '';
+    position: absolute;
+    inset: auto -20% -40% auto;
+    width: 220px;
+    height: 220px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.12);
+    pointer-events: none;
+}
+
+body.theme-prime .pch-feature-eyebrow {
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    opacity: 0.85;
+    margin: 0 0 0.85rem;
+}
+
+body.theme-prime .pch-feature-title {
+    font-size: clamp(2.2rem, 4vw, 3rem);
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    margin: 0 0 0.85rem;
+    color: #fff;
+}
+
+body.theme-prime .pch-feature-body {
+    font-size: 1.05rem;
+    line-height: 1.55;
+    max-width: 22rem;
+    opacity: 0.95;
+    margin: 0;
+}
+
+body.theme-prime .pch-feature-dots {
+    position: absolute;
+    right: 1.5rem;
+    bottom: 1.35rem;
+    display: flex;
+    gap: 0.45rem;
+    z-index: 1;
+}
+
+body.theme-prime .pch-feature-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 999px;
+    border: none;
+    padding: 0;
+    background: rgba(255, 255, 255, 0.4);
+    cursor: pointer;
+}
+
+body.theme-prime .pch-feature-dot.is-active {
+    background: #fff;
+    width: 22px;
+}
+
+/* Stats row */
+body.theme-prime .pch-stats {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 1rem;
+    margin-top: 2.25rem;
+}
+
+body.theme-prime .pch-stat-card {
+    background: #fff;
+    border: 1px solid rgba(226, 232, 240, 0.9);
+    border-radius: 18px;
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.05);
+    padding: 1.15rem 1.25rem;
+    text-align: left;
+}
+
+body.theme-prime .pch-stat-card strong {
+    display: block;
+    font-size: 1.55rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    color: var(--text);
+    line-height: 1.2;
+}
+
+body.theme-prime .pch-stat-card span {
+    display: block;
+    margin-top: 0.35rem;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--muted);
+}
+
+/* Sections under hero */
+body.theme-prime .section {
+    padding-top: 2.75rem;
+    padding-bottom: 2.75rem;
+}
+
+body.theme-prime .section-title {
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    color: var(--text);
+}
+
+body.theme-prime .section-title a {
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+body.theme-prime .store-chip {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    box-shadow: 0 6px 18px rgba(15, 23, 42, 0.04);
+}
+
+body.theme-prime .store-chip:hover {
+    border-color: #bfdbfe;
+    box-shadow: var(--shadow);
+}
+
+body.theme-prime .category-chip {
+    background: #fff;
+    border-radius: 16px;
+    border: 1px solid var(--border);
+}
+
+body.theme-prime .category-chip:hover {
+    border-color: #bfdbfe;
+}
+
+/* Responsive */
+@media (max-width: 960px) {
+    body.theme-prime .pch-hero-grid {
+        grid-template-columns: 1fr;
+        gap: 2rem;
+    }
+
+    body.theme-prime .pch-hero-copy h1 {
+        max-width: none;
+    }
+
+    body.theme-prime .pch-feature {
+        min-height: 240px;
+    }
+
+    body.theme-prime .pch-stats {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+/* Mobile header for prime */
+@media (max-width: 768px) {
+    body.theme-prime .header-inner {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        grid-template-areas:
+            "brand toggle"
+            "nav nav";
+        align-items: center;
+        gap: 0.35rem 0.75rem;
+    }
+
+    body.theme-prime .site-brand {
+        grid-area: brand;
+    }
+
+    body.theme-prime .nav-toggle {
+        grid-area: toggle;
+        margin-left: 0;
+    }
+
+    body.theme-prime .main-nav {
+        margin-left: 0;
+    }
+
+    body.theme-prime .pch-hero {
+        padding: 2.25rem 0 1.75rem;
+    }
+
+    body.theme-prime .pch-hero-search {
+        padding-left: 1rem;
+    }
+
+    body.theme-prime .pch-hero-search button {
+        padding: 0.75rem 1.1rem;
+    }
+
+    body.theme-prime .pch-stats {
+        gap: 0.75rem;
+    }
+
+    body.theme-prime .pch-stat-card {
+        padding: 1rem;
+    }
+
+    body.theme-prime .pch-stat-card strong {
+        font-size: 1.3rem;
+    }
+}
+
+@media (max-width: 480px) {
+    body.theme-prime .pch-stats {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    body.theme-prime .pch-topbar {
+        font-size: 0.7rem;
+        line-height: 1.4;
+    }
+
+    body.theme-prime .pch-coupon-actions {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    body.theme-prime .pch-get-deal {
+        width: 100%;
+        text-align: center;
+    }
+}
+
+/* Hot deals section */
+body.theme-prime .pch-deals {
+    background: #fff;
+    padding-top: 2.5rem;
+    padding-bottom: 3rem;
+}
+
+body.theme-prime .pch-deals-eyebrow {
+    margin: 0 0 0.55rem;
+    color: var(--pch-hover);
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+body.theme-prime .pch-deals-title {
+    margin: 0 0 0.65rem;
+    font-size: clamp(1.65rem, 3vw, 2.15rem);
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    color: var(--text);
+    line-height: 1.2;
+}
+
+body.theme-prime .pch-deals-subtitle {
+    margin: 0 0 1.15rem;
+    max-width: 40rem;
+    color: var(--muted);
+    font-size: 1.02rem;
+    line-height: 1.55;
+}
+
+body.theme-prime .pch-disclosure-box {
+    background: #eff6ff;
+    border: 1px solid #bfdbfe;
+    border-radius: 14px;
+    padding: 0.9rem 1.1rem;
+    color: #475569;
+    font-size: 0.92rem;
+    line-height: 1.5;
+    margin-bottom: 1.75rem;
+}
+
+body.theme-prime .pch-disclosure-box a {
+    color: var(--primary);
+    font-weight: 600;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+}
+
+body.theme-prime .pch-coupon-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1.15rem;
+}
+
+body.theme-prime .pch-deals-more {
+    margin-top: 1.5rem;
+    text-align: center;
+}
+
+body.theme-prime .pch-deals-more-link {
+    font-weight: 700;
+    color: var(--pch-hover);
+    text-decoration: none !important;
+    transition: color 0.2s ease;
+}
+
+body.theme-prime .pch-deals-more-link:hover {
+    color: var(--primary);
+    text-decoration: underline !important;
+}
+
+body.theme-prime .pch-deals-empty {
+    color: var(--muted);
+    margin: 0;
+}
+
+/* Coupon card */
+body.theme-prime .pch-coupon-card {
+    display: flex;
+    align-items: stretch;
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.05);
+    padding: 0;
+    min-height: 148px;
+    position: relative;
+}
+
+body.theme-prime .pch-coupon-card:hover {
+    border-color: #bfdbfe;
+    box-shadow: 0 12px 28px rgba(37, 99, 235, 0.1);
+}
+
+body.theme-prime .pch-coupon-rail {
+    flex: 0 0 58px;
+    background: linear-gradient(180deg, #38bdf8 0%, #2563eb 100%);
+    color: #fff;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
+    padding: 0.75rem 0.35rem;
+}
+
+body.theme-prime .pch-coupon-rail-icon {
+    width: 28px;
+    height: 28px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.2);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.95rem;
+    font-weight: 800;
+    line-height: 1;
+}
+
+body.theme-prime .pch-coupon-rail-label {
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+body.theme-prime .pch-coupon-body {
+    flex: 1;
+    min-width: 0;
+    padding: 0.95rem 1rem 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.55rem;
+}
+
+body.theme-prime .pch-coupon-store {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    min-width: 0;
+}
+
+body.theme-prime .pch-coupon-store .store-logo-wrap,
+body.theme-prime .pch-coupon-store .store-logo,
+body.theme-prime .pch-coupon-store .store-logo-img,
+body.theme-prime .pch-coupon-store .store-logo-fallback {
+    width: 28px !important;
+    height: 28px !important;
+    min-width: 28px;
+    min-height: 28px;
+    border-radius: 999px;
+}
+
+body.theme-prime .pch-coupon-store .store-logo-fallback {
+    font-size: 0.65rem;
+}
+
+body.theme-prime .pch-coupon-store-name {
+    color: var(--text);
+    font-weight: 700;
+    font-size: 0.92rem;
+    text-decoration: none !important;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+body.theme-prime .pch-coupon-store-name:hover {
+    color: var(--primary);
+}
+
+body.theme-prime .pch-coupon-title {
+    margin: 0;
+    font-size: 1.05rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    line-height: 1.25;
+    color: var(--text);
+}
+
+body.theme-prime .pch-coupon-title a {
+    color: inherit;
+    text-decoration: none !important;
+}
+
+body.theme-prime .pch-coupon-title a:hover {
+    color: var(--primary);
+}
+
+body.theme-prime .pch-coupon-actions {
+    margin-top: auto;
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+}
+
+body.theme-prime .pch-code-box {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.4rem;
+    background: #f8fbff;
+    border: 1.5px dashed #93c5fd;
+    border-radius: 10px;
+    padding: 0.45rem 0.65rem;
+    min-height: 2.35rem;
+}
+
+body.theme-prime .pch-code-box--deal {
+    justify-content: center;
+}
+
+body.theme-prime .pch-code-masked,
+body.theme-prime .pch-code-plain {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.84rem;
+    font-weight: 700;
+    color: var(--text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+body.theme-prime .pch-code-masked .coupon-code-blur {
+    filter: blur(3.5px);
+    user-select: none;
+}
+
+body.theme-prime .pch-code-masked.is-revealed .coupon-code-blur {
+    filter: none;
+    user-select: text;
+}
+
+body.theme-prime .pch-code-copy {
+    border: none;
+    background: transparent;
+    color: var(--primary);
+    font-size: 0.8rem;
+    font-weight: 700;
+    cursor: pointer;
+    padding: 0;
+    flex-shrink: 0;
+}
+
+body.theme-prime .pch-code-copy:hover {
+    text-decoration: underline;
+}
+
+body.theme-prime .pch-get-deal {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--primary);
+    color: #fff !important;
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    text-decoration: none !important;
+    border-radius: 10px;
+    padding: 0.7rem 0.9rem;
+    min-height: 2.35rem;
+    white-space: nowrap;
+}
+
+body.theme-prime .pch-get-deal:hover {
+    background: var(--primary-dark);
+}
+
+body.theme-prime .pch-stores-section {
+    background: #f3f7fc;
+    padding-top: 2.75rem;
+    padding-bottom: 3rem;
+}
+
+body.theme-prime .pch-store-tray {
+    margin-top: 0.5rem;
+    background: #fff;
+    border: 1px solid #e8eef5;
+    border-radius: 28px;
+    box-shadow: 0 12px 32px rgba(15, 23, 42, 0.05);
+    padding: 1.35rem 1.25rem;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+body.theme-prime .pch-store-tray-track {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem 1.5rem;
+    min-width: max-content;
+    width: 100%;
+}
+
+body.theme-prime .pch-store-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.55rem;
+    width: 88px;
+    text-decoration: none !important;
+    color: var(--text);
+    flex-shrink: 0;
+}
+
+body.theme-prime .pch-store-logo {
+    width: 64px;
+    height: 64px;
+    border-radius: 16px;
+    background: #eef6ff;
+    border: 1px solid #dbeafe;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+body.theme-prime .pch-store-item:hover .pch-store-logo {
+    border-color: #93c5fd;
+    box-shadow: 0 8px 18px rgba(37, 99, 235, 0.12);
+}
+
+body.theme-prime .pch-store-logo .store-logo-wrap,
+body.theme-prime .pch-store-logo .store-logo,
+body.theme-prime .pch-store-logo .store-logo-img,
+body.theme-prime .pch-store-logo .store-logo-fallback {
+    width: 48px !important;
+    height: 48px !important;
+    min-width: 48px;
+    min-height: 48px;
+    border-radius: 12px;
+    background: transparent;
+}
+
+body.theme-prime .pch-store-name {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: #64748b;
+    text-align: center;
+    line-height: 1.25;
+    max-width: 100%;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+body.theme-prime .pch-store-item:hover .pch-store-name {
+    color: var(--primary);
+}
+
+body.theme-prime .pch-categories-section {
+    background:
+        radial-gradient(ellipse 70% 55% at 50% 0%, rgba(191, 219, 254, 0.35), transparent 60%),
+        linear-gradient(180deg, #f8fbff 0%, #ffffff 100%);
+    padding-top: 2.75rem;
+    padding-bottom: 3.25rem;
+}
+
+body.theme-prime .pch-categories-intro {
+    text-align: center;
+    max-width: 40rem;
+    margin: 0 auto 1.5rem;
+}
+
+body.theme-prime .pch-categories-intro .pch-deals-subtitle {
+    margin-left: auto;
+    margin-right: auto;
+}
+
+body.theme-prime .pch-category-pills {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.65rem 0.7rem;
+    max-width: 980px;
+    margin: 0 auto;
+}
+
+body.theme-prime .pch-category-pill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    padding: 0.55rem 1.05rem;
+    color: #0f172a;
+    font-family: var(--font-body);
+    font-size: 0.875rem;
+    font-weight: 500;
+    line-height: 1.2;
+    text-decoration: none !important;
+    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.03);
+    transition:
+        background-color 0.22s ease,
+        border-color 0.22s ease,
+        color 0.22s ease,
+        box-shadow 0.22s ease,
+        transform 0.22s ease;
+}
+
+body.theme-prime .pch-category-pill:hover,
+body.theme-prime .pch-category-pill:focus-visible {
+    background: var(--pch-hover);
+    border-color: var(--pch-hover);
+    color: #fff;
+    box-shadow: 0 10px 22px rgba(56, 189, 248, 0.28);
+    transform: translateY(-1px);
+    outline: none;
+}
+
+body.theme-prime .pch-category-pill:active {
+    transform: translateY(0);
+    box-shadow: 0 4px 12px rgba(56, 189, 248, 0.22);
+}
+
+/* Footer */
+body.theme-prime .pch-footer.site-footer,
+body.theme-prime footer.pch-footer {
+    background: #0b1220;
+    color: rgba(255, 255, 255, 0.82);
+    margin-top: 0;
+    padding: 3rem 0 1.5rem;
+}
+
+body.theme-prime .pch-footer-grid {
+    display: grid;
+    grid-template-columns: 1.4fr 1fr 1fr 1fr;
+    gap: 2rem 2.5rem;
+    padding-bottom: 2rem;
+}
+
+body.theme-prime .pch-footer-logo {
+    display: inline-block;
+    color: #fff !important;
+    font-size: 1.15rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    text-decoration: none !important;
+    margin-bottom: 0.75rem;
+}
+
+body.theme-prime .pch-footer-dot {
+    color: #38bdf8;
+}
+
+body.theme-prime .pch-footer-tagline {
+    color: rgba(255, 255, 255, 0.62);
+    font-size: 0.92rem;
+    line-height: 1.55;
+    max-width: 16rem;
+    margin: 0;
+}
+
+body.theme-prime .pch-footer h4 {
+    color: rgba(148, 163, 184, 0.95);
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin: 0 0 0.9rem;
+}
+
+body.theme-prime .pch-footer-grid a:not(.pch-footer-logo) {
+    display: block;
+    color: rgba(255, 255, 255, 0.88);
+    text-decoration: none !important;
+    margin-bottom: 0.55rem;
+    font-size: 0.92rem;
+}
+
+body.theme-prime .pch-footer-grid a:not(.pch-footer-logo):hover {
+    color: #fff;
+}
+
+body.theme-prime .pch-footer-bottom {
+    border-top: 1px solid rgba(255, 255, 255, 0.12);
+    padding-top: 1.15rem;
+}
+
+body.theme-prime .pch-footer-disclaimer {
+    color: rgba(255, 255, 255, 0.55);
+    font-size: 0.84rem;
+    line-height: 1.55;
+    margin: 0 0 0.85rem;
+    max-width: none;
+}
+
+body.theme-prime .pch-footer .pch-footer-disclaimer a {
+    display: inline !important;
+    color: #7dd3fc !important;
+    text-decoration: underline !important;
+    text-underline-offset: 2px;
+    margin: 0 !important;
+    font-size: inherit;
+    white-space: nowrap;
+}
+
+body.theme-prime .pch-footer-copy {
+    margin: 0;
+    color: rgba(125, 211, 252, 0.75);
+    font-size: 0.82rem;
+}
+
+@media (max-width: 900px) {
+    body.theme-prime .pch-footer-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+@media (max-width: 560px) {
+    body.theme-prime .pch-footer-grid {
+        grid-template-columns: 1fr;
+        gap: 1.75rem;
+    }
+}
+
+@media (min-width: 900px) {
+    body.theme-prime .pch-store-tray-track {
+        min-width: 0;
+        justify-content: space-evenly;
+    }
+}
+
+body.theme-prime .pch-blog-section {
+    background: #fff;
+    padding-top: 2.75rem;
+    padding-bottom: 3rem;
+}
+
+body.theme-prime .pch-blog-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 1.15rem;
+    margin-top: 0.35rem;
+}
+
+body.theme-prime .pch-blog-card {
+    background: #fff;
+    border: 1px solid #e8eef5;
+    border-radius: 18px;
+    overflow: hidden;
+    box-shadow: 0 10px 28px rgba(15, 23, 42, 0.06);
+    display: flex;
+    flex-direction: column;
+    min-height: 100%;
+    transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+body.theme-prime .pch-blog-card:hover {
+    box-shadow: 0 16px 36px rgba(37, 99, 235, 0.12);
+    transform: translateY(-2px);
+}
+
+body.theme-prime .pch-blog-card-media {
+    display: block;
+    aspect-ratio: 16 / 10;
+    background: linear-gradient(135deg, #dbeafe, #eff6ff);
+    overflow: hidden;
+    text-decoration: none !important;
+}
+
+body.theme-prime .pch-blog-card-media img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+body.theme-prime .pch-blog-card-placeholder {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #93c5fd;
+    font-size: 2rem;
+    font-weight: 800;
+}
+
+body.theme-prime .pch-blog-card-body {
+    padding: 1rem 1.05rem 1.15rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.55rem;
+    flex: 1;
+}
+
+body.theme-prime .pch-blog-card-title {
+    margin: 0;
+    font-size: 0.98rem;
+    font-weight: 800;
+    line-height: 1.35;
+    letter-spacing: -0.02em;
+    color: var(--text);
+}
+
+body.theme-prime .pch-blog-card-title a {
+    color: inherit;
+    text-decoration: none !important;
+}
+
+body.theme-prime .pch-blog-card-title a:hover {
+    color: var(--primary);
+}
+
+body.theme-prime .pch-blog-card-date {
+    display: block;
+    color: #94a3b8;
+    font-size: 0.82rem;
+    font-weight: 500;
+}
+
+body.theme-prime .pch-blog-card-link {
+    margin-top: auto;
+    color: var(--pch-hover);
+    font-size: 0.9rem;
+    font-weight: 700;
+    text-decoration: none !important;
+    transition: color 0.2s ease;
+}
+
+body.theme-prime .pch-blog-card-link:hover {
+    color: var(--primary);
+    text-decoration: underline !important;
+}
+
+@media (max-width: 1100px) {
+    body.theme-prime .pch-coupon-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    body.theme-prime .pch-blog-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 720px) {
+    body.theme-prime .pch-coupon-grid {
+        grid-template-columns: 1fr;
+    }
+
+    body.theme-prime .pch-blog-grid {
+        grid-template-columns: 1fr;
+    }
+
+    body.theme-prime .pch-coupon-rail {
+        flex-basis: 52px;
+    }
+}
+
+/* ------------------------------------------------------------------
+   Inner pages — page-hero / listings / article / legal / search
+   (light theme tokens make default white-on-gradient heroes unreadable)
+   ------------------------------------------------------------------ */
+
+body.theme-prime .page-hero,
+body.theme-prime .hero:not(.pch-hero):not(.sp-hero) {
+    background:
+        radial-gradient(ellipse 80% 60% at 50% 0%, rgba(191, 219, 254, 0.45), transparent 55%),
+        linear-gradient(180deg, #f5f9ff 0%, #eef5ff 100%);
+    color: var(--text);
+    text-align: left;
+    padding: 2.5rem 0 2rem;
+}
+
+body.theme-prime .page-hero .container,
+body.theme-prime .hero:not(.pch-hero):not(.sp-hero) .container {
+    max-width: 1200px;
+}
+
+body.theme-prime .page-hero h1,
+body.theme-prime .hero:not(.pch-hero):not(.sp-hero) h1 {
+    color: var(--text);
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    margin: 0 0 0.5rem;
+}
+
+body.theme-prime .page-hero .page-subtitle,
+body.theme-prime .page-hero p,
+body.theme-prime .page-hero .page-meta,
+body.theme-prime .hero:not(.pch-hero):not(.sp-hero) p,
+body.theme-prime .hero:not(.pch-hero):not(.sp-hero) .hero-subtitle {
+    color: var(--muted);
+    opacity: 1;
+    max-width: 40rem;
+    margin-left: 0;
+    margin-right: 0;
+}
+
+body.theme-prime .page-hero a,
+body.theme-prime .hero:not(.pch-hero):not(.sp-hero) a {
+    color: var(--pch-hover);
+    font-weight: 600;
+}
+
+body.theme-prime .page-hero a:hover,
+body.theme-prime .hero:not(.pch-hero):not(.sp-hero) a:hover {
+    color: var(--primary);
+}
+
+body.theme-prime .page-header {
+    border-bottom-color: #e2e8f0;
+    padding-top: 2rem;
+}
+
+body.theme-prime .page-header h1,
+body.theme-prime .page-header h2 {
+    color: var(--text);
+    font-weight: 800;
+    letter-spacing: -0.02em;
+}
+
+body.theme-prime .page-header p {
+    color: var(--muted);
+}
+
+body.theme-prime .page-body {
+    padding-top: 2rem;
+}
+
+body.theme-prime .legal-content {
+    border-color: #e8eef5;
+    box-shadow: 0 10px 28px rgba(15, 23, 42, 0.05);
+}
+
+body.theme-prime .legal-content--page {
+    max-width: none;
+    width: 100%;
+    margin: 0;
+    padding: 2rem 2.25rem;
+    background: #fff;
+    border: 1px solid #e8eef5;
+    border-radius: 18px;
+}
+
+body.theme-prime .legal-content:has(.contact-grid) {
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    padding: 0;
+    max-width: none;
+}
+
+body.theme-prime .page-hero .page-subtitle {
+    max-width: none;
+}
+
+body.theme-prime .contact-grid {
+    gap: 2rem 2.5rem;
+}
+
+body.theme-prime .contact-info h2,
+body.theme-prime .contact-form-wrap h2 {
+    color: var(--text);
+    font-weight: 800;
+    letter-spacing: -0.02em;
+}
+
+body.theme-prime .contact-card {
+    background: #fff;
+    border-color: #e8eef5;
+    border-radius: 16px;
+    box-shadow: 0 6px 18px rgba(15, 23, 42, 0.04);
+}
+
+body.theme-prime .contact-form-wrap {
+    background: #fff;
+    border: 1px solid #e8eef5;
+    border-radius: 18px;
+    padding: 1.5rem 1.5rem 1.75rem;
+    box-shadow: 0 10px 28px rgba(15, 23, 42, 0.05);
+}
+
+body.theme-prime .contact-form-wrap .form-group input,
+body.theme-prime .contact-form-wrap .form-group select,
+body.theme-prime .contact-form-wrap .form-group textarea {
+    border-color: #e2e8f0;
+    border-radius: 12px;
+    background: #fff;
+    color: var(--text);
+}
+
+body.theme-prime .legal-content h1,
+body.theme-prime .legal-content h2,
+body.theme-prime .legal-content h3 {
+    color: var(--text);
+}
+
+body.theme-prime .legal-content p,
+body.theme-prime .legal-content li {
+    color: #475569;
+}
+
+body.theme-prime .legal-content a {
+    color: var(--primary);
+}
+
+/* Blog listing */
+body.theme-prime .blog-search {
+    display: flex;
+    gap: 0.65rem;
+    margin-bottom: 1.5rem;
+    max-width: 520px;
+}
+
+body.theme-prime .blog-search input {
+    flex: 1;
+    border: 1px solid #e2e8f0;
+    border-radius: 999px;
+    padding: 0.7rem 1.1rem;
+    background: #fff;
+    color: var(--text);
+}
+
+body.theme-prime .blog-search .btn,
+body.theme-prime .blog-search button {
+    border-radius: 999px;
+    background: var(--primary);
+    border: none;
+    color: #fff;
+    font-weight: 700;
+    padding: 0.7rem 1.25rem;
+}
+
+body.theme-prime .blog-search .btn:hover,
+body.theme-prime .blog-search button:hover {
+    background: var(--primary-dark);
+}
+
+body.theme-prime .blog-empty {
+    color: var(--muted);
+}
+
+body.theme-prime .blog-card {
+    background: #fff;
+    border: 1px solid #e8eef5;
+    border-radius: 18px;
+    overflow: hidden;
+    box-shadow: 0 10px 28px rgba(15, 23, 42, 0.05);
+}
+
+body.theme-prime .blog-card:hover {
+    box-shadow: 0 14px 32px rgba(37, 99, 235, 0.1);
+}
+
+body.theme-prime .blog-card-body time,
+body.theme-prime .blog-card-author,
+body.theme-prime .blog-card-excerpt,
+body.theme-prime .blog-card-meta {
+    color: var(--muted);
+}
+
+body.theme-prime .blog-card-body h2,
+body.theme-prime .blog-card-body h2 a {
+    color: var(--text);
+}
+
+body.theme-prime .blog-card-body h2 a:hover,
+body.theme-prime .blog-card-meta .read-more {
+    color: var(--pch-hover);
+}
+
+body.theme-prime .blog-back {
+    color: var(--muted);
+}
+
+body.theme-prime .blog-back:hover {
+    color: var(--primary);
+}
+
+body.theme-prime .blog-article-header h1,
+body.theme-prime .article-header h1,
+body.theme-prime .article-title,
+body.theme-prime .post-title {
+    color: var(--text);
+}
+
+body.theme-prime .article-content h2,
+body.theme-prime .article-content h3 {
+    color: var(--text);
+}
+
+/* Authors */
+body.theme-prime .author-card {
+    background: #fff;
+    border: 1px solid #e8eef5;
+    border-radius: 18px;
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.05);
+}
+
+body.theme-prime .author-card h2,
+body.theme-prime .author-card h2 a {
+    color: var(--text);
+}
+
+body.theme-prime .author-card-title,
+body.theme-prime .author-card-bio,
+body.theme-prime .author-card-meta {
+    color: var(--muted);
+}
+
+body.theme-prime .author-card .read-more,
+body.theme-prime .author-profile-hero a.blog-back {
+    color: var(--pch-hover);
+}
+
+body.theme-prime .author-profile-hero h1 {
+    color: var(--text);
+}
+
+/* Coupons / stores / categories listings */
+body.theme-prime .filter-tabs a {
+    background: #fff;
+    border-color: #e5e7eb;
+    color: var(--text);
+    transition:
+        background-color 0.2s ease,
+        border-color 0.2s ease,
+        color 0.2s ease;
+}
+
+body.theme-prime .filter-tabs a:hover,
+body.theme-prime .filter-tabs a.active {
+    background: var(--pch-hover);
+    border-color: var(--pch-hover);
+    color: #fff;
+    text-decoration: none;
+}
+
+body.theme-prime .store-card,
+body.theme-prime .category-chip {
+    background: #fff;
+    border-color: #e8eef5;
+    color: var(--text);
+}
+
+body.theme-prime .store-card-name,
+body.theme-prime .category-chip strong {
+    color: var(--text);
+}
+
+body.theme-prime .store-card-description,
+body.theme-prime .store-card-meta,
+body.theme-prime .store-chip-verified {
+    color: var(--muted);
+}
+
+body.theme-prime .store-card:hover,
+body.theme-prime .category-chip:hover {
+    border-color: #93c5fd;
+    box-shadow: 0 10px 24px rgba(37, 99, 235, 0.08);
+}
+
+body.theme-prime .search-section .section-title {
+    color: var(--text);
+}
+
+body.theme-prime .search-section .section-title span {
+    color: var(--muted);
+    font-weight: 600;
+}
+
+body.theme-prime .pagination {
+    color: var(--text);
+}
+
+body.theme-prime .pagination a,
+body.theme-prime .pagination span {
+    color: var(--text);
+}
+
+body.theme-prime .pagination .active span,
+body.theme-prime .pagination [aria-current="page"] span {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: #fff;
+}
+
+body.theme-prime .btn-primary {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: #fff;
+}
+
+body.theme-prime .btn-primary:hover {
+    background: var(--primary-dark);
+    border-color: var(--primary-dark);
+}
+
+body.theme-prime .btn-outline {
+    border-color: #cbd5e1;
+    color: var(--text);
+}
+
+body.theme-prime .btn-outline:hover {
+    border-color: var(--pch-hover);
+    color: var(--primary);
+}
+
+body.theme-prime .coupon-title,
+body.theme-prime .coupon-title a {
+    color: var(--text);
+}
+
+body.theme-prime .coupon-description,
+body.theme-prime .coupon-expire {
+    color: var(--muted);
+}
+
+body.theme-prime .alert {
+    color: var(--text);
+}

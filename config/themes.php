@@ -2,7 +2,7 @@
 
 return [
 
-    'default' => 'classic',
+    'default' => 'prime',
 
     'themes' => [
         'classic' => [
@@ -54,6 +54,14 @@ return [
             'font' => 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap',
             'js' => 'js/themes/savingspro.js',
             'preview' => ['#006838', '#f0f4f8', '#e69100'],
+        ],
+        'prime' => [
+            'name' => 'Prime Coupons Hub',
+            'description' => 'Clean light-blue coupon hub with trust bar, split hero search, and editorial feature cards.',
+            'css' => 'themes/prime.css',
+            'font' => 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap',
+            'js' => 'js/themes/prime.js',
+            'preview' => ['#2563eb', '#1d4ed8', '#e0f2fe'],
         ],
     ],
 

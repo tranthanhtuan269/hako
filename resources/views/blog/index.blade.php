@@ -26,9 +26,13 @@
     @if($posts->isEmpty())
         <p class="blog-empty">No articles found.@if($q) Try a different keyword.@endif</p>
     @else
-        <div class="blog-grid">
+        <div class="blog-grid{{ ($activeTheme ?? '') === 'prime' ? ' pch-blog-grid' : '' }}">
             @foreach($posts as $post)
-                @include('blog.partials.card', ['post' => $post])
+                @if(($activeTheme ?? '') === 'prime')
+                    @include('themes.prime.blog-card', ['post' => $post])
+                @else
+                    @include('blog.partials.card', ['post' => $post])
+                @endif
             @endforeach
         </div>
         <div class="pagination">{{ $posts->links() }}</div>

@@ -1539,6 +1539,23 @@ div.pagination > nav.paginator-nav .pagination {
     border: 1px solid var(--border);
 }
 
+.legal-content:has(.contact-grid) {
+    max-width: none;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    border-radius: 0;
+}
+
+.legal-content--page {
+    max-width: none;
+    width: 100%;
+    margin: 0;
+}
+
 .legal-content h2 {
     font-size: 1.2rem;
     margin: 2rem 0 .75rem;

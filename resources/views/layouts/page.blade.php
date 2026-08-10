@@ -13,7 +13,7 @@
     </div>
 </div>
 <div class="container page-body">
-    <div class="legal-content">
+    <div class="legal-content legal-content--page">
         @yield('page_content')
     </div>
 </div>

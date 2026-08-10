@@ -13,10 +13,10 @@ class HomeController extends Controller
 {
     public function index(): View
     {
-        $categories = Category::active()->orderBy('sort_order')->take(18)->get();
+        $categories = Category::active()->orderBy('sort_order')->take(36)->get();
         $stores = Store::homeFeaturedQuery(12)->get();
 
-        $latestPosts = Post::homeFeaturedQuery(6)->get();
+        $latestPosts = Post::homeFeaturedQuery(8)->get();
 
         $stats = [
             'coupons' => Coupon::valid()->count(),
@@ -24,11 +24,19 @@ class HomeController extends Controller
             'categories' => Category::active()->count(),
         ];
 
+        $hotCoupons = Coupon::with(['store.category'])
+            ->valid()
+            ->orderByDesc('is_featured')
+            ->latest()
+            ->take(9)
+            ->get();
+
         return view('home', compact(
             'categories',
             'stores',
             'latestPosts',
-            'stats'
+            'stats',
+            'hotCoupons'
         ));
     }
 

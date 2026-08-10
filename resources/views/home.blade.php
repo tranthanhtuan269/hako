@@ -30,6 +30,8 @@
 @section('content')
 @if($activeTheme === 'savingspro')
     @include('themes.savingspro.home-hero', compact('stats'))
+@elseif($activeTheme === 'prime')
+    @include('themes.prime.home-hero', compact('stats'))
 @else
 <section class="hero">
     <div class="container">
@@ -49,7 +51,16 @@
 </section>
 @endif
 
-@if($latestPosts->isNotEmpty())
+@if($activeTheme === 'prime')
+    @include('themes.prime.home-deals', ['hotCoupons' => $hotCoupons ?? collect()])
+    @if($latestPosts->isNotEmpty())
+        @include('themes.prime.home-blog', ['latestPosts' => $latestPosts])
+    @endif
+    @include('themes.prime.home-stores', ['stores' => $stores])
+    @include('themes.prime.home-categories', ['categories' => $categories])
+@endif
+
+@if($latestPosts->isNotEmpty() && $activeTheme !== 'prime')
 <section class="section">
     <div class="container">
         <h2 class="section-title">Review <a href="{{ route('blog.index') }}">All articles →</a></h2>
@@ -62,6 +73,7 @@
 </section>
 @endif
 
+@if($activeTheme !== 'prime')
 <section class="section">
     <div class="container">
         <h2 class="section-title">{{ $activeTheme === 'savingspro' ? 'Savings from the World\'s Best Stores' : 'Popular Stores' }}</h2>
@@ -106,6 +118,7 @@
         </div>
     </div>
 </section>
+@endif
 
 @if($activeTheme === 'savingspro')
     @include('themes.savingspro.newsletter-cta')

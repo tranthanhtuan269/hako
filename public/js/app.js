@@ -134,7 +134,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const csrf = document.querySelector('meta[name="csrf-token"]')?.content;
 
     function revealCouponCode(btn, code) {
-        const container = btn?.closest('[data-code-reveal], .sp-code-split, .coupon-code-split, .code-box-wrap, .scroll-coupon-popup-code, .scroll-coupon-popup-item, .coupon-detail, .sp-coupon-card, .sp-coupon-row');
+        const container = btn?.closest('[data-code-reveal], .sp-code-split, .coupon-code-split, .code-box-wrap, .scroll-coupon-popup-code, .scroll-coupon-popup-item, .coupon-detail, .sp-coupon-card, .sp-coupon-row, .pch-coupon-card, .pch-code-box');
         const maskEls = container?.querySelectorAll('[data-masked-code]');
 
         if (!maskEls?.length || !code) {
@@ -678,7 +678,7 @@ function initCouponRevealModal() {
         handleRevealClick(btn, primedTab);
     }
 
-    document.querySelectorAll('.btn-copy, .sp-code-copy, .scroll-coupon-popup-copy').forEach(function (btn) {
+    document.querySelectorAll('.btn-copy, .sp-code-copy, .pch-code-copy, .scroll-coupon-popup-copy').forEach(function (btn) {
         btn.addEventListener('click', function (event) {
             event.preventDefault();
             startRevealClick(btn);
