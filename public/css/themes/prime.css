@@ -416,14 +416,32 @@ body.theme-prime .category-chip:hover {
 
 /* Mobile header for prime */
 @media (max-width: 768px) {
+    body.theme-prime .site-header {
+        position: sticky;
+        top: 0;
+        transition: transform 0.25s ease, box-shadow 0.25s ease;
+        will-change: transform;
+    }
+
+    body.theme-prime .site-header.is-scroll-hidden {
+        transform: translateY(-110%);
+        box-shadow: none;
+        pointer-events: none;
+    }
+
+    body.theme-prime .site-header.is-nav-open {
+        transform: none !important;
+        pointer-events: auto;
+    }
+
     body.theme-prime .header-inner {
         display: grid;
         grid-template-columns: 1fr auto;
-        grid-template-areas:
-            "brand toggle"
-            "nav nav";
+        grid-template-areas: "brand toggle";
         align-items: center;
         gap: 0.35rem 0.75rem;
+        position: relative;
+        z-index: 2;
     }
 
     body.theme-prime .site-brand {
@@ -433,10 +451,49 @@ body.theme-prime .category-chip:hover {
     body.theme-prime .nav-toggle {
         grid-area: toggle;
         margin-left: 0;
+        position: relative;
+        z-index: 130;
     }
 
     body.theme-prime .main-nav {
-        margin-left: 0;
+        position: fixed;
+        inset: 0;
+        z-index: 120;
+        display: none !important;
+        flex-direction: column;
+        align-items: stretch;
+        justify-content: flex-start;
+        gap: 0.35rem;
+        margin: 0;
+        padding: 5rem 1.25rem 2rem;
+        background: #fff;
+        border: none;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    body.theme-prime .main-nav.is-open {
+        display: flex !important;
+    }
+
+    body.theme-prime .main-nav a,
+    body.theme-prime .main-nav .nav-logout-btn {
+        width: 100%;
+        min-height: 2.75rem;
+        padding: 0.75rem 0.85rem;
+        border-radius: 12px;
+        font-size: 1rem;
+    }
+
+    body.theme-prime .main-nav .nav-register {
+        text-align: center;
+        justify-content: center;
+        margin-top: 0.35rem;
+    }
+
+    body.theme-prime.pch-nav-lock {
+        overflow: hidden;
+        touch-action: none;
     }
 
     body.theme-prime .pch-hero {
