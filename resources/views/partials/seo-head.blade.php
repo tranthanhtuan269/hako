@@ -28,6 +28,7 @@
 <title>{{ $metaTitle }}</title>
 <meta name="description" content="{{ $metaDescription }}">
 <meta name="robots" content="{{ $robots }}">
+<meta name="convertiser-verification" content="ff67d94429cb7d3afb3aebdf954a104d1908cecd" />
 @include('partials.favicon')
 <link rel="canonical" href="{{ $canonical }}">
 
