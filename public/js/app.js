@@ -306,6 +306,13 @@ function initMobileNav() {
         }
     });
 }
+function isLikelyIosDevice() {
+    const ua = navigator.userAgent || '';
+
+    return /iPad|iPhone|iPod/i.test(ua)
+        || (navigator.platform === 'MacIntel' && (navigator.maxTouchPoints || 0) > 1);
+}
+
 function writeClipboardText(text) {
     if (!text) {
         return Promise.resolve(false);
@@ -324,27 +331,48 @@ function writeClipboardText(text) {
 
 function copyWithTextarea(text) {
     const area = document.createElement('textarea');
+    const selection = document.getSelection();
+    const selected = selection && selection.rangeCount > 0 ? selection.getRangeAt(0) : null;
+    const ios = isLikelyIosDevice();
+
     area.value = text;
-    area.setAttribute('readonly', '');
+    area.setAttribute('aria-hidden', 'true');
     area.style.position = 'fixed';
     area.style.top = '0';
     area.style.left = '0';
-    area.style.width = '1px';
-    area.style.height = '1px';
+    area.style.width = ios ? '100%' : '1px';
+    area.style.height = ios ? '40px' : '1px';
     area.style.padding = '0';
     area.style.border = '0';
     area.style.outline = '0';
     area.style.boxShadow = 'none';
-    area.style.background = 'transparent';
-    area.style.opacity = '0';
+    area.style.background = '#fff';
+    area.style.opacity = '0.01';
+    area.style.fontSize = '16px';
+    area.style.zIndex = '-1';
+
+    if (ios) {
+        area.contentEditable = 'true';
+        area.readOnly = false;
+    } else {
+        area.setAttribute('readonly', '');
+    }
+
     document.body.appendChild(area);
-
-    const selection = document.getSelection();
-    const selected = selection && selection.rangeCount > 0 ? selection.getRangeAt(0) : null;
-
     area.focus();
-    area.select();
-    area.setSelectionRange(0, area.value.length);
+
+    if (ios) {
+        const range = document.createRange();
+        range.selectNodeContents(area);
+        if (selection) {
+            selection.removeAllRanges();
+            selection.addRange(range);
+        }
+        area.setSelectionRange(0, text.length);
+    } else {
+        area.select();
+        area.setSelectionRange(0, area.value.length);
+    }
 
     let ok = false;
     try {
@@ -477,7 +505,9 @@ function initCouponRevealModal() {
         modal.setAttribute('aria-hidden', 'false');
         document.body.classList.add('sp-modal-open');
 
-        if (activeCode) {
+        // Auto-copy after an async reveal loses the tap gesture on iOS/Android,
+        // which then shows "Copy failed". Let the shopper tap COPY CODE instead.
+        if (activeCode && !window.isLikelyMobileViewport()) {
             copyText(activeCode, copyBtn);
         }
     }
@@ -604,8 +634,11 @@ function initCouponRevealModal() {
 
             const affiliateUrl = result.affiliateUrl || btn.dataset.affiliateUrl || btn.dataset.shopUrl || btn.dataset.goUrl || '';
 
-            // Flow 2/3: copy code then open destination — no intermediate coupon popup.
-            if (flags.onCopy) {
+            // Flow 2/3 on desktop: copy then open destination with no coupon popup.
+            // On phones the reveal fetch consumes the tap, so clipboard write fails
+            // and fallbackNavigate would leave the shopper on the merchant site
+            // without a code. Keep the popup so they can copy from a fresh tap.
+            if (flags.onCopy && !isMobile) {
                 const originalLabel = btn.dataset.copyLabel || btn.textContent;
                 btn.dataset.copyLabel = originalLabel;
 
@@ -617,11 +650,10 @@ function initCouponRevealModal() {
                     btn.classList.remove('copied');
                 }, 2000);
 
-                // Always attempt redirect for flow 2/3, even if clipboard write fails on mobile.
                 if (affiliateUrl) {
                     window.navigateBackgroundTab(activePrimedTab, affiliateUrl, {
-                        keepCurrentTab: !isMobile,
-                        fallbackNavigate: isMobile,
+                        keepCurrentTab: true,
+                        fallbackNavigate: false,
                     });
                 } else if (activePrimedTab && !activePrimedTab.closed) {
                     try {
@@ -670,8 +702,9 @@ function initCouponRevealModal() {
         let primedTab = null;
 
         // Must run synchronously in the click handler before any await,
-        // otherwise mobile browsers block the destination tab.
-        if (flags.onCopy) {
+        // otherwise mobile browsers block the destination tab. Skip on phones:
+        // about:blank steals focus and makes clipboard writes fail.
+        if (flags.onCopy && !window.isLikelyMobileViewport()) {
             primedTab = window.primeBackgroundTab();
         }
 

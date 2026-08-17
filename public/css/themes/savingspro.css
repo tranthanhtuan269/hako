@@ -367,6 +367,9 @@ body.theme-savingspro .sp-code-text {
     align-items: center;
     min-width: 0;
     overflow: hidden;
+    user-select: all;
+    -webkit-user-select: all;
+    -webkit-touch-callout: default;
 }
 
 body.theme-savingspro .sp-code-text .coupon-code-masked {

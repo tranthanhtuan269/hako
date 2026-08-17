@@ -919,6 +919,9 @@ a:hover { text-decoration: underline; }
 .coupon-code-masked.is-revealed .coupon-code-blur {
     filter: none;
     opacity: 1;
+    user-select: all;
+    -webkit-user-select: all;
+    pointer-events: auto;
 }
 
 .coupon-code-split {
@@ -2754,6 +2757,9 @@ body.sp-modal-open {
     align-items: center;
     min-width: 0;
     overflow: hidden;
+    user-select: all;
+    -webkit-user-select: all;
+    -webkit-touch-callout: default;
 }
 
 .sp-code-copy {
