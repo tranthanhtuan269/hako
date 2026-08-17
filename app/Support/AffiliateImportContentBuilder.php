@@ -121,6 +121,7 @@ final class AffiliateImportContentBuilder
     private function finalizeStoreDescription(string $content, Store $store, array $merchant = [], array $offers = []): string
     {
         $content = $this->ensureArticleImages($content, $merchant, $store->name);
+        $content = HtmlCleaner::stripAffiliateNotices($content);
         $content = $this->ensureWhyTrustUs($content, $store->name, $merchant, $offers);
         $content = $this->ensureComparisonTables(
             $content,
@@ -258,6 +259,7 @@ final class AffiliateImportContentBuilder
         $storeName = $store?->name ?? (string) ($merchant['name'] ?? 'Store');
         $content = trim((string) ($blog['content'] ?? ''));
         $content = $this->ensureArticleImages($content, $merchant, $storeName);
+        $content = HtmlCleaner::stripAffiliateNotices($content);
         $content = $this->ensureWhyTrustUs($content, $storeName, $merchant, $offers);
         $content = $this->ensureComparisonTables($content, $storeName, $merchant, $offers, $store?->category?->name);
         $content = $this->ensureSearchIntentFaqs($content, $storeName, $merchant, $offers, $store);
@@ -1489,7 +1491,6 @@ final class AffiliateImportContentBuilder
      */
     private function sectionWhyTrustUs(string $storeName, array $products = [], array $offers = []): string
     {
-        $site = (string) config('site.name');
         $productCount = collect($products)
             ->pluck('name')
             ->filter(fn ($name) => filled($name))
@@ -1505,7 +1506,6 @@ final class AffiliateImportContentBuilder
         $parts = [];
         $parts[] = '<h2>Why Trust Us</h2>';
         $parts[] = '<p>'.$researchLine.'</p>';
-        $parts[] = '<p>'.e($site).' publishes independent shopping guides for U.S. readers. Our editorial process focuses on facts shoppers can check themselves — not unverified ratings or invented testimonials.</p>';
         $parts[] = '<ul>';
         $parts[] = '<li><strong>Product research:</strong> Details come from the merchant\'s public product pages and publicly available listing information'
             .($productCount > 0 ? ' for the products compared below.' : '.');
@@ -1513,7 +1513,6 @@ final class AffiliateImportContentBuilder
         $parts[] = '<li><strong>Coupon verification:</strong> Featured offers on this page are reviewed for format and availability when we publish'
             .($offerCount > 0 ? ' ('.$offerCount.' offer'.($offerCount === 1 ? '' : 's').' featured)' : '')
             .'. Always confirm terms on the merchant checkout page before paying.</li>';
-        $parts[] = '<li><strong>Transparent affiliate links:</strong> Some links may earn '.e($site).' a commission at no extra cost to you. That support helps us keep deal pages updated.</li>';
         $parts[] = '<li><strong>Practical buying advice:</strong> We highlight shipping, return, and promo-stacking considerations that affect the final cart total — not just sticker price.</li>';
         $parts[] = '</ul>';
         $parts[] = '<p>If a code stops working or a product page changes, we update the guide when new information is available. Treat this as a research starting point, then verify the live price and promotion at checkout.</p>';

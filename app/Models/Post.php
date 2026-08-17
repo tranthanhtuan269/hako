@@ -97,7 +97,9 @@ class Post extends Model
         $html = PostAffiliateContent::embed($this->content, $this->resolveStore());
         $html = DynamicCouponContent::expand($html, $this->resolveStore());
 
-        return HtmlCleaner::wrapTablesForScroll($html);
+        return HtmlCleaner::wrapTablesForScroll(
+            HtmlCleaner::stripAffiliateNotices($html)
+        );
     }
 
     public function scopeOwnedBy(Builder $query, int $userId): Builder

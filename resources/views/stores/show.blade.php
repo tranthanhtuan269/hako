@@ -62,7 +62,6 @@
                 'store' => $store,
                 'label' => 'Share this store',
             ])
-            @include('partials.site-affiliate-notice')
 
             @if($store->description)
                 <div class="store-description-content">{!! $store->renderedDescription() !!}</div>
