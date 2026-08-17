@@ -768,6 +768,7 @@ a:hover { text-decoration: underline; }
 }
 
 .store-page-header {
+    grid-area: heading;
     display: flex;
     align-items: center;
     gap: 1.25rem;
@@ -807,10 +808,16 @@ a:hover { text-decoration: underline; }
 .store-page-layout {
     display: grid;
     grid-template-columns: minmax(0, 7fr) minmax(0, 3fr);
+    grid-template-areas:
+        "heading heading"
+        "posts coupons";
     gap: 2rem;
     align-items: start;
     margin-top: 1.25rem;
 }
+
+.store-page-column--posts { grid-area: posts; }
+.store-page-column--coupons { grid-area: coupons; }
 
 .store-page-column-title {
     font-size: 1.2rem;
@@ -841,6 +848,11 @@ a:hover { text-decoration: underline; }
 @media (max-width: 960px) {
     .store-page-layout {
         grid-template-columns: 1fr;
+        grid-template-areas:
+            "heading"
+            "coupons"
+            "posts";
+        gap: 1.25rem;
     }
 }
 

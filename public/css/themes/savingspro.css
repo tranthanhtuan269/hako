@@ -476,6 +476,18 @@ body.theme-savingspro .sp-store-layout {
     body.theme-savingspro .sp-store-layout {
         grid-template-columns: 1fr;
     }
+
+    body.theme-savingspro .sp-store-main {
+        order: 1;
+    }
+
+    body.theme-savingspro .sp-store-sidebar {
+        order: 2;
+    }
+
+    body.theme-savingspro .sp-store-main .store-description-content {
+        margin-top: 1.5rem;
+    }
 }
 
 body.theme-savingspro .sp-sidebar-box {
