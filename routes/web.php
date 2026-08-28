@@ -16,6 +16,7 @@ use App\Http\Controllers\HomeController;
 use App\Http\Controllers\BlogController;
 use App\Http\Controllers\AuthorController;
 use App\Http\Controllers\PageController;
+use App\Http\Controllers\RobotsController;
 use App\Http\Controllers\SitemapController;
 use App\Http\Controllers\StoreController;
 use App\Http\Controllers\Admin\CategoryController as AdminCategoryController;
@@ -58,6 +59,7 @@ Route::get('/authors', [AuthorController::class, 'index'])->name('authors.index'
 Route::get('/authors/{slug}', [AuthorController::class, 'show'])->name('authors.show');
 
 Route::get('/sitemap.xml', [SitemapController::class, 'index'])->name('sitemap');
+Route::get('/robots.txt', [RobotsController::class, 'index'])->name('robots');
 
 Route::middleware(['guest', 'noindex'])->group(function () {
     Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
