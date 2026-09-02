@@ -53,6 +53,10 @@ a:hover { text-decoration: underline; }
     flex-wrap: wrap;
 }
 
+.header-inner--no-search {
+    justify-content: space-between;
+}
+
 .site-brand {
     display: flex;
     align-items: center;
@@ -243,6 +247,7 @@ a:hover { text-decoration: underline; }
 }
 
 .main-nav a:hover { color: var(--primary); text-decoration: none; }
+.main-nav a.is-current { color: var(--primary); }
 .nav-admin { color: var(--primary) !important; }
 .nav-register { font-weight: 600; color: var(--primary) !important; }
 .nav-logout-form { display: inline; margin: 0; }
@@ -2142,6 +2147,14 @@ div.pagination > nav.paginator-nav .pagination {
         padding: 0.65rem 0.85rem;
         flex-direction: unset;
         flex-wrap: unset;
+    }
+
+    .header-inner--no-search {
+        grid-template-columns: auto auto;
+        grid-template-areas:
+            "brand toggle"
+            "nav nav nav";
+        justify-content: space-between;
     }
 
     .site-brand {

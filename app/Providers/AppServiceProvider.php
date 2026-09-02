@@ -2,6 +2,8 @@
 
 namespace App\Providers;
 
+use App\Models\NavLink;
+use App\Support\HeaderSearch;
 use App\Support\SiteBranding;
 use App\Support\ThemeManager;
 use Illuminate\Pagination\Paginator;
@@ -83,6 +85,8 @@ class AppServiceProvider extends ServiceProvider
             'siteLogoUrl' => $siteLogoUrl,
             'siteFaviconUrl' => $siteFaviconUrl,
             'siteSocialLinks' => $siteSocialLinks,
+            'headerNavLinks' => NavLink::headerItems(),
+            'headerSearchVisible' => HeaderSearch::visible(),
         ]);
     }
 }

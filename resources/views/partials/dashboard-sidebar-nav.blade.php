@@ -10,6 +10,8 @@
         'admin.account.*',
         'admin.tracking.*',
         'admin.themes.*',
+        'admin.ontopcoupon-homepage.*',
+        'admin.nav-links.*',
     );
     $contentOpen = request()->routeIs(
         'admin.posts.*',
@@ -59,6 +61,10 @@
                     @class(['sidebar-nav-sublink', 'active' => request()->routeIs('admin.tracking.*')])>Tracking Scripts</a>
                 <a href="{{ route('admin.themes.index') }}"
                     @class(['sidebar-nav-sublink', 'active' => request()->routeIs('admin.themes.*')])>Frontend Theme</a>
+                <a href="{{ route('admin.ontopcoupon-homepage.edit') }}"
+                    @class(['sidebar-nav-sublink', 'active' => request()->routeIs('admin.ontopcoupon-homepage.*')])>OnTopCoupon Homepage</a>
+                <a href="{{ route('admin.nav-links.index') }}"
+                    @class(['sidebar-nav-sublink', 'active' => request()->routeIs('admin.nav-links.*')])>Top Menu</a>
             @include('partials.dashboard-sidebar-collapsible-section-end')
         </div>
 
@@ -119,6 +125,10 @@
                         @class(['sidebar-nav-sublink', 'active' => request()->routeIs('admin.tracking.*')])>Tracking Scripts</a>
                     <a href="{{ route('admin.themes.index') }}"
                         @class(['sidebar-nav-sublink', 'active' => request()->routeIs('admin.themes.*')])>Frontend Theme</a>
+                    <a href="{{ route('admin.ontopcoupon-homepage.edit') }}"
+                        @class(['sidebar-nav-sublink', 'active' => request()->routeIs('admin.ontopcoupon-homepage.*')])>OnTopCoupon Homepage</a>
+                    <a href="{{ route('admin.nav-links.index') }}"
+                        @class(['sidebar-nav-sublink', 'active' => request()->routeIs('admin.nav-links.*')])>Top Menu</a>
                 @include('partials.dashboard-sidebar-collapsible-section-end')
             </div>
 
