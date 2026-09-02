@@ -19,3 +19,4 @@ yarn-error.log
 /.idea
 /.vscode
 .db_credentials
+deploy/.*-deploy.local
