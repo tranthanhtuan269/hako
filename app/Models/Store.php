@@ -177,6 +177,42 @@ class Store extends Model
         return $this->publicStoreCouponsQuery()->count();
     }
 
+    public function bestOfferLabel(): ?string
+    {
+        $coupons = $this->relationLoaded('coupons')
+            ? $this->coupons
+            : $this->publicStoreCouponsQuery()->get(['title', 'type', 'discount_type', 'discount_value']);
+
+        $maxPercent = 0.0;
+        $maxFixed = 0.0;
+        $hasFreeShip = false;
+
+        foreach ($coupons as $coupon) {
+            $ticket = $coupon->ticketDisplay();
+
+            $maxPercent = max($maxPercent, $ticket['percent']);
+            $maxFixed = max($maxFixed, $ticket['fixed']);
+
+            if ($ticket['kind'] === 'free_shipping') {
+                $hasFreeShip = true;
+            }
+        }
+
+        if ($maxPercent > 0) {
+            return 'Up to '.(int) $maxPercent.'% off';
+        }
+
+        if ($maxFixed > 0) {
+            return 'Up to $'.number_format($maxFixed, 0, '.', ',').' off';
+        }
+
+        if ($hasFreeShip) {
+            return 'Free shipping';
+        }
+
+        return null;
+    }
+
     public function domain(): ?string
     {
         if (! $this->website) {

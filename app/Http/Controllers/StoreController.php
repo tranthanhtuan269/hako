@@ -7,6 +7,7 @@ use App\Models\SiteSetting;
 use App\Support\ScrollCouponPopup;
 use App\Support\ThemeManager;
 use App\Models\Store;
+use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class StoreController extends Controller
@@ -23,7 +24,7 @@ class StoreController extends Controller
         return view('stores.index', compact('stores'));
     }
 
-    public function show(string $slug): View
+    public function show(Request $request, string $slug): View
     {
         $store = Store::with('category')
             ->where('slug', $slug)
@@ -31,14 +32,27 @@ class StoreController extends Controller
             ->firstOrFail();
         $store->incrementViews();
 
+        $offerType = $request->get('type');
+        if (! in_array($offerType, ['coupon', 'discount'], true)) {
+            $offerType = null;
+        }
+
+        $baseQuery = $store->publicStoreCouponsQuery();
+        $codeCount = (clone $baseQuery)->where('type', 'coupon')->count();
+        $dealCount = (clone $baseQuery)->where('type', 'discount')->count();
+        $bestOffer = $store->bestOfferLabel();
+
         $coupons = $store->publicStoreCouponsQuery()
-            ->paginate($store->storeCouponLimit());
+            ->when($offerType, fn ($q) => $q->where('type', $offerType))
+            ->paginate($store->storeCouponLimit())
+            ->withQueryString();
 
         $similarStores = Store::active()
             ->when($store->category_id, fn ($q) => $q->where('category_id', $store->category_id))
             ->where('id', '!=', $store->id)
+            ->with(['coupons' => fn ($q) => $q->valid()->where('show_on_store', true)])
             ->orderBy('sort_order')
-            ->take(4)
+            ->take(6)
             ->get();
 
         $topCategories = Category::active()->orderBy('sort_order')->take(8)->get();
@@ -51,6 +65,16 @@ class StoreController extends Controller
             $viewName = $themeView;
         }
 
-        return view($viewName, compact('store', 'coupons', 'similarStores', 'topCategories', 'scrollPopup'));
+        return view($viewName, compact(
+            'store',
+            'coupons',
+            'similarStores',
+            'topCategories',
+            'scrollPopup',
+            'codeCount',
+            'dealCount',
+            'bestOffer',
+            'offerType',
+        ));
     }
 }

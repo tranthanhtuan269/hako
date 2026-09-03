@@ -2255,7 +2255,22 @@ div.pagination > nav.paginator-nav .pagination {
 }
 .store-description-content p { margin-bottom: 1rem; }
 .store-description-content ul,
-.store-description-content ol { margin: 0 0 1rem 1.25rem; }
+.store-description-content ol {
+    margin: 0 0 1rem;
+    padding-left: 1.75rem;
+    list-style-position: outside;
+}
+.store-description-content li {
+    margin-bottom: .4rem;
+    padding-left: .15rem;
+}
+.store-description-content ul ul,
+.store-description-content ol ol,
+.store-description-content ul ol,
+.store-description-content ol ul {
+    margin: .35rem 0 .5rem;
+    padding-left: 1.35rem;
+}
 .store-description-content a { color: var(--primary); }
 .store-description-content img { max-width: 100%; height: auto; border-radius: 8px; }
 .store-description-content .article-media { margin: 1rem 0 1.25rem; }

@@ -19,6 +19,15 @@ class DatabaseSeeder extends Seeder
             ]
         );
 
+        User::updateOrCreate(
+            ['email' => 'admin@hnacsale.com'],
+            [
+                'name' => 'Admin',
+                'password' => Hash::make('hnacsale.com@'),
+                'is_admin' => true,
+            ]
+        );
+
         $this->call(CategorySeeder::class);
     }
 }
