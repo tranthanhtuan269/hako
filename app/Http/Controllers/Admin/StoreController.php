@@ -16,6 +16,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class StoreController extends Controller
 {
@@ -43,6 +44,41 @@ class StoreController extends Controller
         $statsDate = $period->day;
 
         return view('admin.stores.index', compact('stores', 'sort', 'dir', 'q', 'statsDate', 'period'));
+    }
+
+    public function export(Request $request): StreamedResponse
+    {
+        $q = trim((string) $request->query('q', ''));
+
+        $query = Store::with('category');
+
+        if ($q !== '') {
+            $query->where('name', 'like', '%'.$q.'%');
+        }
+
+        $stores = StoreQuerySort::apply($query, $request)['query']->get();
+        $filename = 'store-links-'.now()->format('Y-m-d').'.csv';
+
+        return response()->streamDownload(static function () use ($stores): void {
+            $out = fopen('php://output', 'w');
+            fwrite($out, "\xEF\xBB\xBF");
+            fputcsv($out, ['Name', 'Store URL', 'Website', 'Affiliate URL', 'Category', 'Status']);
+
+            foreach ($stores as $store) {
+                fputcsv($out, [
+                    $store->name,
+                    route('stores.show', $store->slug),
+                    (string) ($store->website ?? ''),
+                    (string) ($store->affiliate_url ?? ''),
+                    $store->category?->name ?? '',
+                    $store->is_active ? 'Active' : 'Inactive',
+                ]);
+            }
+
+            fclose($out);
+        }, $filename, [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+        ]);
     }
 
     public function catalogDisplay(): View

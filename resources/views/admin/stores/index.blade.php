@@ -15,6 +15,11 @@
         </p>
     </div>
     <div style="display:flex;gap:.5rem;flex-wrap:wrap;">
+        <a href="{{ route('admin.stores.export', array_filter([
+            'q' => $q ?? null,
+            'sort' => ($sort ?? 'order') !== 'order' ? $sort : null,
+            'dir' => ($sort ?? 'order') !== 'order' ? $dir : null,
+        ])) }}" class="btn btn-outline">Export store links</a>
         <a href="{{ route('admin.stores.catalog-display') }}" class="btn btn-outline">Stores page display</a>
         <a href="{{ route('admin.stores.create') }}" class="btn btn-primary">+ Add Store</a>
     </div>

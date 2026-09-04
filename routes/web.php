@@ -117,6 +117,7 @@ Route::middleware(['auth', 'admin', 'noindex'])->prefix('admin')->name('admin.')
     Route::get('stores/catalog-display', [AdminStoreController::class, 'catalogDisplay'])->name('stores.catalog-display');
     Route::put('stores/catalog-display', [AdminStoreController::class, 'updateCatalogDisplay'])->name('stores.catalog-display.update');
     Route::put('stores/sort-order', [AdminStoreController::class, 'updateSortOrder'])->name('stores.sort-order');
+    Route::get('stores/export', [AdminStoreController::class, 'export'])->name('stores.export');
     Route::get('stores/{store}/coupons', [AdminStoreController::class, 'coupons'])->name('stores.coupons');
     Route::put('stores/{store}/coupons/sort-order', [AdminStoreController::class, 'updateCouponsSortOrder'])->name('stores.coupons.sort-order');
     Route::put('stores/{store}/coupons/{coupon}', [AdminStoreController::class, 'updateCoupon'])->name('stores.coupons.update');
