@@ -421,12 +421,10 @@ final class PublicImage
 
     private static function detectFormat(string $binary): ?string
     {
-        $trim = ltrim($binary);
-
-        if (str_starts_with($trim, '<svg') || str_contains($trim, '<svg')) {
-            return 'svg';
-        }
-
+        // Raster magic bytes MUST come before any SVG text probe.
+        // Some PNG/JPEG binaries coincidentally contain the ASCII sequence "<svg"
+        // (e.g. exports that embed vector markup), which previously caused false
+        // SVG detections and made uploaded logos appear "unsaved".
         if (str_starts_with($binary, "\x89PNG\r\n\x1a\n")) {
             return 'png';
         }
@@ -439,8 +437,28 @@ final class PublicImage
             return 'gif';
         }
 
+        $trim = ltrim($binary);
+
         if (str_starts_with($trim, 'RIFF') && str_contains(substr($binary, 0, 16), 'WEBP')) {
             return 'webp';
+        }
+
+        // ICO: reserved 0 + type 1 (little-endian)
+        if (strlen($binary) >= 4 && $binary[0] === "\x00" && $binary[1] === "\x00"
+            && ($binary[2] === "\x01" || $binary[2] === "\x02") && $binary[3] === "\x00") {
+            return 'ico';
+        }
+
+        // SVG is text — only inspect a small leading window (after optional XML decl).
+        $head = ltrim(substr($trim, 0, 2048));
+        if (str_starts_with($head, '<?xml')) {
+            $gt = strpos($head, '>');
+            if ($gt !== false) {
+                $head = ltrim(substr($head, $gt + 1));
+            }
+        }
+        if (str_starts_with($head, '<svg') || str_starts_with($head, '<!DOCTYPE svg')) {
+            return 'svg';
         }
 
         if (function_exists('finfo_open')) {
