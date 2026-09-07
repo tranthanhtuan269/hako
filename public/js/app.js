@@ -147,7 +147,7 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    async function resolveCouponReveal(btn) {
+    async function loadCouponReveal(btn) {
         if (btn.dataset.code) {
             return {
                 code: btn.dataset.code,
@@ -164,9 +164,11 @@ document.addEventListener('DOMContentLoaded', function () {
         try {
             const res = await fetch(revealUrl, {
                 method: 'POST',
+                credentials: 'same-origin',
                 headers: {
                     'X-CSRF-TOKEN': csrf,
                     'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
                 },
             });
             const data = await res.json();
@@ -183,6 +185,42 @@ document.addEventListener('DOMContentLoaded', function () {
         } catch (e) {
             return null;
         }
+    }
+
+    function resolveCouponReveal(btn) {
+        if (!btn) {
+            return Promise.resolve(null);
+        }
+
+        if (btn.dataset.code && !btn._couponRevealValue) {
+            btn._couponRevealValue = {
+                code: btn.dataset.code,
+                affiliateUrl: btn.dataset.affiliateUrl || btn.dataset.shopUrl || btn.dataset.goUrl || '',
+                title: btn.dataset.couponTitle || '',
+            };
+        }
+
+        if (btn._couponRevealPromise) {
+            return btn._couponRevealPromise;
+        }
+
+        btn._couponRevealPromise = loadCouponReveal(btn).then(function (result) {
+            if (!result?.code) {
+                btn._couponRevealPromise = null;
+                btn._couponRevealValue = null;
+            } else {
+                btn._couponRevealValue = result;
+            }
+
+            return result;
+        }).catch(function () {
+            btn._couponRevealPromise = null;
+            btn._couponRevealValue = null;
+
+            return null;
+        });
+
+        return btn._couponRevealPromise;
     }
 
     async function resolveCouponCode(btn) {
@@ -329,6 +367,44 @@ function writeClipboardText(text) {
     return Promise.resolve(copyWithTextarea(text));
 }
 
+/**
+ * Start a clipboard write in the same click/tap turn. Chrome, Edge, and Safari
+ * keep user activation if write() is called now and the code arrives later.
+ */
+function writeClipboardFromPromise(textPromise) {
+    const pending = Promise.resolve(textPromise).then(function (text) {
+        if (!text) {
+            throw new Error('empty-code');
+        }
+
+        return String(text);
+    });
+
+    if (window.isSecureContext && navigator.clipboard && typeof ClipboardItem === 'function') {
+        try {
+            const type = 'text/plain';
+            const blobPromise = pending.then(function (text) {
+                return new Blob([text], { type: type });
+            });
+            const item = new ClipboardItem({ [type]: blobPromise });
+
+            return navigator.clipboard.write([item]).then(function () {
+                return true;
+            }).catch(function () {
+                return pending.then(writeClipboardText).catch(function () {
+                    return false;
+                });
+            });
+        } catch (error) {
+            // ClipboardItem construction can throw on older Safari.
+        }
+    }
+
+    return pending.then(writeClipboardText).catch(function () {
+        return false;
+    });
+}
+
 function copyWithTextarea(text) {
     const area = document.createElement('textarea');
     const selection = document.getSelection();
@@ -337,9 +413,10 @@ function copyWithTextarea(text) {
 
     area.value = text;
     area.setAttribute('aria-hidden', 'true');
+    area.setAttribute('tabindex', '-1');
     area.style.position = 'fixed';
     area.style.top = '0';
-    area.style.left = '0';
+    area.style.left = ios ? '0' : '-9999px';
     area.style.width = ios ? '100%' : '1px';
     area.style.height = ios ? '40px' : '1px';
     area.style.padding = '0';
@@ -347,9 +424,9 @@ function copyWithTextarea(text) {
     area.style.outline = '0';
     area.style.boxShadow = 'none';
     area.style.background = '#fff';
-    area.style.opacity = '0.01';
+    area.style.opacity = ios ? '0.01' : '0';
     area.style.fontSize = '16px';
-    area.style.zIndex = '-1';
+    area.style.zIndex = '10000';
 
     if (ios) {
         area.contentEditable = 'true';
@@ -389,6 +466,44 @@ function copyWithTextarea(text) {
     }
 
     return ok;
+}
+
+function markCopyButton(btn, copied) {
+    if (!btn) {
+        return;
+    }
+
+    const label = btn.querySelector('.otc-get-code-label');
+    const successText = label ? 'COPIED!' : 'Copied!';
+    const failText = label ? 'COPY FAILED' : 'Copy failed';
+
+    if (label) {
+        if (!btn.dataset.copyLabel) {
+            btn.dataset.copyLabel = label.textContent;
+        }
+
+        label.textContent = copied ? successText : failText;
+        btn.classList.toggle('copied', copied);
+        btn.classList.toggle('copy-failed', !copied);
+
+        setTimeout(function () {
+            label.textContent = btn.dataset.copyLabel || 'GET CODE';
+            btn.classList.remove('copied', 'copy-failed');
+        }, 2000);
+
+        return;
+    }
+
+    const original = btn.dataset.copyLabel || btn.textContent;
+    btn.dataset.copyLabel = original;
+    btn.textContent = copied ? successText : failText;
+    btn.classList.toggle('copied', copied);
+    btn.classList.toggle('copy-failed', !copied);
+
+    setTimeout(function () {
+        btn.textContent = btn.dataset.copyLabel || original;
+        btn.classList.remove('copied', 'copy-failed');
+    }, 2000);
 }
 
 function initCouponRevealModal() {
@@ -452,17 +567,7 @@ function initCouponRevealModal() {
 
         try {
             const copied = await writeClipboardText(text);
-
-            if (btn) {
-                const original = btn.dataset.copyLabel || btn.textContent;
-                btn.dataset.copyLabel = original;
-                btn.textContent = copied ? 'Copied!' : 'Copy failed';
-                btn.classList.toggle('copied', copied);
-                setTimeout(function () {
-                    btn.textContent = btn.dataset.copyLabel || original;
-                    btn.classList.remove('copied');
-                }, 2000);
-            }
+            markCopyButton(btn, copied);
 
             // Open even when clipboard fails (common on mobile without gesture/permission).
             if (shouldOpenOnCopy && affiliateUrl) {
@@ -473,11 +578,12 @@ function initCouponRevealModal() {
         }
     }
 
-    function openModal(data) {
+    function openModal(data, options) {
+        options = options || {};
         activeCode = data.code || '';
         pendingAffiliateUrl = data.affiliateUrl || data.shopUrl || '';
         modalWasShown = true;
-        affiliateTabOpened = false;
+        affiliateTabOpened = !!options.affiliateAlreadyOpen;
         copyInFlight = false;
 
         if (titleEl) {
@@ -504,6 +610,24 @@ function initCouponRevealModal() {
         modal.hidden = false;
         modal.setAttribute('aria-hidden', 'false');
         document.body.classList.add('sp-modal-open');
+
+        if (codeEl && activeCode) {
+            try {
+                const range = document.createRange();
+                range.selectNodeContents(codeEl);
+                const selection = window.getSelection();
+                if (selection) {
+                    selection.removeAllRanges();
+                    selection.addRange(range);
+                }
+            } catch (error) {
+                // Ignore selection restrictions.
+            }
+        }
+
+        if (options.skipAutoCopy) {
+            return;
+        }
 
         // Auto-copy after an async reveal loses the tap gesture on iOS/Android,
         // which then shows "Copy failed". Let the shopper tap COPY CODE instead.
@@ -583,19 +707,31 @@ function initCouponRevealModal() {
         });
     }
 
-    async function handleRevealClick(btn, primedTab) {
+    function modalPayload(btn, result, affiliateUrl) {
+        return {
+            code: result.code,
+            affiliateUrl: affiliateUrl,
+            title: result.title || btn.dataset.couponTitle || '',
+            discount: btn.dataset.couponDiscount || '',
+            store: btn.dataset.couponStore || '',
+            expires: btn.dataset.couponExpires || '',
+            shopUrl: btn.dataset.shopUrl || btn.dataset.goUrl || '',
+        };
+    }
+
+    async function handleRevealClick(btn, primedTab, revealPromise, copyPromise) {
         if (btn.id === 'sp-modal-copy' || btn.closest('#sp-coupon-modal')) {
             return;
         }
 
-        const flags = redirectFlowFlags();
-        const isMobile = window.isLikelyMobileViewport();
-        let activePrimedTab = primedTab || null;
+        const activePrimedTab = primedTab || null;
 
         try {
             let result = null;
 
-            if (typeof window.resolveCouponReveal === 'function') {
+            if (revealPromise) {
+                result = await revealPromise;
+            } else if (typeof window.resolveCouponReveal === 'function') {
                 result = await window.resolveCouponReveal(btn);
             } else if (typeof window.resolveCouponCode === 'function') {
                 const code = await window.resolveCouponCode(btn);
@@ -633,38 +769,17 @@ function initCouponRevealModal() {
             }
 
             const affiliateUrl = result.affiliateUrl || btn.dataset.affiliateUrl || btn.dataset.shopUrl || btn.dataset.goUrl || '';
+            let copied = false;
 
-            // Flow 2/3 on desktop: copy then open destination with no coupon popup.
-            // On phones the reveal fetch consumes the tap, so clipboard write fails
-            // and fallbackNavigate would leave the shopper on the merchant site
-            // without a code. Keep the popup so they can copy from a fresh tap.
-            if (flags.onCopy && !isMobile) {
-                const originalLabel = btn.dataset.copyLabel || btn.textContent;
-                btn.dataset.copyLabel = originalLabel;
-
-                const copied = await writeClipboardText(result.code);
-                btn.textContent = copied ? 'Copied!' : 'Copy failed';
-                btn.classList.toggle('copied', copied);
-                setTimeout(function () {
-                    btn.textContent = btn.dataset.copyLabel || originalLabel;
-                    btn.classList.remove('copied');
-                }, 2000);
-
-                if (affiliateUrl) {
-                    window.navigateBackgroundTab(activePrimedTab, affiliateUrl, {
-                        keepCurrentTab: true,
-                        fallbackNavigate: false,
-                    });
-                } else if (activePrimedTab && !activePrimedTab.closed) {
-                    try {
-                        activePrimedTab.close();
-                    } catch (error) {
-                        // Ignore.
-                    }
-                }
-
-                return;
+            if (copyPromise) {
+                copied = await copyPromise.catch(function () {
+                    return false;
+                });
+            } else {
+                copied = await writeClipboardText(result.code);
             }
+
+            markCopyButton(btn, copied);
 
             if (activePrimedTab && !activePrimedTab.closed) {
                 try {
@@ -674,15 +789,12 @@ function initCouponRevealModal() {
                 }
             }
 
-            // Flow 1: show popup; destination opens when the popup is closed.
-            openModal({
-                code: result.code,
-                affiliateUrl: affiliateUrl,
-                title: result.title || btn.dataset.couponTitle || '',
-                discount: btn.dataset.couponDiscount || '',
-                store: btn.dataset.couponStore || '',
-                expires: btn.dataset.couponExpires || '',
-                shopUrl: btn.dataset.shopUrl || btn.dataset.goUrl || '',
+            // Always show the popup with the plaintext code. Auto-opening the
+            // merchant first is why some desktops copy and others do not:
+            // browsers that allow popups steal focus, clipboard fails, and the
+            // shopper is left on the store with an empty clipboard.
+            openModal(modalPayload(btn, result, affiliateUrl), {
+                skipAutoCopy: copied,
             });
         } catch (e) {
             if (activePrimedTab && !activePrimedTab.closed) {
@@ -698,20 +810,66 @@ function initCouponRevealModal() {
     }
 
     function startRevealClick(btn) {
-        const flags = redirectFlowFlags();
-        let primedTab = null;
-
-        // Must run synchronously in the click handler before any await,
-        // otherwise mobile browsers block the destination tab. Skip on phones:
-        // about:blank steals focus and makes clipboard writes fail.
-        if (flags.onCopy && !window.isLikelyMobileViewport()) {
-            primedTab = window.primeBackgroundTab();
+        if (btn.id === 'sp-modal-copy' || btn.closest('#sp-coupon-modal')) {
+            return;
         }
 
-        handleRevealClick(btn, primedTab);
+        if (btn._revealClickLock) {
+            return;
+        }
+
+        btn._revealClickLock = true;
+        setTimeout(function () {
+            btn._revealClickLock = false;
+        }, 1200);
+
+        const revealPromise = typeof window.resolveCouponReveal === 'function'
+            ? window.resolveCouponReveal(btn)
+            : Promise.resolve(null);
+        const cachedCode = btn._couponRevealValue && btn._couponRevealValue.code
+            ? btn._couponRevealValue.code
+            : '';
+        let copyPromise;
+
+        if (cachedCode && copyWithTextarea(cachedCode)) {
+            copyPromise = Promise.resolve(true);
+            writeClipboardText(cachedCode);
+        } else {
+            copyPromise = writeClipboardFromPromise(
+                cachedCode
+                    ? Promise.resolve(cachedCode)
+                    : Promise.resolve(revealPromise).then(function (result) {
+                        if (!result || !result.code) {
+                            throw new Error('no-code');
+                        }
+
+                        return result.code;
+                    })
+            );
+        }
+
+        handleRevealClick(btn, null, revealPromise, copyPromise);
     }
 
+    function prefetchRevealFromEvent(event) {
+        const btn = event.target.closest?.('.btn-copy, .sp-code-copy, .scroll-coupon-popup-copy, [data-reveal-url]');
+
+        if (!btn || btn.id === 'sp-modal-copy' || btn.closest('#sp-coupon-modal')) {
+            return;
+        }
+
+        if (typeof window.resolveCouponReveal === 'function') {
+            window.resolveCouponReveal(btn);
+        }
+    }
+
+    document.addEventListener('pointerdown', prefetchRevealFromEvent, true);
+
     document.querySelectorAll('.btn-copy, .sp-code-copy, .scroll-coupon-popup-copy').forEach(function (btn) {
+        if (btn.id === 'sp-modal-copy' || btn.closest('#sp-coupon-modal')) {
+            return;
+        }
+
         btn.addEventListener('click', function (event) {
             event.preventDefault();
             startRevealClick(btn);

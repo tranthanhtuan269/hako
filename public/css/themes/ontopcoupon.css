@@ -1514,6 +1514,13 @@ body.theme-ontopcoupon .otc-get-code-peek .coupon-code-blur {
 body.theme-ontopcoupon .otc-get-code-peek.is-revealed,
 body.theme-ontopcoupon .otc-get-code-peek.is-revealed .coupon-code-blur {
     filter: none;
+    user-select: text;
+    -webkit-user-select: text;
+}
+
+body.theme-ontopcoupon .otc-get-code.copy-failed .otc-get-code-label {
+    background: #fecaca;
+    color: #7f1d1d;
 }
 
 body.theme-ontopcoupon .otc-get-code-label {
