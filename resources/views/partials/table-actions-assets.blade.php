@@ -40,11 +40,12 @@
                 color: #16a34a;
             }
             .table-action-btn.js-toggle-ads:not(.is-ads-on) {
-                opacity: .38;
+                color: #0f172a;
+                opacity: 1;
             }
             .table-action-btn.js-toggle-ads.is-ads-on {
-                color: #d97706;
-                background: #fffbeb;
+                color: #dc2626;
+                background: #fef2f2;
                 opacity: 1;
             }
             .table-action-btn.js-toggle-ads.is-ads-on svg {
@@ -52,6 +53,14 @@
             }
             .table-action-btn.js-toggle-ads:hover:not(:disabled) {
                 opacity: 1;
+            }
+            .table-action-btn.js-toggle-ads:not(.is-ads-on):hover:not(:disabled) {
+                color: #020617;
+                background: #f1f5f9;
+            }
+            .table-action-btn.js-toggle-ads.is-ads-on:hover:not(:disabled) {
+                color: #b91c1c;
+                background: #fee2e2;
             }
         </style>
     @endpush
