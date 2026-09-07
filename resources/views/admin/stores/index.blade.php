@@ -130,6 +130,7 @@
                         'store' => $store,
                         'editUrl' => route('admin.stores.edit', $store),
                         'destroyUrl' => route('admin.stores.destroy', $store),
+                        'showAdsToggle' => true,
                     ])
                 </td>
             </tr>

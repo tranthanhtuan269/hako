@@ -3,8 +3,23 @@
     $editUrl = $editUrl ?? route('member.stores.edit', $store);
     $destroyUrl = $destroyUrl ?? route('member.stores.destroy', $store);
     $showCopy = $showCopy ?? true;
+    $showAdsToggle = $showAdsToggle ?? false;
+    $adsListed = (bool) $store->is_listed_ads;
+    $adsTitle = $adsListed ? 'Listed on ads — click to mark not listed' : 'Not listed on ads — click to mark listed';
 @endphp
 <div class="table-actions">
+    @if($showAdsToggle)
+        <button
+            type="button"
+            class="table-action-btn js-toggle-ads{{ $adsListed ? ' is-ads-on' : '' }}"
+            data-toggle-url="{{ route('admin.stores.toggle-ads-listed', $store) }}"
+            title="{{ $adsTitle }}"
+            aria-label="{{ $adsTitle }}"
+            aria-pressed="{{ $adsListed ? 'true' : 'false' }}"
+        >
+            @include('partials.icons.megaphone')
+        </button>
+    @endif
     @if($store->is_active)
         <a href="{{ $publicUrl }}" class="table-action-btn" target="_blank" rel="noopener" title="View public page" aria-label="View public page">
             @include('partials.icons.eye')

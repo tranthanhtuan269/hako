@@ -31,6 +31,7 @@ class Store extends Model
         'store_coupon_limit',
         'is_active',
         'is_pinned_home',
+        'is_listed_ads',
         'home_pin_sort_order',
         'view_count',
     ];
@@ -38,6 +39,7 @@ class Store extends Model
     protected $casts = [
         'is_active' => 'boolean',
         'is_pinned_home' => 'boolean',
+        'is_listed_ads' => 'boolean',
         'show_on_stores' => 'boolean',
         'store_coupon_limit' => 'integer',
         'stores_list_sort_order' => 'integer',

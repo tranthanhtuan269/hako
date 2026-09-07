@@ -62,7 +62,7 @@ class StoreController extends Controller
         return response()->streamDownload(static function () use ($stores): void {
             $out = fopen('php://output', 'w');
             fwrite($out, "\xEF\xBB\xBF");
-            fputcsv($out, ['Name', 'Store URL', 'Website', 'Affiliate URL', 'Category', 'Status']);
+            fputcsv($out, ['Name', 'Store URL', 'Website', 'Affiliate URL', 'Category', 'Status', 'Ads']);
 
             foreach ($stores as $store) {
                 fputcsv($out, [
@@ -72,6 +72,7 @@ class StoreController extends Controller
                     (string) ($store->affiliate_url ?? ''),
                     $store->category?->name ?? '',
                     $store->is_active ? 'Active' : 'Inactive',
+                    $store->is_listed_ads ? 'Listed' : 'Not listed',
                 ]);
             }
 
@@ -184,6 +185,27 @@ class StoreController extends Controller
         ]);
 
         return back()->with('success', "{$store->name} pinned to homepage.");
+    }
+
+    public function toggleAdsListed(Request $request, Store $store): JsonResponse|RedirectResponse
+    {
+        $store->update([
+            'is_listed_ads' => ! $store->is_listed_ads,
+        ]);
+
+        $listed = (bool) $store->is_listed_ads;
+        $message = $listed
+            ? "{$store->name} marked as listed on ads."
+            : "{$store->name} marked as not listed on ads.";
+
+        if ($request->wantsJson()) {
+            return response()->json([
+                'is_listed_ads' => $listed,
+                'message' => $message,
+            ]);
+        }
+
+        return back()->with('success', $message);
     }
 
     public function coupons(Store $store): JsonResponse

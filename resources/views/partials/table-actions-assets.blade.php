@@ -1,7 +1,7 @@
 @once
     @push('styles')
         <style>
-            .table-actions-col { width: 10rem; text-align: right; }
+            .table-actions-col { width: 12rem; text-align: right; }
             .table-actions {
                 display: flex;
                 align-items: center;
@@ -22,7 +22,7 @@
                 color: #475569;
                 cursor: pointer;
                 text-decoration: none;
-                transition: background .15s, color .15s;
+                transition: background .15s, color .15s, opacity .15s;
             }
             .table-action-btn:hover:not(.is-disabled):not(:disabled) {
                 background: #f1f5f9;
@@ -38,6 +38,20 @@
             }
             .table-action-btn.is-copied {
                 color: #16a34a;
+            }
+            .table-action-btn.js-toggle-ads:not(.is-ads-on) {
+                opacity: .38;
+            }
+            .table-action-btn.js-toggle-ads.is-ads-on {
+                color: #d97706;
+                background: #fffbeb;
+                opacity: 1;
+            }
+            .table-action-btn.js-toggle-ads.is-ads-on svg {
+                fill: currentColor;
+            }
+            .table-action-btn.js-toggle-ads:hover:not(:disabled) {
+                opacity: 1;
             }
         </style>
     @endpush
@@ -69,6 +83,51 @@
                     window.prompt('Copy this link:', url);
                     markCopied();
                 }
+            });
+
+            document.addEventListener('click', function (e) {
+                var btn = e.target.closest('.js-toggle-ads');
+                if (!btn || btn.disabled) {
+                    return;
+                }
+
+                var url = btn.getAttribute('data-toggle-url');
+                if (!url) {
+                    return;
+                }
+
+                var csrf = document.querySelector('meta[name="csrf-token"]');
+                btn.disabled = true;
+
+                fetch(url, {
+                    method: 'PATCH',
+                    credentials: 'same-origin',
+                    headers: {
+                        'X-CSRF-TOKEN': csrf ? csrf.content : '',
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                    },
+                }).then(function (res) {
+                    if (!res.ok) {
+                        throw new Error('toggle-failed');
+                    }
+
+                    return res.json();
+                }).then(function (data) {
+                    var on = !!data.is_listed_ads;
+                    var title = on
+                        ? 'Listed on ads — click to mark not listed'
+                        : 'Not listed on ads — click to mark listed';
+
+                    btn.classList.toggle('is-ads-on', on);
+                    btn.setAttribute('title', title);
+                    btn.setAttribute('aria-label', title);
+                    btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+                }).catch(function () {
+                    btn.setAttribute('title', 'Could not update ads status');
+                }).finally(function () {
+                    btn.disabled = false;
+                });
             });
         </script>
     @endpush
