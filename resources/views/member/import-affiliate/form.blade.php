@@ -72,7 +72,7 @@
             <img id="preview-logo" src="" alt="" class="merchant-preview-logo">
             <div>
                 <div id="preview-existing-import" class="preview-existing-import" hidden>
-                    <strong>Existing import found</strong>
+                    <strong>Existing store found</strong>
                     <p id="preview-existing-import-text" class="form-hint" style="margin:.35rem 0 0;"></p>
                 </div>
                 <strong id="preview-name"></strong>
@@ -425,8 +425,6 @@
 <script>
 (() => {
     const previewUrl = @json(route('member.import-affiliate.preview'));
-    const integrationsUrl = @json(auth()->user()->isAdmin() ? route('admin.integrations.index') : null);
-    const allowReimportExistingStores = @json($allowReimportExistingStores);
     const csrf = document.querySelector('meta[name="csrf-token"]').content;
     const offersList = document.getElementById('offers-list');
     const template = document.getElementById('offer-block-template');
@@ -446,12 +444,10 @@
 
     function setImportSubmitEnabled(enabled) {
         importSubmitBtn.disabled = !enabled;
-        importSubmitBtn.title = enabled
-            ? ''
-            : 'Re-importing existing stores is disabled in site settings.';
+        importSubmitBtn.title = '';
     }
 
-    function updateExistingImportNotice(existing, importBlocked) {
+    function updateExistingImportNotice(existing) {
         const previewExistingImport = document.getElementById('preview-existing-import');
         const previewExistingImportText = document.getElementById('preview-existing-import-text');
 
@@ -463,33 +459,15 @@
             return;
         }
 
-        const postLabel = existing.post_title
-            ? `post “${existing.post_title}”`
-            : 'an existing post';
-
-        if (importBlocked) {
-            let message =
-                `This merchant is already imported as “${existing.store_name}”. `
-                + 'Re-importing existing stores is disabled, so import is blocked.';
-
-            if (integrationsUrl) {
-                message += ` Enable “Allow re-importing existing stores” in Integrations settings to update that store.`;
-            } else {
-                message += ' Ask your site admin to enable re-importing in Integrations settings.';
-            }
-
-            previewExistingImportText.textContent = message;
-            previewExistingImport.classList.add('is-blocked');
-            setImportSubmitEnabled(false);
-        } else {
-            previewExistingImportText.textContent =
-                `This merchant is already imported as “${existing.store_name}”. `
-                + `Submitting will update that store, replace its offers, and refresh ${postLabel} instead of creating duplicates.`;
-            previewExistingImport.classList.remove('is-blocked');
-            setImportSubmitEnabled(true);
-        }
-
+        const nextSlug = existing.next_store_slug || '';
+        previewExistingImportText.textContent =
+            `This merchant is already imported as “${existing.store_name}” (/stores/${existing.store_slug}). `
+            + `Import will create a new store`
+            + (nextSlug ? ` with slug “${nextSlug}”` : '')
+            + `.`;
+        previewExistingImport.classList.remove('is-blocked');
         previewExistingImport.hidden = false;
+        setImportSubmitEnabled(true);
     }
 
     document.getElementById('add-offer-btn').addEventListener('click', () => {
@@ -764,12 +742,9 @@
             document.getElementById('preview-meta').textContent = merchant.meta_description || merchant.page_title || '';
 
             if (data.existing_import) {
-                updateExistingImportNotice(
-                    data.existing_import,
-                    !!data.import_blocked,
-                );
+                updateExistingImportNotice(data.existing_import);
             } else {
-                updateExistingImportNotice(null, false);
+                updateExistingImportNotice(null);
             }
 
             if (Array.isArray(merchant.products) && merchant.products.length) {
@@ -836,11 +811,10 @@
                 statusMessage += ' No catalog products found — using brand/offers content.';
             }
 
-            if (data.import_blocked) {
-                statusMessage += ' Import blocked — this store already exists.';
-                status.className = 'form-hint detect-status is-error';
-            } else if (data.existing_import) {
-                statusMessage += ' Existing store will be updated on import.';
+            if (data.existing_import) {
+                statusMessage += data.existing_import.next_store_slug
+                    ? ` Existing store found — import will create /stores/${data.existing_import.next_store_slug}.`
+                    : ' Existing store found — import will create a new store.';
                 status.className = 'form-hint detect-status is-success';
             } else {
                 status.className = 'form-hint detect-status is-success';

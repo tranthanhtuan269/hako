@@ -7,7 +7,7 @@ use Illuminate\Support\Str;
 
 final class StoreSlug
 {
-    public static function make(string $name, ?string $preferred = null, ?int $ignoreId = null): string
+    public static function make(string $name, ?string $preferred = null, ?int $ignoreId = null, string $separator = '-'): string
     {
         $slug = Str::slug($preferred ?: $name);
 
@@ -22,9 +22,17 @@ final class StoreSlug
             ->where('slug', $slug)
             ->when($ignoreId, fn ($query) => $query->where('id', '!=', $ignoreId))
             ->exists()) {
-            $slug = $original.'-'.$suffix++;
+            $slug = $original.$separator.$suffix++;
         }
 
         return $slug;
+    }
+
+    /**
+     * Unique slug using _1, _2 when the base name is already taken.
+     */
+    public static function makeNumbered(string $name, ?string $preferred = null, ?int $ignoreId = null): string
+    {
+        return self::make($name, $preferred, $ignoreId, '_');
     }
 }

@@ -84,8 +84,8 @@
             Allow re-importing existing stores
         </label>
         <p class="form-hint" style="margin-top:.5rem;">
-            When enabled, importing the same merchant again updates the store, replaces offers, and refreshes the blog post.
-            When disabled, the import button is blocked if that store already exists on your site.
+            Import from Affiliate Link always creates a new store. If that merchant already exists, the new store gets a unique slug such as <code>store_1</code>, <code>store_2</code>.
+            This checkbox only affects other import tools that reuse an existing store.
         </p>
     </div>
 
