@@ -421,12 +421,8 @@ final class PublicImage
 
     private static function detectFormat(string $binary): ?string
     {
-        $trim = ltrim($binary);
-
-        if (str_starts_with($trim, '<svg') || str_contains($trim, '<svg')) {
-            return 'svg';
-        }
-
+        // Raster signatures first. PNG/JPEG payloads can contain the ASCII bytes "<svg"
+        // in compressed data, which used to make valid logos fail isValidImage().
         if (str_starts_with($binary, "\x89PNG\r\n\x1a\n")) {
             return 'png';
         }
@@ -439,8 +435,17 @@ final class PublicImage
             return 'gif';
         }
 
+        $trim = ltrim($binary);
+
         if (str_starts_with($trim, 'RIFF') && str_contains(substr($binary, 0, 16), 'WEBP')) {
             return 'webp';
+        }
+
+        $head = substr($trim, 0, 2048);
+
+        if (str_starts_with($head, '<svg')
+            || (str_contains($head, '<svg') && (str_starts_with($head, '<?xml') || str_contains($head, '<!DOCTYPE svg')))) {
+            return 'svg';
         }
 
         if (function_exists('finfo_open')) {

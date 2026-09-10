@@ -323,7 +323,7 @@ final class AffiliateLinkResolver
     }
 
     /**
-     * Discover featured products: AI picks best SKUs + images when Gemini is enabled,
+     * Discover featured products: AI picks best SKUs + images when an AI provider is enabled,
      * otherwise fall back to homepage/catalog scrape ranking.
      *
      * @param  array{store_name?: ?string, category_name?: ?string, meta_description?: ?string, page_title?: ?string, domain?: ?string}  $context

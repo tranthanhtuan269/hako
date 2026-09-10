@@ -289,7 +289,9 @@ final class AffiliateImportContentBuilder
             $aiBlog = $this->geminiWriter->generate($this->blogContext($store, $offers, $merchant));
 
             if ($aiBlog !== null) {
-                return $this->sanitizeBlogOutput($aiBlog, $store, $merchant, $offers) + ['source' => 'gemini'];
+                return $this->sanitizeBlogOutput($aiBlog, $store, $merchant, $offers) + [
+                    'source' => $aiBlog['source'] ?? (new AiChatClient())->activeProvider(),
+                ];
             }
 
             $fallback = $this->blogPostWithoutAi($store, $offers, $merchant);

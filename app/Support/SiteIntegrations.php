@@ -6,8 +6,6 @@ use App\Models\SiteSetting;
 
 final class SiteIntegrations
 {
-    private const GEMINI_KEY = 'gemini_api_key';
-
     private const SCAN_SITE_KEY = 'scan_site';
 
     private const SCAN_API_URL_KEY = 'scan_api_url';
@@ -18,15 +16,134 @@ final class SiteIntegrations
 
     private const SCAN_DEFAULT_BASE_URL = 'https://scan.thuoc360.com';
 
+    private const AI_PROVIDER_KEY = 'ai_provider';
+
     public static function geminiApiKey(): string
     {
-        $stored = trim((string) SiteSetting::get(self::GEMINI_KEY, ''));
+        return self::aiApiKey('gemini');
+    }
+
+    public static function aiProvider(): string
+    {
+        $stored = strtolower(trim((string) SiteSetting::get(self::AI_PROVIDER_KEY, '')));
+
+        if (AiProviderCatalog::exists($stored)) {
+            return $stored;
+        }
+
+        return AiProviderCatalog::DEFAULT;
+    }
+
+    public static function setAiProvider(?string $value): void
+    {
+        SiteSetting::set(self::AI_PROVIDER_KEY, AiProviderCatalog::normalize((string) $value));
+    }
+
+    public static function aiApiKey(?string $provider = null): string
+    {
+        $provider = AiProviderCatalog::normalize($provider ?? self::aiProvider());
+        $meta = AiProviderCatalog::get($provider);
+
+        if ($meta === null) {
+            return '';
+        }
+
+        $stored = trim((string) SiteSetting::get($meta['key_setting'], ''));
 
         if ($stored !== '') {
             return $stored;
         }
 
-        return trim((string) env('GEMINI_API_KEY', ''));
+        return trim((string) env($meta['key_env'], ''));
+    }
+
+    public static function aiModel(?string $provider = null): string
+    {
+        $provider = AiProviderCatalog::normalize($provider ?? self::aiProvider());
+        $meta = AiProviderCatalog::get($provider);
+        $fallback = $meta['default_model'] ?? 'gemini-2.5-flash';
+
+        if ($meta === null) {
+            return $fallback;
+        }
+
+        $stored = trim((string) SiteSetting::get($meta['model_setting'], ''));
+
+        if ($stored !== '') {
+            return $stored;
+        }
+
+        $fromEnv = trim((string) config("ai.{$provider}.model", ''));
+
+        return $fromEnv !== '' ? $fromEnv : $fallback;
+    }
+
+    public static function setAiModel(string $provider, ?string $value): void
+    {
+        $provider = AiProviderCatalog::normalize($provider);
+        $meta = AiProviderCatalog::get($provider);
+
+        if ($meta === null || $value === null) {
+            return;
+        }
+
+        SiteSetting::set($meta['model_setting'], trim($value));
+    }
+
+    public static function aiTimeout(?string $provider = null): int
+    {
+        $provider = AiProviderCatalog::normalize($provider ?? self::aiProvider());
+
+        return max(15, (int) config("ai.{$provider}.timeout", config('ai.gemini.timeout', 90)));
+    }
+
+    public static function maskedAiApiKey(?string $provider = null): string
+    {
+        $key = self::aiApiKey($provider);
+
+        if ($key === '') {
+            return '';
+        }
+
+        if (strlen($key) <= 8) {
+            return '••••••••';
+        }
+
+        return substr($key, 0, 4).'…'.substr($key, -4);
+    }
+
+    public static function setAiApiKey(string $provider, ?string $value): void
+    {
+        if ($value === null) {
+            return;
+        }
+
+        $value = trim($value);
+
+        if ($value === '') {
+            return;
+        }
+
+        $provider = AiProviderCatalog::normalize($provider);
+        $meta = AiProviderCatalog::get($provider);
+
+        if ($meta === null) {
+            return;
+        }
+
+        SiteSetting::set($meta['key_setting'], $value);
+    }
+
+    public static function clearAiApiKey(string $provider): void
+    {
+        $provider = AiProviderCatalog::normalize($provider);
+        $meta = AiProviderCatalog::get($provider);
+
+        if ($meta === null) {
+            return;
+        }
+
+        SiteSetting::set($meta['key_setting'], '');
     }
 
     public static function scanSiteStored(): string
@@ -129,37 +246,17 @@ final class SiteIntegrations
 
     public static function maskedGeminiApiKey(): string
     {
-        $key = self::geminiApiKey();
-
-        if ($key === '') {
-            return '';
-        }
-
-        if (strlen($key) <= 8) {
-            return '••••••••';
-        }
-
-        return substr($key, 0, 4).'…'.substr($key, -4);
+        return self::maskedAiApiKey('gemini');
     }
 
     public static function setGeminiApiKey(?string $value): void
     {
-        if ($value === null) {
-            return;
-        }
-
-        $value = trim($value);
-
-        if ($value === '') {
-            return;
-        }
-
-        SiteSetting::set(self::GEMINI_KEY, $value);
+        self::setAiApiKey('gemini', $value);
     }
 
     public static function clearGeminiApiKey(): void
     {
-        SiteSetting::set(self::GEMINI_KEY, '');
+        self::clearAiApiKey('gemini');
     }
 
     public static function setScanSite(?string $value): void

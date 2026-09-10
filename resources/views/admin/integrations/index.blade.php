@@ -5,7 +5,7 @@
 @section('content')
 <h1>Integrations</h1>
 <p class="form-hint" style="margin-bottom:1.25rem;">
-    Configure Gemini AI and site import settings. Settings are stored in the database per site.
+    Connect one or more AI providers, then choose which one writes blog posts and store descriptions. Keys are stored in the database per site.
 </p>
 
 <form action="{{ route('admin.integrations.update') }}" method="POST">
@@ -13,24 +13,68 @@
     @method('PUT')
 
     <div class="integrations-section">
-        <h2>Gemini AI</h2>
+        <h2>Active AI model</h2>
+        <p class="form-hint" style="margin-bottom:.85rem;">
+            Affiliate import uses this provider when its API key is saved. If the key is missing, import falls back to the template article.
+        </p>
         <div class="form-group">
-            <label for="gemini_api_key">Gemini API key</label>
-            @if($geminiConfigured)
-                <p class="form-hint" style="margin-bottom:.5rem;">Current key: <code>{{ $geminiMasked }}</code></p>
-            @endif
-            <input type="password" id="gemini_api_key" name="gemini_api_key" value="" maxlength="500" autocomplete="new-password" placeholder="{{ $geminiConfigured ? 'Leave blank to keep current key' : 'Paste API key' }}">
-            <p class="form-hint">Used for AI blog generation on affiliate import.</p>
-            @error('gemini_api_key')<p class="form-error">{{ $message }}</p>@enderror
+            <label for="ai_provider">Provider</label>
+            <select id="ai_provider" name="ai_provider">
+                @foreach($aiProviders as $provider)
+                    <option value="{{ $provider['id'] }}" @selected(old('ai_provider', $aiProvider) === $provider['id'])>
+                        {{ $provider['label'] }}{{ $provider['configured'] ? '' : ' (no key yet)' }}
+                    </option>
+                @endforeach
+            </select>
+            @error('ai_provider')<p class="form-error">{{ $message }}</p>@enderror
         </div>
-        @if($geminiConfigured)
-            <label class="form-check integrations-clear-key">
-                <input type="hidden" name="clear_gemini_api_key" value="0">
-                <input type="checkbox" name="clear_gemini_api_key" value="1">
-                Remove saved Gemini API key
-            </label>
-        @endif
     </div>
+
+    @foreach($aiProviders as $provider)
+        <div class="integrations-section">
+            <h2>{{ $provider['label'] }}</h2>
+            <p class="form-hint" style="margin-bottom:.85rem;">
+                {{ $provider['hint'] }}
+                <a href="{{ $provider['docs_url'] }}" target="_blank" rel="noopener">Get an API key</a>
+            </p>
+            <div class="form-group">
+                <label for="ai_keys_{{ $provider['id'] }}">API key</label>
+                @if($provider['configured'])
+                    <p class="form-hint" style="margin-bottom:.5rem;">Current key: <code>{{ $provider['masked'] }}</code></p>
+                @endif
+                <input
+                    type="password"
+                    id="ai_keys_{{ $provider['id'] }}"
+                    name="ai_keys[{{ $provider['id'] }}]"
+                    value=""
+                    maxlength="500"
+                    autocomplete="new-password"
+                    placeholder="{{ $provider['configured'] ? 'Leave blank to keep current key' : 'Paste API key' }}"
+                >
+                @error("ai_keys.{$provider['id']}")<p class="form-error">{{ $message }}</p>@enderror
+            </div>
+            <div class="form-group">
+                <label for="ai_models_{{ $provider['id'] }}">Model</label>
+                <input
+                    type="text"
+                    id="ai_models_{{ $provider['id'] }}"
+                    name="ai_models[{{ $provider['id'] }}]"
+                    value="{{ old('ai_models.'.$provider['id'], $provider['model']) }}"
+                    maxlength="120"
+                    placeholder="{{ $provider['default_model'] }}"
+                >
+                <p class="form-hint">{{ $provider['model_hint'] }}</p>
+                @error("ai_models.{$provider['id']}")<p class="form-error">{{ $message }}</p>@enderror
+            </div>
+            @if($provider['configured'])
+                <label class="form-check integrations-clear-key">
+                    <input type="hidden" name="clear_ai_keys[{{ $provider['id'] }}]" value="0">
+                    <input type="checkbox" name="clear_ai_keys[{{ $provider['id'] }}]" value="1">
+                    Remove saved {{ $provider['label'] }} API key
+                </label>
+            @endif
+        </div>
+    @endforeach
 
     <div class="integrations-section">
         <h2>Affiliate Import</h2>

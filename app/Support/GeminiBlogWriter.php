@@ -3,16 +3,13 @@
 namespace App\Support;
 
 use App\Models\Post;
-use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 final class GeminiBlogWriter
 {
     public function isEnabled(): bool
     {
-        return (bool) config('ai.gemini.enabled')
-            && filled(SiteIntegrations::geminiApiKey());
+        return (new AiChatClient())->isEnabled();
     }
 
     /**
@@ -40,7 +37,7 @@ final class GeminiBlogWriter
             return null;
         }
 
-        $blog['source'] = 'gemini';
+        $blog['source'] = (new AiChatClient())->activeProvider();
 
         return $blog;
     }
@@ -296,59 +293,7 @@ PROMPT;
     /** @return array<string, mixed>|null */
     private function requestJson(string $prompt, string $logContext): ?array
     {
-        if (! $this->isEnabled()) {
-            return null;
-        }
-
-        $apiKey = SiteIntegrations::geminiApiKey();
-        $model = (string) config('ai.gemini.model', 'gemini-2.0-flash');
-        $timeout = (int) config('ai.gemini.timeout', 90);
-
-        try {
-            $response = Http::timeout($timeout)
-                ->post(
-                    "https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent?key={$apiKey}",
-                    [
-                        'contents' => [
-                            [
-                                'parts' => [
-                                    ['text' => $prompt],
-                                ],
-                            ],
-                        ],
-                        'generationConfig' => [
-                            'responseMimeType' => 'application/json',
-                            'temperature' => 0.55,
-                            'maxOutputTokens' => 8192,
-                        ],
-                    ]
-                );
-
-            if (! $response->successful()) {
-                Log::warning("{$logContext} failed", [
-                    'status' => $response->status(),
-                    'body' => Str::limit($response->body(), 500),
-                ]);
-
-                return null;
-            }
-
-            $text = data_get($response->json(), 'candidates.0.content.parts.0.text');
-
-            if (! is_string($text) || trim($text) === '') {
-                return null;
-            }
-
-            $parsed = json_decode($text, true);
-
-            return is_array($parsed) ? $parsed : null;
-        } catch (\Throwable $exception) {
-            Log::warning("{$logContext} exception", [
-                'message' => $exception->getMessage(),
-            ]);
-
-            return null;
-        }
+        return (new AiChatClient())->completeJson($prompt, $logContext);
     }
 
     /**

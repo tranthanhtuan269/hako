@@ -5,7 +5,7 @@
 @section('content')
 <h1 style="margin-bottom:.5rem;">Import from Affiliate Link</h1>
 <p style="color:var(--muted);margin-bottom:1.5rem;">
-    Paste your affiliate URL and add the offers you want to feature. We detect the store, crawl products, and use AI (Gemini) to write a long-form SEO article during detection — so import is faster.
+    Paste your affiliate URL and add the offers you want to feature. We detect the store, crawl products, and use AI to write a long-form SEO article during detection — so import is faster.
 </p>
 
 @if(session('import_links'))
@@ -796,8 +796,8 @@
                 generatedBlogInput.value = JSON.stringify(data.generated_blog);
                 previewBlogTitle.textContent = data.generated_blog.title;
                 previewBlogExcerpt.textContent = data.generated_blog.excerpt || '';
-                previewBlogSource.textContent = data.generated_blog.source === 'gemini'
-                    ? 'Written by Gemini AI during detect — will be saved on import without regenerating.'
+                previewBlogSource.textContent = data.generated_blog.source && data.generated_blog.source !== 'template'
+                    ? 'Written by AI during detect — will be saved on import without regenerating.'
                     : 'Template fallback used (AI unavailable). You can still import.';
                 previewBlog.hidden = false;
             } else {
@@ -822,7 +822,7 @@
                 statusMessage += ` No matching coupons found for ${data.store_query}.`;
             }
 
-            if (data.generated_blog?.source === 'gemini') {
+            if (data.generated_blog?.source && data.generated_blog.source !== 'template') {
                 statusMessage += ' AI article ready.';
             } else if (data.generated_blog?.source === 'template') {
                 statusMessage += ' Blog draft prepared (template fallback).';
