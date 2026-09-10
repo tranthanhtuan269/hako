@@ -166,7 +166,9 @@ class Store extends Model
         }
 
         return HtmlCleaner::wrapTablesForScroll(
-            DynamicCouponContent::expand($html, $this, null, false)
+            HtmlCleaner::stripAffiliateNotices(
+                DynamicCouponContent::expand($html, $this, null, false)
+            )
         );
     }
 

@@ -97,7 +97,9 @@ class Post extends Model
         $html = PostAffiliateContent::embed($this->content, $this->resolveStore());
         $html = DynamicCouponContent::expand($html, $this->resolveStore());
 
-        return self::wrapTablesForMobile($html);
+        return self::wrapTablesForMobile(
+            HtmlCleaner::stripAffiliateNotices($html)
+        );
     }
 
     private static function wrapTablesForMobile(string $html): string

@@ -58,8 +58,6 @@
             </div>
         </div>
 
-        @include('partials.site-affiliate-notice')
-
         <div class="sp-store-layout">
             <aside class="sp-store-sidebar">
                 @if($similarStores->isNotEmpty())

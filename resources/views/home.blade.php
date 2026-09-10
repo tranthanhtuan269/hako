@@ -29,8 +29,8 @@
 
 @section('content')
 @if($activeTheme === 'googlycodes')
-    @include('themes.googlycodes.home-blog', ['latestPosts' => $latestPosts ?? collect()])
     @include('themes.googlycodes.home-hero', ['heroSlides' => $heroSlides ?? collect()])
+    @include('themes.googlycodes.home-blog', ['latestPosts' => $latestPosts ?? collect()])
     @include('themes.googlycodes.trending-stores', [
         'trendingStores' => $trendingStores ?? $stores ?? collect(),
     ])
