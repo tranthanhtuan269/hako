@@ -1,7 +1,6 @@
 <?php
 
 use App\Http\Controllers\Auth\LoginController;
-use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Member\AffiliateController as MemberAffiliateController;
 use App\Http\Controllers\Member\ImportAffiliateController;
 use App\Http\Controllers\Member\KeywordGeneratorController;
@@ -69,8 +68,8 @@ Route::get('/sitemap.xml', [SitemapController::class, 'index'])->name('sitemap')
 Route::middleware(['guest', 'noindex'])->group(function () {
     Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
     Route::post('/login', [LoginController::class, 'login']);
-    Route::get('/register', [RegisterController::class, 'showRegistrationForm'])->name('register');
-    Route::post('/register', [RegisterController::class, 'register']);
+    Route::get('/register', fn () => redirect()->route('login'))->name('register');
+    Route::post('/register', fn () => redirect()->route('login'));
 });
 
 Route::post('/logout', [LoginController::class, 'logout'])->name('logout');

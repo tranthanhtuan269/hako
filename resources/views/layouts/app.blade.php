@@ -34,7 +34,6 @@
                 <a href="{{ route('blog.index') }}">Blog</a>
                 @guest
                     <a href="{{ route('login') }}">Sign In</a>
-                    <a href="{{ route('register') }}" class="nav-register">Sign Up</a>
                 @else
                     @if(auth()->user()->isAdmin())
                         <a href="{{ route('admin.dashboard') }}" class="nav-admin">Admin</a>

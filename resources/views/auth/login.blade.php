@@ -27,9 +27,5 @@
         </div>
         <button type="submit" class="btn btn-primary" style="width:100%;margin-top:1rem;padding:.75rem;">Sign In</button>
     </form>
-    <p style="margin-top:1.25rem;text-align:center;color:var(--muted);">
-        Don't have an account?
-        <a href="{{ route('register') }}">Create one</a>
-    </p>
 </div>
 @endsection

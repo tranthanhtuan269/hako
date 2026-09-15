@@ -36,11 +36,11 @@ class ReferralController extends Controller
             );
         }
 
-        return redirect()->route('register')->with(
+        return redirect()->route('login')->with(
             'info',
             $referrer
-                ? 'You were referred by ' . $referrer->name . '. Create an account to get started.'
-                : 'Invalid referral link. You can still register below.'
+                ? 'You were referred by ' . $referrer->name . '. Sign in to continue.'
+                : 'Invalid referral link. Please sign in.'
         );
     }
 }
