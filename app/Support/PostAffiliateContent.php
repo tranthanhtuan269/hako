@@ -7,6 +7,31 @@ use App\Models\Store;
 final class PostAffiliateContent
 {
     /**
+     * Query keys copied from affiliate_url onto every outbound article link.
+     *
+     * @var list<string>
+     */
+    private const MERCHANT_TRACKING_KEYS = ['ref', 'aff', 'affiliate', 'affiliate_id'];
+
+    /**
+     * @var list<string>
+     */
+    private const SOCIAL_SHARE_HOSTS = [
+        'facebook.com',
+        'twitter.com',
+        'x.com',
+        'linkedin.com',
+        'pinterest.com',
+        'instagram.com',
+        'wa.me',
+        'whatsapp.com',
+        't.me',
+        'telegram.me',
+        'youtube.com',
+        'youtu.be',
+    ];
+
+    /**
      * @var list<string>
      */
     private const AFFILIATE_NETWORK_HOSTS = [
@@ -42,7 +67,7 @@ final class PostAffiliateContent
         $affiliateUrl = (string) $store->affiliate_url;
         $html = self::rewriteMerchantAnchors($html, $store, $affiliateUrl);
 
-        if (! str_contains($html, $affiliateUrl)) {
+        if (! str_contains($html, $affiliateUrl) && ! self::htmlHasMerchantTracking($html, $affiliateUrl)) {
             $html = self::injectAffiliateParagraph($html, $store->name, $affiliateUrl);
         }
 
@@ -66,18 +91,30 @@ final class PostAffiliateContent
             return $affiliateUrl;
         }
 
-        return self::swapAffiliateDestination($affiliateUrl, $destination) ?? $affiliateUrl;
+        $wrapped = self::swapAffiliateDestination($affiliateUrl, $destination);
+
+        if ($wrapped !== null) {
+            return $wrapped;
+        }
+
+        $tracking = self::merchantTrackingParams($affiliateUrl);
+
+        if ($tracking !== []) {
+            return self::mergeQueryParams($destination, $tracking) ?? $affiliateUrl;
+        }
+
+        return $affiliateUrl;
     }
 
     private static function rewriteMerchantAnchors(string $html, Store $store, string $affiliateUrl): string
     {
         $merchantHosts = self::merchantHosts($store);
+        $ownHosts = self::ownHosts();
+        $tracking = self::merchantTrackingParams($affiliateUrl);
 
-        if ($merchantHosts === []) {
+        if ($merchantHosts === [] && $tracking === [] && self::swapAffiliateDestination($affiliateUrl, 'https://example.com') === null) {
             return $html;
         }
-
-        $ownHosts = self::ownHosts();
 
         return preg_replace_callback(
             '/<a\s+([^>]*?)href=(["\'])([^"\']+)\2([^>]*)>/i',
@@ -88,7 +125,15 @@ final class PostAffiliateContent
                     return $matches[0];
                 }
 
-                $tracked = self::trackedHref($store, $href);
+                $destination = $href;
+
+                if (str_starts_with($href, '/') && ! str_starts_with($href, '//')) {
+                    $destination = self::absoluteMerchantUrl($href, $store) ?? $href;
+                } elseif (str_starts_with($href, '//')) {
+                    $destination = 'https:'.$href;
+                }
+
+                $tracked = self::trackedHref($store, $destination);
                 $before = $matches[1];
                 $after = $matches[4];
                 $attrs = trim($before.' '.$after);
@@ -133,7 +178,7 @@ final class PostAffiliateContent
         }
 
         if (str_starts_with($href, '/') && ! str_starts_with($href, '//')) {
-            if (preg_match('#^/(stores|blog|coupons|categories|authors|search)(/|$)#i', $href)) {
+            if (preg_match('#^/(stores|blog|coupons|categories|authors|search|pages|login|register|about)(/|$)#i', $href)) {
                 return false;
             }
 
@@ -154,8 +199,16 @@ final class PostAffiliateContent
 
         $host = Store::normalizeMerchantHost($href);
 
-        if ($host === null || in_array($host, $ownHosts, true) || self::isAffiliateNetworkHost($host)) {
+        if ($host === null || in_array($host, $ownHosts, true) || self::isAffiliateNetworkHost($host) || self::isSocialShareHost($host)) {
             return false;
+        }
+
+        $tracking = self::merchantTrackingParams($affiliateUrl);
+
+        if ($tracking !== []) {
+            $merged = self::mergeQueryParams($href, $tracking);
+
+            return $merged !== null && ! self::urlsMatch($href, $merged);
         }
 
         foreach ($merchantHosts as $merchantHost) {
@@ -284,6 +337,88 @@ final class PostAffiliateContent
         $fragment = isset($parsed['fragment']) ? '#'.$parsed['fragment'] : '';
 
         return $scheme.'://'.$host.$port.$path.'?'.http_build_query($params).$fragment;
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private static function merchantTrackingParams(string $affiliateUrl): array
+    {
+        $parsed = parse_url($affiliateUrl);
+
+        if (empty($parsed['query'])) {
+            return [];
+        }
+
+        parse_str($parsed['query'], $params);
+        $tracking = [];
+
+        foreach (self::MERCHANT_TRACKING_KEYS as $key) {
+            if (! isset($params[$key]) || ! is_string($params[$key]) || trim($params[$key]) === '') {
+                continue;
+            }
+
+            $tracking[$key] = trim($params[$key]);
+        }
+
+        return $tracking;
+    }
+
+    private static function htmlHasMerchantTracking(string $html, string $affiliateUrl): bool
+    {
+        $tracking = self::merchantTrackingParams($affiliateUrl);
+
+        if (isset($tracking['ref']) && str_contains($html, 'ref='.rawurlencode($tracking['ref']))) {
+            return true;
+        }
+
+        if (isset($tracking['ref']) && str_contains($html, 'ref='.$tracking['ref'])) {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * @param  array<string, string>  $params
+     */
+    private static function mergeQueryParams(string $url, array $params): ?string
+    {
+        if ($params === []) {
+            return $url;
+        }
+
+        $parsed = parse_url($url);
+
+        if (empty($parsed['host'])) {
+            return null;
+        }
+
+        $existing = [];
+
+        if (! empty($parsed['query'])) {
+            parse_str($parsed['query'], $existing);
+        }
+
+        $query = array_merge($existing, $params);
+        $scheme = $parsed['scheme'] ?? 'https';
+        $host = $parsed['host'];
+        $port = isset($parsed['port']) ? ':'.$parsed['port'] : '';
+        $path = $parsed['path'] ?? '';
+        $fragment = isset($parsed['fragment']) ? '#'.$parsed['fragment'] : '';
+
+        return $scheme.'://'.$host.$port.$path.'?'.http_build_query($query).$fragment;
+    }
+
+    private static function isSocialShareHost(string $host): bool
+    {
+        foreach (self::SOCIAL_SHARE_HOSTS as $needle) {
+            if ($host === $needle || str_ends_with($host, '.'.$needle)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private static function isAffiliateNetworkHost(string $host): bool
