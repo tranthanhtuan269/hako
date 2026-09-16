@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Support\HtmlCleaner;
+use App\Support\PostAffiliateContent;
 use App\Support\PublicImage;
 use App\Support\Seo;
 use App\Support\DynamicCouponContent;
@@ -169,7 +170,12 @@ class Store extends Model
 
         return HtmlCleaner::wrapTablesForScroll(
             HtmlCleaner::stripAffiliateNotices(
-                DynamicCouponContent::expand($html, $this, null, false)
+                DynamicCouponContent::expand(
+                    PostAffiliateContent::embed($html, $this),
+                    $this,
+                    null,
+                    false
+                )
             )
         );
     }

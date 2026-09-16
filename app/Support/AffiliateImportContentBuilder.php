@@ -266,6 +266,7 @@ final class AffiliateImportContentBuilder
 
         if ($store !== null) {
             $content = PostAffiliateContent::embed($content, $store);
+            $content = $this->ensureAffiliateLinks($content, $store, self::STORE_DESCRIPTION_MIN_AFFILIATE_LINKS);
             $content = DynamicCouponContent::ensurePlaceholder($content, $store->name);
         }
 
@@ -389,7 +390,7 @@ final class AffiliateImportContentBuilder
 
         $parts[] = $this->sectionStoreAtAGlanceTable($name, $category, $products, $offers, $faqs, $metaDescription, $merchant);
         $parts[] = $this->sectionProductComparisonTable($name, $products, $category);
-        $parts[] = $this->sectionProductDeepDives($name, $products, $storeUrl);
+        $parts[] = $this->sectionProductDeepDives($name, $products, $storeUrl, $store);
         $parts[] = $this->sectionWhichProductToChoose($name, $products, $category);
         $parts[] = $this->sectionCurrentOffers($name, $offers, $storeUrl, $store->affiliate_url);
         $parts[] = $this->sectionHowToSave($name, $storeUrl, $store->affiliate_url);
@@ -462,7 +463,7 @@ final class AffiliateImportContentBuilder
             $parts[] = '<p><strong>Listed price:</strong> ' . e($product['price']) . ' (confirm on the merchant site before checkout).</p>';
         }
 
-        $parts[] = $this->sectionSingleProductProsCons($productName, $product);
+        $parts[] = $this->sectionSingleProductProsCons($productName, $product, $store);
         $parts[] = $this->sectionCurrentOffers($name, $offers, $storeUrl, $store->affiliate_url);
         $parts[] = $this->sectionHowToSave($name, $storeUrl, $store->affiliate_url);
         $parts[] = $this->sectionFaq($name, $faqs, $storeUrl, [$product], $offers, $merchant);
@@ -867,7 +868,7 @@ final class AffiliateImportContentBuilder
     /**
      * @param  array<int, array{name: string, description: ?string, price: ?string, image: ?string, url: ?string}>  $products
      */
-    private function sectionProductDeepDives(string $brandName, array $products, string $storeUrl): string
+    private function sectionProductDeepDives(string $brandName, array $products, string $storeUrl, ?Store $store = null): string
     {
         $parts = [];
         $parts[] = '<h2>Product details from the merchant listings</h2>';
@@ -897,7 +898,10 @@ final class AffiliateImportContentBuilder
             }
 
             if (filled($product['url'] ?? null)) {
-                $parts[] = '<p><a href="' . e((string) $product['url']) . '" rel="nofollow sponsored">Open ' . e($productName) . ' on ' . e($brandName) . ' →</a></p>';
+                $shopHref = $store
+                    ? PostAffiliateContent::trackedHref($store, (string) $product['url'])
+                    : (string) $product['url'];
+                $parts[] = '<p><a href="' . e($shopHref) . '" rel="nofollow sponsored" target="_blank">Open ' . e($productName) . ' on ' . e($brandName) . ' →</a></p>';
             }
         }
 
@@ -942,7 +946,7 @@ final class AffiliateImportContentBuilder
     /**
      * @param  array{name: string, description: ?string, price: ?string, image: ?string, url: ?string, features?: list<string>}  $product
      */
-    private function sectionSingleProductProsCons(string $productName, array $product): string
+    private function sectionSingleProductProsCons(string $productName, array $product, ?Store $store = null): string
     {
         $parts = [];
         $parts[] = '<h2>Pros &amp; cons for '.e($productName).'</h2>';
@@ -970,7 +974,10 @@ final class AffiliateImportContentBuilder
         $parts[] = '</ul>';
 
         if (filled($product['url'] ?? null)) {
-            $parts[] = '<p><a href="' . e((string) $product['url']) . '" rel="nofollow sponsored">Check ' . e($productName) . ' availability →</a></p>';
+            $shopHref = $store
+                ? PostAffiliateContent::trackedHref($store, (string) $product['url'])
+                : (string) $product['url'];
+            $parts[] = '<p><a href="' . e($shopHref) . '" rel="nofollow sponsored" target="_blank">Check ' . e($productName) . ' availability →</a></p>';
         }
 
         return implode("\n", $parts);
@@ -1029,12 +1036,12 @@ final class AffiliateImportContentBuilder
 
         if (count($products) >= 2) {
             $parts[] = $this->sectionProductComparisonTable($name, $products, $category);
-            $parts[] = $this->sectionProductDeepDives($name, $products, $storeUrl);
+            $parts[] = $this->sectionProductDeepDives($name, $products, $storeUrl, $store);
             $parts[] = $this->sectionWhichProductToChoose($name, $products, $category);
         } elseif (count($products) === 1) {
             $parts[] = $this->sectionProductSpecTable($products[0], $name);
-            $parts[] = $this->sectionProductDeepDives($name, $products, $storeUrl);
-            $parts[] = $this->sectionSingleProductProsCons($products[0]['name'], $products[0]);
+            $parts[] = $this->sectionProductDeepDives($name, $products, $storeUrl, $store);
+            $parts[] = $this->sectionSingleProductProsCons($products[0]['name'], $products[0], $store);
         } else {
             $parts[] = $this->sectionBestSellers($name, $offers, $storeUrl);
         }
