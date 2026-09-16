@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Support\HtmlCleaner;
+use App\Support\PostAffiliateContent;
 use App\Support\PublicImage;
 use App\Support\Seo;
 use App\Support\DynamicCouponContent;
@@ -165,6 +166,7 @@ class Store extends Model
             return '';
         }
 
+        $html = PostAffiliateContent::embed($html, $this);
         $html = DynamicCouponContent::expand($html, $this, null, false);
         $html = \App\Support\MediaEmbedParser::convert($html);
 

@@ -381,7 +381,7 @@ Article rules:
 - Quote or paraphrase product descriptions, features, prices, offer titles/codes, and merchant FAQs from the JSON. Name products and codes explicitly in product sections — do not repeat the full product-name list in intro, Why Trust Us, and what-sells.
 - CRITICAL: each product heading must use that product's OWN description/features only. Never copy-paste the same bullet list across products. If features are missing or identical sitewide USPs, paraphrase the product description instead or omit bullets.
 - Mention {$siteName} naturally and link to our store deals page (store_url) when sending readers to browse coupons on our site.
-- When affiliate_url is provided in the JSON, include at least 2 in-article links to affiliate_url with rel="nofollow sponsored" and target="_blank" when directing readers to shop at the merchant. Do not use store_url for outbound shopping CTAs when affiliate_url exists.
+- When affiliate_url is provided in the JSON, include at least 2 in-article links whose href is EXACTLY affiliate_url (rel="nofollow sponsored" target="_blank") whenever readers shop at the merchant or open a product page. Never use website, domain, product urls, or store_url as shopping hrefs — those merchant/product URLs are facts only, not link targets. store_url is only for "browse coupons on our site".
 - Use merchant FAQs when provided. Also include high-intent search FAQs shoppers type into Google, using ONLY facts from the JSON (or an honest research note when unknown). Required question patterns:
   - "Is {$storeName} genuine leather?" (only if leather appears in product/meta data; otherwise skip)
   - "Where is {$storeName} made?" — mine products[].description, products[].features, meta_description, and faqs for Made in / manufactured / formulated / country-of-origin clues before saying it is not stated. Prefer SKU-level notes over a vague "check packaging" default.
@@ -489,7 +489,7 @@ Description rules:
   Answer from JSON facts or give a precise research note — never invent origin, shipping coverage, or student discounts.
 - Ground major sections in prices, distinct product facts, offer titles/codes, meta_description, or FAQs from the JSON — not by repeating the same product-name string in every paragraph.
 - Mention {$siteName} naturally and link to store_url when pointing readers to browse coupons on our site.
-- When affiliate_url is provided, include at least 2 natural in-text links to affiliate_url with rel="nofollow sponsored" and target="_blank" when directing readers to shop at the merchant.
+- When affiliate_url is provided, include at least 2 natural in-text links whose href is EXACTLY affiliate_url (rel="nofollow sponsored" target="_blank") when directing readers to shop at the merchant or open a product page. Never link to website/domain/product urls.
 - Do not paste a full list of current coupon codes in the description body. You may mention offer themes/titles; live codes are injected via [store_coupons]. Never invent codes.
 - HTML only: <h2>, <h3>, <p>, <ul>, <li>, <ol>, <table>, <thead>, <tbody>, <tr>, <th>, <td>, <strong>, <em>, <a>, <code>, <img>, <figure>, <figcaption>. No <h1>, no markdown.
 - Do not claim star ratings or verified customer reviews unless explicitly in the JSON.
