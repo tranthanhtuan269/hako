@@ -540,9 +540,9 @@ RULES;
 
         return [
             'title' => Post::normalizeTitle($title),
-            'excerpt' => Str::limit($excerpt, 500, ''),
-            'meta_title' => Str::limit($metaTitle, 70, ''),
-            'meta_description' => Str::limit($metaDescription, 320, ''),
+            'excerpt' => Str::limit(HtmlCleaner::decodeEntities($excerpt), 500, ''),
+            'meta_title' => Str::limit(HtmlCleaner::decodeEntities($metaTitle), 70, ''),
+            'meta_description' => Str::limit(HtmlCleaner::decodeEntities($metaDescription), 320, ''),
             'content' => $content,
         ];
     }

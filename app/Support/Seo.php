@@ -6,7 +6,7 @@ final class Seo
 {
     public static function title(string $pageTitle, bool $includeBrand = true): string
     {
-        $pageTitle = trim($pageTitle);
+        $pageTitle = HtmlCleaner::decodeEntities(trim($pageTitle));
         $brand = config('site.name');
 
         if (! $includeBrand || str_contains($pageTitle, $brand)) {
@@ -18,7 +18,7 @@ final class Seo
 
     public static function description(string $text, int $max = 160): string
     {
-        $text = trim(preg_replace('/\s+/', ' ', strip_tags($text)));
+        $text = HtmlCleaner::decodeEntities(trim(preg_replace('/\s+/', ' ', strip_tags($text))));
 
         if (mb_strlen($text) <= $max) {
             return $text;

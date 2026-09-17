@@ -271,9 +271,9 @@ final class AffiliateImportContentBuilder
 
         return [
             'title' => Post::normalizeTitle(trim((string) ($blog['title'] ?? ''))),
-            'excerpt' => Str::limit(trim((string) ($blog['excerpt'] ?? '')), 500, ''),
-            'meta_title' => Str::limit(trim((string) ($blog['meta_title'] ?? $blog['title'] ?? '')), 70, ''),
-            'meta_description' => Str::limit(trim((string) ($blog['meta_description'] ?? $blog['excerpt'] ?? '')), 320, ''),
+            'excerpt' => Str::limit(HtmlCleaner::decodeEntities(trim((string) ($blog['excerpt'] ?? ''))), 500, ''),
+            'meta_title' => Str::limit(HtmlCleaner::decodeEntities(trim((string) ($blog['meta_title'] ?? $blog['title'] ?? ''))), 70, ''),
+            'meta_description' => Str::limit(HtmlCleaner::decodeEntities(trim((string) ($blog['meta_description'] ?? $blog['excerpt'] ?? ''))), 320, ''),
             'content' => $content,
         ];
     }

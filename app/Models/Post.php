@@ -173,12 +173,12 @@ class Post extends Model
 
     public function seoTitle(): string
     {
-        return $this->meta_title ?: $this->title;
+        return HtmlCleaner::decodeEntities($this->meta_title ?: $this->title);
     }
 
     public function ogShareTitle(): string
     {
-        return $this->title;
+        return HtmlCleaner::decodeEntities($this->title);
     }
 
     public function ogShareDescription(): string

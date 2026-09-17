@@ -1,18 +1,21 @@
 @php
+    use App\Support\HtmlCleaner;
     use App\Support\Seo;
 
-    $pageTitle = trim($__env->yieldContent('title') ?: 'Coupons & Discount Codes');
+    $yielded = static function (string $section, string $default = '') use ($__env): string {
+        return HtmlCleaner::decodeEntities(trim($__env->yieldContent($section) ?: $default));
+    };
+
+    $pageTitle = $yielded('title', 'Coupons & Discount Codes');
     $metaTitle = Seo::title($pageTitle);
-    $metaDescription = trim($__env->yieldContent('meta_description'))
+    $metaDescription = $yielded('meta_description')
         ?: Seo::description(config('site.default_description'));
 
-    $ogTitle = trim($__env->yieldContent('og_title'))
-        ?: $pageTitle;
-    $ogDescription = trim($__env->yieldContent('og_description'))
-        ?: $metaDescription;
+    $ogTitle = $yielded('og_title') ?: $pageTitle;
+    $ogDescription = $yielded('og_description') ?: $metaDescription;
 
-    $canonical = trim($__env->yieldContent('canonical')) ?: Seo::canonical();
-    $ogUrl = trim($__env->yieldContent('og_url')) ?: $canonical;
+    $canonical = $yielded('canonical') ?: Seo::canonical();
+    $ogUrl = $yielded('og_url') ?: $canonical;
     if (! preg_match('#^https?://#i', $ogUrl)) {
         $ogUrl = Seo::absoluteUrl($ogUrl);
     }
@@ -20,10 +23,10 @@
         $canonical = Seo::absoluteUrl($canonical);
     }
 
-    $robots = trim($__env->yieldContent('meta_robots')) ?: 'index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1';
-    $ogType = trim($__env->yieldContent('og_type')) ?: 'website';
-    $ogImage = Seo::ogImage(trim($__env->yieldContent('og_image')) ?: null);
-    $ogImageAlt = trim($__env->yieldContent('og_image_alt')) ?: $ogTitle;
+    $robots = $yielded('meta_robots') ?: 'index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1';
+    $ogType = $yielded('og_type') ?: 'website';
+    $ogImage = Seo::ogImage($yielded('og_image') ?: null);
+    $ogImageAlt = $yielded('og_image_alt') ?: $ogTitle;
 @endphp
 <title>{{ $metaTitle }}</title>
 <meta name="description" content="{{ $metaDescription }}">
