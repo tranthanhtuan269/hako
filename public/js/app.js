@@ -418,6 +418,7 @@ function initCouponRevealModal() {
         return {
             onCopy: flow === 'copy' || flow === 'both',
             onClose: flow === 'close' || flow === 'both',
+            onPopupOpen: flow === 'popup',
         };
     }
 
@@ -473,9 +474,89 @@ function initCouponRevealModal() {
         }
     }
 
-    function openModal(data) {
+    function absoluteHref(url) {
+        if (!url || url === '#') {
+            return '';
+        }
+
+        try {
+            return new URL(url, window.location.origin).href;
+        } catch (error) {
+            return url;
+        }
+    }
+
+    function destinationFromButton(btn) {
+        if (!btn) {
+            return '';
+        }
+
+        return absoluteHref(
+            btn.dataset.affiliateUrl || btn.dataset.shopUrl || btn.dataset.goUrl || ''
+        );
+    }
+
+    function savedFlow4Url() {
+        return absoluteHref(window.__couponRedirectAffiliateUrl || modal?.dataset.flow4Url || '');
+    }
+
+    function flow4Destination(preferred, btn) {
+        return savedFlow4Url()
+            || absoluteHref(preferred || '')
+            || destinationFromButton(btn);
+    }
+
+    function openFlow4Destination(btn, preferred) {
+        const destUrl = flow4Destination(preferred, btn);
+
+        if (!destUrl) {
+            return false;
+        }
+
+        const win = window.open(destUrl, '_blank');
+
+        if (!win) {
+            return false;
+        }
+
+        try {
+            win.opener = null;
+        } catch (error) {
+            // Ignore.
+        }
+
+        return true;
+    }
+
+    function armFlow4Destination(btn) {
+        if (!btn || btn.dataset.flow4Armed === '1' || !redirectFlowFlags().onPopupOpen) {
+            return btn?.dataset.flow4Armed === '1';
+        }
+
+        if (openFlow4Destination(btn)) {
+            btn.dataset.flow4Armed = '1';
+
+            return true;
+        }
+
+        return false;
+    }
+
+    function closePrimedTab(tab) {
+        if (!tab || tab.closed) {
+            return;
+        }
+
+        try {
+            tab.close();
+        } catch (error) {
+            // Ignore.
+        }
+    }
+
+    function openModal(data, primedTab, destinationAlreadyOpened) {
         activeCode = data.code || '';
-        pendingAffiliateUrl = data.affiliateUrl || data.shopUrl || '';
+        pendingAffiliateUrl = flow4Destination(data.affiliateUrl || data.shopUrl || '');
         modalWasShown = true;
         affiliateTabOpened = false;
         copyInFlight = false;
@@ -505,9 +586,18 @@ function initCouponRevealModal() {
         modal.setAttribute('aria-hidden', 'false');
         document.body.classList.add('sp-modal-open');
 
-        // Auto-copy after an async reveal loses the tap gesture on iOS/Android,
-        // which then shows "Copy failed". Let the shopper tap COPY CODE instead.
-        if (activeCode && !window.isLikelyMobileViewport()) {
+        if (destinationAlreadyOpened) {
+            affiliateTabOpened = true;
+            closePrimedTab(primedTab);
+        } else if (redirectFlowFlags().onPopupOpen) {
+            affiliateTabOpened = openFlow4Destination(null, pendingAffiliateUrl);
+            closePrimedTab(primedTab);
+        } else {
+            closePrimedTab(primedTab);
+        }
+
+        // Flow 4 should only open the affiliate tab — don't auto-copy the code.
+        if (activeCode && !window.isLikelyMobileViewport() && !redirectFlowFlags().onPopupOpen) {
             copyText(activeCode, copyBtn);
         }
     }
@@ -549,6 +639,18 @@ function initCouponRevealModal() {
         bindCloseWithBackgroundTab(el, true);
     });
 
+    modal.addEventListener('mousedown', function (event) {
+        if (event.button !== 0 || modal.hidden || !redirectFlowFlags().onPopupOpen || affiliateTabOpened) {
+            return;
+        }
+
+        if (event.target.closest('[data-sp-modal-close]')) {
+            return;
+        }
+
+        affiliateTabOpened = openFlow4Destination(null, pendingAffiliateUrl);
+    });
+
     if (okBtn) {
         bindCloseWithBackgroundTab(okBtn, true);
     }
@@ -583,7 +685,7 @@ function initCouponRevealModal() {
         });
     }
 
-    async function handleRevealClick(btn, primedTab) {
+    async function handleRevealClick(btn, primedTab, destinationAlreadyOpened) {
         if (btn.id === 'sp-modal-copy' || btn.closest('#sp-coupon-modal')) {
             return;
         }
@@ -609,13 +711,7 @@ function initCouponRevealModal() {
             }
 
             if (!result?.code) {
-                if (activePrimedTab && !activePrimedTab.closed) {
-                    try {
-                        activePrimedTab.close();
-                    } catch (error) {
-                        // Ignore.
-                    }
-                }
+                closePrimedTab(activePrimedTab);
 
                 alert('Could not retrieve the code. Please try again.');
                 return;
@@ -655,26 +751,15 @@ function initCouponRevealModal() {
                         keepCurrentTab: true,
                         fallbackNavigate: false,
                     });
-                } else if (activePrimedTab && !activePrimedTab.closed) {
-                    try {
-                        activePrimedTab.close();
-                    } catch (error) {
-                        // Ignore.
-                    }
+                } else {
+                    closePrimedTab(activePrimedTab);
                 }
 
                 return;
             }
 
-            if (activePrimedTab && !activePrimedTab.closed) {
-                try {
-                    activePrimedTab.close();
-                } catch (error) {
-                    // Ignore.
-                }
-            }
-
             // Flow 1: show popup; destination opens when the popup is closed.
+            // Flow 4: show popup and send the primed tab to the merchant immediately.
             openModal({
                 code: result.code,
                 affiliateUrl: affiliateUrl,
@@ -683,15 +768,9 @@ function initCouponRevealModal() {
                 store: btn.dataset.couponStore || '',
                 expires: btn.dataset.couponExpires || '',
                 shopUrl: btn.dataset.shopUrl || btn.dataset.goUrl || '',
-            });
+            }, activePrimedTab, destinationAlreadyOpened);
         } catch (e) {
-            if (activePrimedTab && !activePrimedTab.closed) {
-                try {
-                    activePrimedTab.close();
-                } catch (error) {
-                    // Ignore.
-                }
-            }
+            closePrimedTab(activePrimedTab);
 
             alert('Could not retrieve the code. Please try again.');
         }
@@ -700,18 +779,28 @@ function initCouponRevealModal() {
     function startRevealClick(btn) {
         const flags = redirectFlowFlags();
         let primedTab = null;
+        let destinationAlreadyOpened = btn.dataset.flow4Armed === '1';
 
-        // Must run synchronously in the click handler before any await,
-        // otherwise mobile browsers block the destination tab. Skip on phones:
-        // about:blank steals focus and makes clipboard writes fail.
-        if (flags.onCopy && !window.isLikelyMobileViewport()) {
+        if (flags.onPopupOpen) {
+            destinationAlreadyOpened = armFlow4Destination(btn);
+            btn.dataset.flow4Armed = '0';
+        } else if (flags.onCopy && !window.isLikelyMobileViewport()) {
+            // Must run synchronously in the click handler before any await.
             primedTab = window.primeBackgroundTab();
         }
 
-        handleRevealClick(btn, primedTab);
+        handleRevealClick(btn, primedTab, destinationAlreadyOpened);
     }
 
     document.querySelectorAll('.btn-copy, .sp-code-copy, .scroll-coupon-popup-copy').forEach(function (btn) {
+        btn.addEventListener('mousedown', function (event) {
+            if (event.button !== 0) {
+                return;
+            }
+
+            armFlow4Destination(btn);
+        });
+
         btn.addEventListener('click', function (event) {
             event.preventDefault();
             startRevealClick(btn);
@@ -727,6 +816,14 @@ function initCouponRevealModal() {
         }
 
         const clickTarget = container.querySelector('.code-box-wrap') || maskEl;
+
+        clickTarget.addEventListener('mousedown', function (event) {
+            if (event.button !== 0 || maskEl.classList.contains('is-revealed')) {
+                return;
+            }
+
+            armFlow4Destination(revealBtn);
+        });
 
         clickTarget.addEventListener('click', function (event) {
             if (maskEl.classList.contains('is-revealed')) {

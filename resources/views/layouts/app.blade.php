@@ -101,6 +101,7 @@
 
     <script>
         window.__couponRedirectFlow = @json(\App\Support\SiteCouponRedirect::flow());
+        window.__couponRedirectAffiliateUrl = @json(\App\Support\SiteCouponRedirect::affiliateUrl());
     </script>
     <script src="{{ asset('js/app.js') }}?v={{ filemtime(public_path('js/app.js')) }}"></script>
     @include('themes.savingspro.coupon-modal')

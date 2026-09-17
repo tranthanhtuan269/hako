@@ -38,6 +38,7 @@ class IntegrationsController extends Controller
             'allowReimportExistingStores' => SiteImportSettings::allowReimportExistingStores(),
             'couponRedirectFlow' => SiteCouponRedirect::flow(),
             'couponRedirectOptions' => SiteCouponRedirect::options(),
+            'couponRedirectAffiliateUrl' => SiteCouponRedirect::affiliateUrl(),
         ]);
     }
 
@@ -54,7 +55,8 @@ class IntegrationsController extends Controller
             'clear_ai_keys' => ['nullable', 'array'],
             'clear_ai_keys.*' => ['nullable', 'boolean'],
             'import_allow_reimport_existing_stores' => ['nullable', 'boolean'],
-            'coupon_redirect_flow' => ['required', 'in:close,copy,both'],
+            'coupon_redirect_flow' => ['required', 'in:'.implode(',', SiteCouponRedirect::values())],
+            'coupon_redirect_affiliate_url' => ['nullable', 'string', 'max:500'],
         ]);
 
         SiteIntegrations::setAiProvider($validated['ai_provider']);
@@ -76,6 +78,15 @@ class IntegrationsController extends Controller
         );
 
         SiteCouponRedirect::setFlow($validated['coupon_redirect_flow']);
+
+        $affiliateUrl = trim((string) ($validated['coupon_redirect_affiliate_url'] ?? ''));
+        if ($affiliateUrl !== '' && ! filter_var($affiliateUrl, FILTER_VALIDATE_URL)) {
+            return back()
+                ->withInput()
+                ->withErrors(['coupon_redirect_affiliate_url' => 'Enter a valid affiliate URL.']);
+        }
+
+        SiteCouponRedirect::setAffiliateUrl($affiliateUrl);
 
         return redirect()
             ->route('admin.integrations.index')

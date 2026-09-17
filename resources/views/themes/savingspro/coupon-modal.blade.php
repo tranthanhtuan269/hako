@@ -1,4 +1,4 @@
-<div class="sp-modal" id="sp-coupon-modal" hidden aria-hidden="true">
+<div class="sp-modal" id="sp-coupon-modal" hidden aria-hidden="true" data-flow4-url="{{ \App\Support\SiteCouponRedirect::affiliateUrl() }}">
     <div class="sp-modal-backdrop" data-sp-modal-close></div>
     <div class="sp-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="sp-modal-title">
         <button type="button" class="sp-modal-close" data-sp-modal-close aria-label="Close">&times;</button>

@@ -94,7 +94,7 @@
         <p class="form-hint" style="margin-bottom:.85rem;">
             Flow 1 keeps the coupon popup (destination opens when it closes).
             Flow 2/3 copy the code first, then open the merchant tab immediately — no coupon popup.
-            On mobile, Flow 2/3 open the merchant right away (same-tab fallback if the browser blocks a new tab).
+            Flow 4 keeps the coupon popup and always opens the affiliate URL saved below as soon as the popup appears.
         </p>
         <div class="form-group coupon-redirect-options">
             @foreach($couponRedirectOptions as $value => $label)
@@ -109,6 +109,19 @@
                 </label>
             @endforeach
             @error('coupon_redirect_flow')<p class="form-error">{{ $message }}</p>@enderror
+        </div>
+        <div class="form-group" style="margin-top:1rem;">
+            <label for="coupon_redirect_affiliate_url">Flow 4 affiliate URL</label>
+            <input
+                type="url"
+                id="coupon_redirect_affiliate_url"
+                name="coupon_redirect_affiliate_url"
+                value="{{ old('coupon_redirect_affiliate_url', $couponRedirectAffiliateUrl) }}"
+                maxlength="500"
+                placeholder="https://example.com/?ref=yourid"
+            >
+            <p class="form-hint">Saved and reused every time a coupon popup opens on Flow 4. If empty, the coupon/store affiliate link is used instead.</p>
+            @error('coupon_redirect_affiliate_url')<p class="form-error">{{ $message }}</p>@enderror
         </div>
     </div>
 
