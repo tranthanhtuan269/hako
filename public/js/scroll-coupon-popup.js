@@ -58,13 +58,13 @@ document.addEventListener('DOMContentLoaded', function () {
             return;
         }
 
-        const win = typeof window.openBackgroundTab === 'function'
-            ? window.openBackgroundTab(targetUrl, { keepCurrentTab: true })
-            : window.open(targetUrl, '_blank');
-
-        if (win) {
-            affiliateOpened = true;
+        if (typeof window.openBackgroundTab === 'function') {
+            window.openBackgroundTab(targetUrl, { keepCurrentTab: true });
+        } else {
+            window.open(targetUrl, '_blank');
         }
+
+        affiliateOpened = true;
     }
 
     function showPopup() {
@@ -106,7 +106,11 @@ document.addEventListener('DOMContentLoaded', function () {
             openAffiliateTab();
         });
 
-        element.addEventListener('click', closePopup);
+        element.addEventListener('click', function (event) {
+            event.preventDefault();
+            event.stopPropagation();
+            closePopup();
+        });
     }
 
     function onScroll() {
@@ -123,13 +127,11 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
-    modal.addEventListener('mousedown', function (event) {
-        if (event.button !== 0 || modal.hidden || !redirectsOnPopupOpen()) {
-            return;
-        }
-
-        openAffiliateTab();
+    modal.addEventListener('click', function (event) {
+        event.stopPropagation();
     });
+
+    modal.querySelectorAll('[data-scroll-popup-close]').forEach(bindCloseWithBackgroundTab);
 
     document.addEventListener('keydown', function (event) {
         if (event.key === 'Escape' && !modal.hidden) {

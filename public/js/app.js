@@ -51,12 +51,6 @@ window.primeBackgroundTab = function () {
         const win = window.open('about:blank', '_blank');
 
         if (win) {
-            try {
-                win.opener = null;
-            } catch (error) {
-                // Ignore cross-browser opener restrictions.
-            }
-
             return win;
         }
     } catch (error) {
@@ -86,6 +80,12 @@ window.navigateBackgroundTab = function (win, url, options) {
     if (win && !win.closed) {
         try {
             win.location.replace(url);
+
+            try {
+                win.opener = null;
+            } catch (error) {
+                // Ignore.
+            }
 
             if (keepCurrentTab) {
                 function refocusCurrentTab() {
@@ -147,42 +147,98 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    async function resolveCouponReveal(btn) {
-        if (btn.dataset.code) {
-            return {
-                code: btn.dataset.code,
-                affiliateUrl: btn.dataset.affiliateUrl || btn.dataset.shopUrl || btn.dataset.goUrl || '',
-                title: btn.dataset.couponTitle || '',
-            };
+    const revealResults = new WeakMap();
+    const revealPromises = new WeakMap();
+
+    function rememberRevealResult(btn, result) {
+        if (!btn || !result?.code) {
+            return result;
+        }
+
+        btn.dataset.code = result.code;
+
+        if (result.affiliateUrl) {
+            btn.dataset.affiliateUrl = result.affiliateUrl;
+        }
+
+        revealResults.set(btn, result);
+
+        return result;
+    }
+
+    function cachedRevealResult(btn) {
+        if (!btn) {
+            return null;
+        }
+
+        if (revealResults.has(btn)) {
+            return revealResults.get(btn);
+        }
+
+        if (!btn.dataset.code) {
+            return null;
+        }
+
+        return rememberRevealResult(btn, {
+            code: btn.dataset.code,
+            affiliateUrl: btn.dataset.affiliateUrl || btn.dataset.shopUrl || btn.dataset.goUrl || '',
+            title: btn.dataset.couponTitle || '',
+        });
+    }
+
+    function resolveCouponReveal(btn) {
+        if (!btn) {
+            return Promise.resolve(null);
+        }
+
+        const cached = cachedRevealResult(btn);
+
+        if (cached) {
+            return Promise.resolve(cached);
+        }
+
+        if (revealPromises.has(btn)) {
+            return revealPromises.get(btn);
         }
 
         const revealUrl = btn.dataset.revealUrl;
         if (!revealUrl || !csrf) {
-            return null;
+            return Promise.resolve(null);
         }
 
-        try {
-            const res = await fetch(revealUrl, {
-                method: 'POST',
-                headers: {
-                    'X-CSRF-TOKEN': csrf,
-                    'Accept': 'application/json',
-                },
-            });
-            const data = await res.json();
-
+        const pending = fetch(revealUrl, {
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': csrf,
+                'Accept': 'application/json',
+            },
+        }).then(function (res) {
+            return res.json();
+        }).then(function (data) {
             if (!data.code) {
+                revealPromises.delete(btn);
+
                 return null;
             }
 
-            return {
+            return rememberRevealResult(btn, {
                 code: data.code,
                 affiliateUrl: data.affiliate_url || btn.dataset.affiliateUrl || btn.dataset.shopUrl || btn.dataset.goUrl || '',
                 title: data.title || btn.dataset.couponTitle || '',
-            };
-        } catch (e) {
+            });
+        }).catch(function () {
+            revealPromises.delete(btn);
+
             return null;
-        }
+        });
+
+        revealPromises.set(btn, pending);
+
+        return pending;
+    }
+
+    function prefetchCouponReveal(btn) {
+        return resolveCouponReveal(btn);
     }
 
     async function resolveCouponCode(btn) {
@@ -193,6 +249,20 @@ document.addEventListener('DOMContentLoaded', function () {
     window.revealCouponCode = revealCouponCode;
     window.resolveCouponCode = resolveCouponCode;
     window.resolveCouponReveal = resolveCouponReveal;
+    window.prefetchCouponReveal = prefetchCouponReveal;
+    window.cachedRevealResult = cachedRevealResult;
+
+    function prefetchVisibleCouponCodes() {
+        document.querySelectorAll('[data-reveal-url]').forEach(function (btn) {
+            if (btn.id === 'sp-modal-copy' || btn.closest('#sp-coupon-modal')) {
+                return;
+            }
+
+            prefetchCouponReveal(btn);
+        });
+    }
+
+    prefetchVisibleCouponCodes();
 
     initCouponRevealModal();
 
@@ -411,6 +481,7 @@ function initCouponRevealModal() {
     let modalWasShown = false;
     let affiliateTabOpened = false;
     let copyInFlight = false;
+    let suppressRevealUntil = 0;
 
     function redirectFlowFlags() {
         const flow = window.__couponRedirectFlow || 'close';
@@ -513,18 +584,12 @@ function initCouponRevealModal() {
             return false;
         }
 
-        const win = window.open(destUrl, '_blank');
+        window.openBackgroundTab(destUrl, {
+            keepCurrentTab: !window.isLikelyMobileViewport(),
+        });
 
-        if (!win) {
-            return false;
-        }
-
-        try {
-            win.opener = null;
-        } catch (error) {
-            // Ignore.
-        }
-
+        // window.open(..., 'noopener') often returns null even when the tab opened.
+        // Count the attempt so later clicks do not spawn more tabs.
         return true;
     }
 
@@ -596,8 +661,7 @@ function initCouponRevealModal() {
             closePrimedTab(primedTab);
         }
 
-        // Flow 4 should only open the affiliate tab — don't auto-copy the code.
-        if (activeCode && !window.isLikelyMobileViewport() && !redirectFlowFlags().onPopupOpen) {
+        if (activeCode && !window.isLikelyMobileViewport()) {
             copyText(activeCode, copyBtn);
         }
     }
@@ -605,12 +669,15 @@ function initCouponRevealModal() {
     function closeModal(openAffiliate) {
         const flags = redirectFlowFlags();
         const affiliateUrl = pendingAffiliateUrl;
+        const wasOpen = modalWasShown && !modal.hidden;
         // Flow 3: if destination already opened on copy (or copy is about to open it), skip close redirect.
+        // Flow 4 already opened the destination when the popup appeared.
         const shouldOpenAffiliate = openAffiliate
             && flags.onClose
             && modalWasShown
             && !!affiliateUrl
             && !affiliateTabOpened
+            && !flags.onPopupOpen
             && !(flags.onCopy && copyInFlight);
 
         modal.hidden = true;
@@ -627,28 +694,26 @@ function initCouponRevealModal() {
 
         affiliateTabOpened = false;
         copyInFlight = false;
+
+        if (wasOpen) {
+            suppressRevealUntil = Date.now() + 500;
+        }
     }
 
     function bindCloseWithBackgroundTab(element, openAffiliate) {
-        element.addEventListener('click', function () {
+        element.addEventListener('click', function (event) {
+            event.preventDefault();
+            event.stopPropagation();
             closeModal(openAffiliate);
         });
     }
 
-    modal.querySelectorAll('[data-sp-modal-close]').forEach(function (el) {
-        bindCloseWithBackgroundTab(el, true);
+    modal.addEventListener('click', function (event) {
+        event.stopPropagation();
     });
 
-    modal.addEventListener('mousedown', function (event) {
-        if (event.button !== 0 || modal.hidden || !redirectFlowFlags().onPopupOpen || affiliateTabOpened) {
-            return;
-        }
-
-        if (event.target.closest('[data-sp-modal-close]')) {
-            return;
-        }
-
-        affiliateTabOpened = openFlow4Destination(null, pendingAffiliateUrl);
+    modal.querySelectorAll('[data-sp-modal-close]').forEach(function (el) {
+        bindCloseWithBackgroundTab(el, true);
     });
 
     if (okBtn) {
@@ -657,7 +722,7 @@ function initCouponRevealModal() {
 
     if (shopEl) {
         shopEl.addEventListener('mousedown', function (event) {
-            if (event.button !== 0 || modal.hidden) {
+            if (event.button !== 0 || modal.hidden || redirectFlowFlags().onPopupOpen) {
                 return;
             }
 
@@ -666,7 +731,12 @@ function initCouponRevealModal() {
 
         shopEl.addEventListener('click', function (event) {
             event.preventDefault();
-            openAffiliateTab(pendingAffiliateUrl || shopEl.getAttribute('href') || '');
+            event.stopPropagation();
+
+            if (!redirectFlowFlags().onPopupOpen) {
+                openAffiliateTab(pendingAffiliateUrl || shopEl.getAttribute('href') || '');
+            }
+
             closeModal(false);
         });
     }
@@ -678,14 +748,36 @@ function initCouponRevealModal() {
     });
 
     if (copyBtn) {
-        copyBtn.addEventListener('click', function () {
-            if (activeCode) {
-                copyText(activeCode, copyBtn);
+        copyBtn.addEventListener('click', function (event) {
+            event.preventDefault();
+            event.stopPropagation();
+
+            if (!activeCode) {
+                return;
             }
+
+            if (copyWithTextarea(activeCode)) {
+                const original = copyBtn.dataset.copyLabel || copyBtn.textContent;
+                copyBtn.dataset.copyLabel = original;
+                copyBtn.textContent = 'Copied!';
+                copyBtn.classList.add('copied');
+                setTimeout(function () {
+                    copyBtn.textContent = copyBtn.dataset.copyLabel || original;
+                    copyBtn.classList.remove('copied');
+                }, 2000);
+                return;
+            }
+
+            copyText(activeCode, copyBtn);
         });
     }
 
     async function handleRevealClick(btn, primedTab, destinationAlreadyOpened) {
+        if (Date.now() < suppressRevealUntil) {
+            closePrimedTab(primedTab);
+            return;
+        }
+
         if (btn.id === 'sp-modal-copy' || btn.closest('#sp-coupon-modal')) {
             return;
         }
@@ -729,6 +821,19 @@ function initCouponRevealModal() {
             }
 
             const affiliateUrl = result.affiliateUrl || btn.dataset.affiliateUrl || btn.dataset.shopUrl || btn.dataset.goUrl || '';
+
+            if (flags.onPopupOpen && result.code && !destinationAlreadyOpened) {
+                showCopiedState(btn, copyCodeNow(result.code));
+
+                if (activePrimedTab) {
+                    window.navigateBackgroundTab(activePrimedTab, flow4Destination(affiliateUrl, btn), {
+                        keepCurrentTab: !window.isLikelyMobileViewport(),
+                        fallbackNavigate: false,
+                    });
+                    destinationAlreadyOpened = true;
+                    activePrimedTab = null;
+                }
+            }
 
             // Flow 2/3 on desktop: copy then open destination with no coupon popup.
             // On phones the reveal fetch consumes the tap, so clipboard write fails
@@ -776,14 +881,55 @@ function initCouponRevealModal() {
         }
     }
 
+    function showCopiedState(btn, copied) {
+        if (!btn) {
+            return copied;
+        }
+
+        const originalLabel = btn.dataset.copyLabel || btn.textContent;
+        btn.dataset.copyLabel = originalLabel;
+        btn.textContent = copied ? 'Copied!' : btn.dataset.copyLabel || originalLabel;
+        btn.classList.toggle('copied', copied);
+
+        if (copied) {
+            setTimeout(function () {
+                btn.textContent = btn.dataset.copyLabel || originalLabel;
+                btn.classList.remove('copied');
+            }, 2000);
+        }
+
+        return copied;
+    }
+
+    function copyCodeNow(code) {
+        return !!(code && copyWithTextarea(code));
+    }
+
     function startRevealClick(btn) {
+        if (Date.now() < suppressRevealUntil) {
+            return;
+        }
+
         const flags = redirectFlowFlags();
         let primedTab = null;
-        let destinationAlreadyOpened = btn.dataset.flow4Armed === '1';
+        let destinationAlreadyOpened = false;
 
         if (flags.onPopupOpen) {
-            destinationAlreadyOpened = armFlow4Destination(btn);
-            btn.dataset.flow4Armed = '0';
+            if (typeof window.prefetchCouponReveal === 'function') {
+                window.prefetchCouponReveal(btn);
+            }
+
+            const ready = typeof window.cachedRevealResult === 'function'
+                ? window.cachedRevealResult(btn)
+                : null;
+
+            if (ready?.code) {
+                // Copy first, then open the merchant tab, all inside the click gesture.
+                showCopiedState(btn, copyCodeNow(ready.code));
+                destinationAlreadyOpened = openFlow4Destination(btn, ready.affiliateUrl);
+            } else {
+                primedTab = window.primeBackgroundTab();
+            }
         } else if (flags.onCopy && !window.isLikelyMobileViewport()) {
             // Must run synchronously in the click handler before any await.
             primedTab = window.primeBackgroundTab();
@@ -792,13 +938,29 @@ function initCouponRevealModal() {
         handleRevealClick(btn, primedTab, destinationAlreadyOpened);
     }
 
+    function prefetchRevealFrom(btn) {
+        if (!btn || typeof window.prefetchCouponReveal !== 'function') {
+            return;
+        }
+
+        window.prefetchCouponReveal(btn);
+    }
+
     document.querySelectorAll('.btn-copy, .sp-code-copy, .scroll-coupon-popup-copy').forEach(function (btn) {
+        if (btn.id === 'sp-modal-copy' || btn.closest('#sp-coupon-modal')) {
+            return;
+        }
+
+        btn.addEventListener('pointerenter', function () {
+            prefetchRevealFrom(btn);
+        });
+
         btn.addEventListener('mousedown', function (event) {
             if (event.button !== 0) {
                 return;
             }
 
-            armFlow4Destination(btn);
+            prefetchRevealFrom(btn);
         });
 
         btn.addEventListener('click', function (event) {
@@ -817,12 +979,16 @@ function initCouponRevealModal() {
 
         const clickTarget = container.querySelector('.code-box-wrap') || maskEl;
 
+        clickTarget.addEventListener('pointerenter', function () {
+            prefetchRevealFrom(revealBtn);
+        });
+
         clickTarget.addEventListener('mousedown', function (event) {
             if (event.button !== 0 || maskEl.classList.contains('is-revealed')) {
                 return;
             }
 
-            armFlow4Destination(revealBtn);
+            prefetchRevealFrom(revealBtn);
         });
 
         clickTarget.addEventListener('click', function (event) {
