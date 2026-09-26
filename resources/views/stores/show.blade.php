@@ -34,6 +34,9 @@
 @endpush
 
 @section('content')
+@if(($activeTheme ?? '') === 'proreview')
+    @include('themes.proreview.store-show', ['store' => $store, 'coupons' => $coupons])
+@else
 <div class="container">
     <!-- chia 2 cột ở đây -->
     <div class="store-page-layout">
@@ -71,4 +74,5 @@
 </div>
 
 @include('partials.scroll-coupon-popup')
+@endif
 @endsection

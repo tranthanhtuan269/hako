@@ -36,6 +36,12 @@
         @yield('content')
     </main>
 
+    @php
+        $themeFooterView = 'themes.' . ($activeTheme ?? 'classic') . '.partials.footer';
+    @endphp
+    @if(view()->exists($themeFooterView))
+        @include($themeFooterView)
+    @else
     <footer class="site-footer">
         <div class="container footer-grid">
             <div>
@@ -73,6 +79,7 @@
             &copy; {{ date('Y') }} {{ config('site.domain') }}. All rights reserved.
         </div>
     </footer>
+    @endif
 
     <script>
         window.__couponRedirectFlow = @json(\App\Support\SiteCouponRedirect::flow());

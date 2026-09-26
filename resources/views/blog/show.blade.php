@@ -101,6 +101,9 @@
 @endpush
 
 @section('content')
+@if(($activeTheme ?? '') === 'proreview')
+    @include('themes.proreview.blog-show', ['post' => $post, 'related' => $related])
+@else
 <article class="blog-article">
     <header class="blog-article-header">
         <div class="container">
@@ -155,4 +158,5 @@
 @endif
 
 @include('partials.scroll-coupon-popup')
+@endif
 @endsection

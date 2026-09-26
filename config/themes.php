@@ -2,9 +2,18 @@
 
 return [
 
-    'default' => 'googlycodes',
+    'default' => 'proreview',
 
     'themes' => [
+        'proreview' => [
+            'name' => 'ProReview',
+            'description' => 'Editorial review & deal theme with Fraunces serif headings, sand accents, dark navy header/footer, and responsive coupon cards (inspired by proreview.ducnh.com).',
+            'css' => 'themes/proreview.css',
+            'font' => 'https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Figtree:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap',
+            'js' => 'js/themes/proreview.js',
+            'preview' => ['#0F172A', '#D97706', '#F5F5F0'],
+        ],
+
         'classic' => [
             'name' => 'Classic Coral',
             'description' => 'Red coral accents with navy blue — clean coupon hub style.',

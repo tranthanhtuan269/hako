@@ -28,7 +28,13 @@
 @endpush
 
 @section('content')
-@if($activeTheme === 'googlycodes')
+@if($activeTheme === 'proreview')
+    @include('themes.proreview.home-hero', ['latestPosts' => $latestPosts ?? collect()])
+    @include('themes.proreview.featured-posts', ['latestPosts' => $latestPosts ?? collect()])
+    @include('themes.proreview.blog-section', ['latestPosts' => $latestPosts ?? collect()])
+    @include('themes.proreview.editors-picks', ['stores' => $stores ?? collect()])
+    @include('themes.proreview.latest-posts', ['latestPosts' => $latestPosts ?? collect()])
+@elseif($activeTheme === 'googlycodes')
     @include('themes.googlycodes.home-hero', ['heroSlides' => $heroSlides ?? collect()])
     @include('themes.googlycodes.trending-stores', [
         'trendingStores' => $trendingStores ?? $stores ?? collect(),
@@ -57,7 +63,7 @@
 </section>
 @endif
 
-@if($activeTheme !== 'googlycodes' && $latestPosts->isNotEmpty())
+@if(!in_array($activeTheme, ['googlycodes', 'proreview']) && $latestPosts->isNotEmpty())
 <section class="section">
     <div class="container">
         <h2 class="section-title">Review <a href="{{ route('blog.index') }}">All articles →</a></h2>
@@ -70,7 +76,7 @@
 </section>
 @endif
 
-@if($activeTheme !== 'googlycodes')
+@if(!in_array($activeTheme, ['googlycodes', 'proreview']))
 <section class="section">
     <div class="container">
         <h2 class="section-title">

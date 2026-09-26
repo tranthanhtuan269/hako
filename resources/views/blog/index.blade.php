@@ -9,7 +9,9 @@
 @endpush
 
 @section('content')
-@if(($activeTheme ?? '') === 'googlycodes')
+@if(($activeTheme ?? '') === 'proreview')
+    @include('themes.proreview.blog-index', ['posts' => $posts, 'q' => $q])
+@elseif(($activeTheme ?? '') === 'googlycodes')
     @include('themes.googlycodes.blog-index', ['posts' => $posts, 'q' => $q])
 @else
 <section class="page-hero">

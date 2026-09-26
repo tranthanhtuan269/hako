@@ -9,7 +9,9 @@
 @endpush
 
 @section('content')
-@if(($activeTheme ?? '') === 'googlycodes')
+@if(($activeTheme ?? '') === 'proreview')
+    @include('themes.proreview.stores-index', ['stores' => $stores])
+@elseif(($activeTheme ?? '') === 'googlycodes')
     @include('themes.googlycodes.stores-index', ['stores' => $stores])
 @else
 <div class="container">
