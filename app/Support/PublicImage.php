@@ -421,12 +421,6 @@ final class PublicImage
 
     private static function detectFormat(string $binary): ?string
     {
-        $trim = ltrim($binary);
-
-        if (str_starts_with($trim, '<svg') || str_contains($trim, '<svg')) {
-            return 'svg';
-        }
-
         if (str_starts_with($binary, "\x89PNG\r\n\x1a\n")) {
             return 'png';
         }
@@ -439,8 +433,14 @@ final class PublicImage
             return 'gif';
         }
 
+        $trim = ltrim($binary);
+
         if (str_starts_with($trim, 'RIFF') && str_contains(substr($binary, 0, 16), 'WEBP')) {
             return 'webp';
+        }
+
+        if (str_starts_with($trim, '<svg') || str_starts_with($trim, '<?xml') || str_contains(substr($trim, 0, 200), '<svg')) {
+            return 'svg';
         }
 
         if (function_exists('finfo_open')) {
