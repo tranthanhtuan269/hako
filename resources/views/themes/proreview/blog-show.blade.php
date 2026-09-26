@@ -40,23 +40,23 @@
         <div class="prose-pro max-w-none text-ink leading-relaxed">
             {!! $post->renderedContent() !!}
         </div>
-
-        @if($related->isNotEmpty())
-            <div class="mt-16 border-t border-line pt-12">
-                <h3 class="mb-8 font-display text-2xl font-bold sm:text-3xl">Related Reviews</h3>
-                <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
-                    @foreach($related->take(4) as $item)
-                        <article class="flex flex-col gap-3 rounded-2xl border border-line bg-white p-4 shadow-sm">
-                            <a href="{{ route('blog.show', $item->slug) }}" class="aspect-[16/9] w-full overflow-hidden rounded-xl bg-sand">
-                                <img src="{{ $item->featuredImageUrl() }}" alt="{{ $item->title }}" class="h-full w-full object-cover">
-                            </a>
-                            <h4 class="font-display font-bold text-base line-clamp-2">
-                                <a href="{{ route('blog.show', $item->slug) }}" class="text-ink hover:text-rust">{{ $item->title }}</a>
-                            </h4>
-                        </article>
-                    @endforeach
-                </div>
-            </div>
-        @endif
     </div>
+
+    @if($related->isNotEmpty())
+        <div class="mt-16 border-t border-line pt-12">
+            <h3 class="mb-8 font-display text-2xl font-bold sm:text-3xl text-ink">Related Reviews</h3>
+            <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+                @foreach($related->take(4) as $item)
+                    <article class="flex flex-col gap-3 rounded-2xl border border-line bg-white p-4 shadow-sm hover:shadow-card hover:-translate-y-1 transition-all">
+                        <a href="{{ route('blog.show', $item->slug) }}" class="aspect-[16/9] w-full overflow-hidden rounded-xl bg-sand">
+                            <img src="{{ $item->featuredImageUrl() }}" alt="{{ $item->title }}" class="h-full w-full object-cover">
+                        </a>
+                        <h4 class="font-display font-bold text-base line-clamp-2">
+                            <a href="{{ route('blog.show', $item->slug) }}" class="text-ink hover:text-rust transition-colors">{{ $item->title }}</a>
+                        </h4>
+                    </article>
+                @endforeach
+            </div>
+        </div>
+    @endif
 </article>
