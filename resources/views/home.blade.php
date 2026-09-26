@@ -29,7 +29,7 @@
 
 @section('content')
 @if($activeTheme === 'proreview')
-    @include('themes.proreview.home-hero', ['latestPosts' => $latestPosts ?? collect()])
+    @include('themes.proreview.home-hero', ['heroSlides' => $heroSlides ?? collect()])
     @include('themes.proreview.featured-posts', ['latestPosts' => $latestPosts ?? collect()])
     @include('themes.proreview.blog-section', ['latestPosts' => $latestPosts ?? collect()])
     @include('themes.proreview.editors-picks', ['stores' => $stores ?? collect()])
