@@ -1,10 +1,12 @@
 <header class="sticky top-0 z-40 bg-navy">
     <div class="container-site flex h-16 items-center gap-6 sm:h-[76px] xl:gap-9">
         <a class="inline-flex shrink-0 items-center no-underline" href="{{ route('home') }}">
-            @if(file_exists(public_path('frontend/images/logo.png')))
+            @if(!empty($siteLogoUrl))
+                <img alt="{{ $siteDisplayName ?? config('site.name', 'ProReview') }}" class="h-9 sm:h-10 w-auto max-w-[200px] object-contain" src="{{ $siteLogoUrl }}">
+            @elseif(file_exists(public_path('frontend/images/logo.png')))
                 <img alt="{{ config('site.name', 'ProReview') }}" class="h-[1.4rem] w-auto" height="40" src="{{ asset('frontend/images/logo.png') }}" width="186">
             @else
-                <span class="font-display text-xl font-bold tracking-tight text-white">{{ config('site.name', 'ProReview') }}</span>
+                <span class="font-display text-xl font-bold tracking-tight text-white">{{ $siteDisplayName ?? config('site.name', 'ProReview') }}</span>
             @endif
         </a>
         <nav aria-label="Main" class="hidden items-center gap-0.5 xl:flex">
