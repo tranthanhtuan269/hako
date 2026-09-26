@@ -2,7 +2,7 @@
     <div class="container-site flex flex-col items-center gap-7 py-12 text-center sm:py-14">
         <a class="inline-flex shrink-0 items-center no-underline" href="{{ route('home') }}">
             @if(!empty($siteLogoUrl))
-                <img alt="{{ $siteDisplayName ?? config('site.name', 'ProReview') }}" class="h-10 sm:h-12 w-auto max-w-[220px] object-contain" src="{{ $siteLogoUrl }}">
+                <img alt="{{ $siteDisplayName ?? config('site.name', 'ProReview') }}" class="h-[2rem] w-auto max-w-[200px] object-contain" src="{{ $siteLogoUrl }}">
             @elseif(file_exists(public_path('frontend/images/logo.png')))
                 <img alt="{{ config('site.name', 'ProReview') }}" class="h-[2rem] w-auto" height="40" src="{{ asset('frontend/images/logo.png') }}" width="186">
             @else
