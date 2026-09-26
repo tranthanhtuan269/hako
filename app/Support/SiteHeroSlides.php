@@ -167,9 +167,9 @@ final class SiteHeroSlides
             $slides[] = [
                 'id' => $id,
                 'enabled' => (bool) ($row['enabled'] ?? true),
-                'headline' => Str::limit(trim((string) ($row['headline'] ?? 'Exclusive Deals')), 120, ''),
+                'headline' => Str::limit(trim((string) ($row['headline'] ?? '')), 120, ''),
                 'subtitle' => Str::limit(trim((string) ($row['subtitle'] ?? '')), 320, ''),
-                'cta_label' => Str::limit(trim((string) ($row['cta_label'] ?? 'Shop Now')), 40, ''),
+                'cta_label' => Str::limit(trim((string) ($row['cta_label'] ?? '')), 40, ''),
                 'cta_url' => Str::limit(trim((string) ($row['cta_url'] ?? '')), 500, ''),
                 'image' => $image,
             ];

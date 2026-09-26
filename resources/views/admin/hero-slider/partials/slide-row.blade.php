@@ -46,7 +46,7 @@
                     type="text"
                     id="slide-headline-{{ $index }}"
                     name="slides[{{ $index }}][headline]"
-                    value="{{ old('slides.'.$index.'.headline', $slide['headline'] ?? 'Exclusive Deals') }}"
+                    value="{{ old('slides.'.$index.'.headline', $slide['headline'] ?? '') }}" placeholder="Optional (leave blank to display image only)"
                     maxlength="120"
                 >
             </div>
@@ -58,7 +58,8 @@
                     name="slides[{{ $index }}][subtitle]"
                     rows="3"
                     maxlength="320"
-                >{{ old('slides.'.$index.'.subtitle', $slide['subtitle'] ?? 'Discover amazing savings with our top brands. Limited time offers available now!') }}</textarea>
+                    placeholder="Optional subtitle"
+                >{{ old('slides.'.$index.'.subtitle', $slide['subtitle'] ?? '') }}</textarea>
             </div>
 
             <div class="hero-slide-cta-grid">
@@ -68,7 +69,7 @@
                         type="text"
                         id="slide-cta-label-{{ $index }}"
                         name="slides[{{ $index }}][cta_label]"
-                        value="{{ old('slides.'.$index.'.cta_label', $slide['cta_label'] ?? 'Shop Now') }}"
+                        value="{{ old('slides.'.$index.'.cta_label', $slide['cta_label'] ?? '') }}" placeholder="Shop Now"
                         maxlength="40"
                     >
                 </div>
