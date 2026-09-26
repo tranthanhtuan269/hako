@@ -39,7 +39,7 @@ class BlogController extends Controller
             ->with('user')
             ->where('id', '!=', $post->id)
             ->orderByDesc('published_at')
-            ->take(3)
+            ->take(4)
             ->get();
 
         $scrollPopup = ScrollCouponPopup::forStore($post->resolveStore());
