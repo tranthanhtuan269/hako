@@ -1886,7 +1886,9 @@ body.theme-ontopcoupon .otc-empty {
     body.theme-ontopcoupon .otc-split,
     body.theme-ontopcoupon .otc-cta-grid,
     body.theme-ontopcoupon .otc-store-layout {
-        grid-template-columns: 1fr;
+        grid-template-columns: minmax(0, 1fr);
+        width: 100%;
+        max-width: 100%;
     }
 
     body.theme-ontopcoupon .otc-store-sidebar {
@@ -2063,4 +2065,95 @@ body.theme-ontopcoupon .otc-get-code-label {
         line-height: 1.4 !important;
         word-break: break-word !important;
     }
+}
+
+
+/* --- Container & Content Width Containment --- */
+body.theme-ontopcoupon .otc-store-layout {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    box-sizing: border-box !important;
+}
+
+@media (max-width: 900px) {
+    body.theme-ontopcoupon .otc-store-layout {
+        grid-template-columns: minmax(0, 1fr) !important;
+    }
+}
+
+body.theme-ontopcoupon .otc-store-main {
+    min-width: 0 !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+}
+
+body.theme-ontopcoupon .otc-coupon-list {
+    min-width: 0 !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+}
+
+body.theme-ontopcoupon .otc-coupon-row {
+    min-width: 0 !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+}
+
+body.theme-ontopcoupon .otc-store-panel {
+    background: #fff;
+    border-radius: 16px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 12px rgba(16, 41, 45, .06);
+    margin-top: 1.5rem;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    overflow: hidden !important;
+    box-sizing: border-box !important;
+}
+
+@media (max-width: 640px) {
+    body.theme-ontopcoupon .otc-store-panel {
+        padding: 1.15rem 1rem !important;
+        border-radius: 14px !important;
+    }
+}
+
+body.theme-ontopcoupon .otc-store-about,
+body.theme-ontopcoupon .store-description-content {
+    min-width: 0 !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    overflow-x: hidden !important;
+    box-sizing: border-box !important;
+    word-break: break-word !important;
+    overflow-wrap: break-word !important;
+}
+
+body.theme-ontopcoupon .otc-store-about .article-table-scroll,
+body.theme-ontopcoupon .store-description-content .article-table-scroll,
+body.theme-ontopcoupon .otc-store-about table,
+body.theme-ontopcoupon .store-description-content table,
+body.theme-ontopcoupon .otc-store-about table.comparison-table,
+body.theme-ontopcoupon .store-description-content table.comparison-table {
+    display: block !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    border-radius: 8px !important;
+    margin: 1rem 0 !important;
+    box-sizing: border-box !important;
+}
+
+body.theme-ontopcoupon .otc-store-about img,
+body.theme-ontopcoupon .store-description-content img,
+body.theme-ontopcoupon .otc-store-about figure,
+body.theme-ontopcoupon .store-description-content figure {
+    max-width: 100% !important;
+    height: auto !important;
+    box-sizing: border-box !important;
 }
