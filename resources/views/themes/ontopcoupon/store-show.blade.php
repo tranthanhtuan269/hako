@@ -6,8 +6,10 @@
     $bestOffer = $bestOffer ?? $store->bestOfferLabel();
     $offerType = $offerType ?? null;
     $offerTotal = $codeCount + $dealCount;
-    $heroDesc = filled($store->description)
-        ? \Illuminate\Support\Str::limit(strip_tags($store->description), 140)
+    $cleanDesc = preg_replace('/<figure\b[^>]*>.*?<\/figure>|<figcaption\b[^>]*>.*?<\/figcaption>/is', '', $store->description ?? '');
+    $cleanDesc = trim(preg_replace('/\s+/', ' ', strip_tags($cleanDesc)));
+    $heroDesc = $cleanDesc !== ''
+        ? \Illuminate\Support\Str::limit($cleanDesc, 140)
         : 'Browse verified '.$store->name.' coupon codes and discount deals.';
     $storeCrumbs = [
         ['name' => 'Home', 'url' => route('home')],
