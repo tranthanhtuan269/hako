@@ -158,6 +158,29 @@ class StoreController extends Controller
         return redirect()->route('admin.stores.index')->with('success', 'Store updated successfully.');
     }
 
+        public function bulkDestroy(Request $request): RedirectResponse
+    {
+        $ids = $request->input('ids', []);
+        if (is_string($ids)) {
+            $ids = array_filter(array_map('trim', explode(',', $ids)));
+        }
+
+        if (empty($ids) || !is_array($ids)) {
+            return back()->with('error', 'Please select at least one store to delete.');
+        }
+
+        $stores = Store::whereIn('id', $ids)->get();
+        $count = 0;
+
+        foreach ($stores as $store) {
+            PublicImage::delete($store->logo);
+            $store->delete();
+            $count++;
+        }
+
+        return redirect()->route('admin.stores.index')->with('success', "Successfully deleted {$count} store(s).");
+    }
+
     public function destroy(Store $store): RedirectResponse
     {
         PublicImage::delete($store->logo);

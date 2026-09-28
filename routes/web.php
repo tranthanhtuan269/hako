@@ -71,8 +71,8 @@ Route::get('/sitemap.xml', [SitemapController::class, 'index'])->name('sitemap')
 Route::middleware(['guest', 'noindex'])->group(function () {
     Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
     Route::post('/login', [LoginController::class, 'login']);
-    Route::get('/register', [RegisterController::class, 'showRegistrationForm'])->name('register');
-    Route::post('/register', [RegisterController::class, 'register']);
+    Route::get('/register', fn () => redirect()->route('login'))->name('register');
+    Route::post('/register', fn () => abort(404));
 });
 
 Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
@@ -123,6 +123,7 @@ Route::middleware(['auth', 'admin', 'noindex'])->prefix('admin')->name('admin.')
     Route::put('stores/{store}/coupons/{coupon}', [AdminStoreController::class, 'updateCoupon'])->name('stores.coupons.update');
     Route::patch('stores/{store}/home-pin', [AdminStoreController::class, 'toggleHomePin'])->name('stores.toggle-home-pin');
     Route::patch('stores/{store}/ads-listed', [AdminStoreController::class, 'toggleAdsListed'])->name('stores.toggle-ads-listed');
+    Route::post('stores/bulk-destroy', [AdminStoreController::class, 'bulkDestroy'])->name('stores.bulk-destroy');
     Route::resource('stores', AdminStoreController::class)->except(['show']);
     Route::resource('categories', AdminCategoryController::class)->except(['show']);
     Route::patch('posts/{post}/home-pin', [AdminPostController::class, 'toggleHomePin'])->name('posts.toggle-home-pin');

@@ -15,6 +15,9 @@
         </p>
     </div>
     <div style="display:flex;gap:.5rem;flex-wrap:wrap;">
+        <button type="button" id="btn-bulk-delete" class="btn btn-outline" style="display:none;color:#dc2626;border-color:#fca5a5;background:#fef2f2;">
+            🗑 Delete Selected (<span id="bulk-selected-count">0</span>)
+        </button>
         <a href="{{ route('admin.stores.export', array_filter([
             'q' => $q ?? null,
             'sort' => ($sort ?? 'order') !== 'order' ? $sort : null,
@@ -52,102 +55,111 @@
     ]),
 ])
 
-<div class="coupon-sort-table-wrap">
-<table class="admin-table coupon-sort-table">
-    <thead>
-        <tr>
-            <th class="coupon-sort-col" aria-label="Reorder"></th>
-            @include('partials.table-sort-th', ['column' => 'order', 'label' => 'Page order', 'currentSort' => $sort ?? 'order', 'currentDir' => $dir ?? 'desc'])
-            <th>Logo</th>
-            @include('partials.table-sort-th', ['column' => 'name', 'label' => 'Name', 'currentSort' => $sort ?? 'order', 'currentDir' => $dir ?? 'desc'])
-            <th>Home</th>
-            <th>On /stores</th>
-            @include('partials.table-sort-th', ['column' => 'coupons', 'label' => 'Coupons', 'currentSort' => $sort ?? 'order', 'currentDir' => $dir ?? 'desc'])
-            <th>Day</th>
-            <th>Month</th>
-            <th>Year</th>
-            @include('partials.table-sort-th', ['column' => 'clicks', 'label' => 'Total', 'currentSort' => $sort ?? 'order', 'currentDir' => $dir ?? 'desc'])
-            @include('partials.table-sort-th', ['column' => 'created_at', 'label' => 'Created', 'currentSort' => $sort ?? 'order', 'currentDir' => $dir ?? 'desc'])
-            <th>Status</th>
-            <th class="table-actions-col">Actions</th>
-        </tr>
-    </thead>
-    <tbody id="store-sortable"
-        data-reorder-url="{{ route('admin.stores.sort-order') }}"
-        data-sort-enabled="{{ ($sort ?? 'order') === 'order' ? '1' : '0' }}">
-        @forelse($stores as $store)
-            <tr data-store-id="{{ $store->id }}">
-                <td class="coupon-sort-col">
-                    @if(($sort ?? 'order') === 'order')
-                        <button type="button" class="coupon-sort-handle" aria-label="Drag to reorder {{ $store->name }}" title="Drag to reorder">⠿</button>
-                    @else
-                        <span class="coupon-sort-handle coupon-sort-handle--disabled" aria-hidden="true">⠿</span>
-                    @endif
-                </td>
-                <td><span class="coupon-sort-order" data-order-label>{{ $store->stores_list_sort_order }}</span></td>
-                <td>
-                    @if($store->logoUrl())
-                        <img src="{{ $store->logoUrl() }}" alt="{{ $store->name }}" class="admin-thumb" loading="lazy">
-                    @else
-                        <span class="admin-thumb-fallback">{{ $store->initials() }}</span>
-                    @endif
-                </td>
-                <td>{{ $store->name }}</td>
-                <td>
-                    <form action="{{ route('admin.stores.toggle-home-pin', $store) }}" method="POST" style="display:inline;">
-                        @csrf
-                        @method('PATCH')
-                        @foreach(request()->only(['q', 'sort', 'dir', 'date']) as $key => $value)
-                            @if(filled($value))
-                                <input type="hidden" name="{{ $key }}" value="{{ $value }}">
-                            @endif
-                        @endforeach
-                        <button type="submit" class="btn btn-outline btn-sm" title="{{ $store->is_pinned_home ? 'Unpin from homepage' : 'Pin to homepage' }}">
-                            {{ $store->is_pinned_home ? '📌 Pinned' : 'Pin' }}
-                        </button>
-                    </form>
-                </td>
-                <td>{{ $store->show_on_stores ? 'Yes' : 'No' }}</td>
-                <td>
-                    <button
-                        type="button"
-                        class="btn btn-outline btn-sm js-store-coupons-open"
-                        data-coupons-url="{{ route('admin.stores.coupons', $store) }}"
-                        data-store-name="{{ $store->name }}"
-                        title="Manage coupons for {{ $store->name }}"
-                    >
-                        {{ number_format($store->coupons_count) }}
-                    </button>
-                </td>
-                <td><strong>{{ number_format((int) ($store->day_clicks ?? 0)) }}</strong></td>
-                <td>{{ number_format((int) ($store->month_clicks ?? 0)) }}</td>
-                <td>{{ number_format((int) ($store->year_clicks ?? 0)) }}</td>
-                <td><strong>{{ number_format((int) ($store->coupons_click_sum ?? 0)) }}</strong></td>
-                <td>{{ $store->created_at?->format('M j, Y') }}</td>
-                <td>{{ $store->is_active ? 'Active' : 'Inactive' }}</td>
-                <td>
-                    @include('partials.store-table-actions', [
-                        'store' => $store,
-                        'editUrl' => route('admin.stores.edit', $store),
-                        'destroyUrl' => route('admin.stores.destroy', $store),
-                        'showAdsToggle' => true,
-                    ])
-                </td>
-            </tr>
-        @empty
+<form id="bulk-delete-form" action="{{ route('admin.stores.bulk-destroy') }}" method="POST" style="margin:0;">
+    @csrf
+    <div class="coupon-sort-table-wrap">
+    <table class="admin-table coupon-sort-table">
+        <thead>
             <tr>
-                <td colspan="14">
-                    @if(filled($q ?? null))
-                        No stores match your search.
-                    @else
-                        No stores yet. <a href="{{ route('admin.stores.create') }}">Add a store</a>.
-                    @endif
-                </td>
+                <th style="width:2.2rem;text-align:center;">
+                    <input type="checkbox" id="check-all-stores" title="Select all" style="cursor:pointer;width:1.05rem;height:1.05rem;">
+                </th>
+                <th class="coupon-sort-col" aria-label="Reorder"></th>
+                @include('partials.table-sort-th', ['column' => 'order', 'label' => 'Page order', 'currentSort' => $sort ?? 'order', 'currentDir' => $dir ?? 'desc'])
+                <th>Logo</th>
+                @include('partials.table-sort-th', ['column' => 'name', 'label' => 'Name', 'currentSort' => $sort ?? 'order', 'currentDir' => $dir ?? 'desc'])
+                <th>Home</th>
+                <th>On /stores</th>
+                @include('partials.table-sort-th', ['column' => 'coupons', 'label' => 'Coupons', 'currentSort' => $sort ?? 'order', 'currentDir' => $dir ?? 'desc'])
+                <th>Day</th>
+                <th>Month</th>
+                <th>Year</th>
+                @include('partials.table-sort-th', ['column' => 'clicks', 'label' => 'Total', 'currentSort' => $sort ?? 'order', 'currentDir' => $dir ?? 'desc'])
+                @include('partials.table-sort-th', ['column' => 'created_at', 'label' => 'Created', 'currentSort' => $sort ?? 'order', 'currentDir' => $dir ?? 'desc'])
+                <th>Status</th>
+                <th class="table-actions-col">Actions</th>
             </tr>
-        @endforelse
-    </tbody>
-</table>
-</div>
+        </thead>
+        <tbody id="store-sortable"
+            data-reorder-url="{{ route('admin.stores.sort-order') }}"
+            data-sort-enabled="{{ ($sort ?? 'order') === 'order' ? '1' : '0' }}">
+            @forelse($stores as $store)
+                <tr data-store-id="{{ $store->id }}">
+                    <td style="text-align:center;">
+                        <input type="checkbox" name="ids[]" value="{{ $store->id }}" class="store-checkbox" style="cursor:pointer;width:1.05rem;height:1.05rem;">
+                    </td>
+                    <td class="coupon-sort-col">
+                        @if(($sort ?? 'order') === 'order')
+                            <button type="button" class="coupon-sort-handle" aria-label="Drag to reorder {{ $store->name }}" title="Drag to reorder">⠿</button>
+                        @else
+                            <span class="coupon-sort-handle coupon-sort-handle--disabled" aria-hidden="true">⠿</span>
+                        @endif
+                    </td>
+                    <td><span class="coupon-sort-order" data-order-label>{{ $store->stores_list_sort_order }}</span></td>
+                    <td>
+                        @if($store->logoUrl())
+                            <img src="{{ $store->logoUrl() }}" alt="{{ $store->name }}" class="admin-thumb" loading="lazy">
+                        @else
+                            <span class="admin-thumb-fallback">{{ $store->initials() }}</span>
+                        @endif
+                    </td>
+                    <td>{{ $store->name }}</td>
+                    <td>
+                        <form action="{{ route('admin.stores.toggle-home-pin', $store) }}" method="POST" style="display:inline;">
+                            @csrf
+                            @method('PATCH')
+                            @foreach(request()->only(['q', 'sort', 'dir', 'date']) as $key => $value)
+                                @if(filled($value))
+                                    <input type="hidden" name="{{ $key }}" value="{{ $value }}">
+                                @endif
+                            @endforeach
+                            <button type="submit" class="btn btn-outline btn-sm" title="{{ $store->is_pinned_home ? 'Unpin from homepage' : 'Pin to homepage' }}">
+                                {{ $store->is_pinned_home ? '📌 Pinned' : 'Pin' }}
+                            </button>
+                        </form>
+                    </td>
+                    <td>{{ $store->show_on_stores ? 'Yes' : 'No' }}</td>
+                    <td>
+                        <button
+                            type="button"
+                            class="btn btn-outline btn-sm js-store-coupons-open"
+                            data-coupons-url="{{ route('admin.stores.coupons', $store) }}"
+                            data-store-name="{{ $store->name }}"
+                            title="Manage coupons for {{ $store->name }}"
+                        >
+                            {{ number_format($store->coupons_count) }}
+                        </button>
+                    </td>
+                    <td><strong>{{ number_format((int) ($store->day_clicks ?? 0)) }}</strong></td>
+                    <td>{{ number_format((int) ($store->month_clicks ?? 0)) }}</td>
+                    <td>{{ number_format((int) ($store->year_clicks ?? 0)) }}</td>
+                    <td><strong>{{ number_format((int) ($store->coupons_click_sum ?? 0)) }}</strong></td>
+                    <td>{{ $store->created_at?->format('M j, Y') }}</td>
+                    <td>{{ $store->is_active ? 'Active' : 'Inactive' }}</td>
+                    <td>
+                        @include('partials.store-table-actions', [
+                            'store' => $store,
+                            'editUrl' => route('admin.stores.edit', $store),
+                            'destroyUrl' => route('admin.stores.destroy', $store),
+                            'showAdsToggle' => true,
+                        ])
+                    </td>
+                </tr>
+            @empty
+                <tr>
+                    <td colspan="15">
+                        @if(filled($q ?? null))
+                            No stores match your search.
+                        @else
+                            No stores yet. <a href="{{ route('admin.stores.create') }}">Add a store</a>.
+                        @endif
+                    </td>
+                </tr>
+            @endforelse
+        </tbody>
+    </table>
+    </div>
+</form>
 
 @include('partials.table-actions-assets')
 @include('partials.admin-store-coupons-modal')
@@ -308,6 +320,49 @@
 @endpush
 
 @push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const checkAll = document.getElementById('check-all-stores');
+    const storeBoxes = document.querySelectorAll('.store-checkbox');
+    const btnBulk = document.getElementById('btn-bulk-delete');
+    const countSpan = document.getElementById('bulk-selected-count');
+    const form = document.getElementById('bulk-delete-form');
+
+    function updateBulkUI() {
+        const checked = document.querySelectorAll('.store-checkbox:checked');
+        const count = checked.length;
+        if (countSpan) countSpan.textContent = count;
+        if (btnBulk) {
+            btnBulk.style.display = count > 0 ? 'inline-flex' : 'none';
+        }
+        if (checkAll) {
+            checkAll.checked = storeBoxes.length > 0 && count === storeBoxes.length;
+            checkAll.indeterminate = count > 0 && count < storeBoxes.length;
+        }
+    }
+
+    if (checkAll) {
+        checkAll.addEventListener('change', function () {
+            storeBoxes.forEach(cb => { cb.checked = checkAll.checked; });
+            updateBulkUI();
+        });
+    }
+
+    storeBoxes.forEach(cb => {
+        cb.addEventListener('change', updateBulkUI);
+    });
+
+    if (btnBulk && form) {
+        btnBulk.addEventListener('click', function () {
+            const count = document.querySelectorAll('.store-checkbox:checked').length;
+            if (count === 0) return;
+            if (confirm(`Are you sure you want to permanently delete ${count} selected store(s)? This will also remove their associated logo images.`)) {
+                form.submit();
+            }
+        });
+    }
+});
+</script>
 <script src="{{ asset('js/admin-store-sort.js') }}?v={{ filemtime(public_path('js/admin-store-sort.js')) }}" defer></script>
 <script src="{{ asset('js/admin-store-coupons-popup.js') }}?v={{ filemtime(public_path('js/admin-store-coupons-popup.js')) }}" defer></script>
 @endpush
