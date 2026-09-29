@@ -139,7 +139,7 @@ class PostController extends Controller
         $i = 1;
 
         while (Post::where('slug', $slug)->when($ignoreId, fn ($q) => $q->where('id', '!=', $ignoreId))->exists()) {
-            $slug = $original . '-' . $i++;
+            $slug = $original . '_' . $i++;
         }
 
         return $slug;

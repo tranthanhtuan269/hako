@@ -230,7 +230,7 @@
                     @endif
                 @endforeach
             </ul>
-            <a href="{{ route('register') }}" class="otc-btn-outline-lime">{{ $otc['cta_owners']['button'] }}</a>
+            <a href="{{ route('pages.contact') }}" class="otc-btn-outline-lime">{{ $otc['cta_owners']['button'] }}</a>
         </div>
     </div>
 </section>

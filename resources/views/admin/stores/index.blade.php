@@ -327,6 +327,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const btnBulk = document.getElementById('btn-bulk-delete');
     const countSpan = document.getElementById('bulk-selected-count');
     const form = document.getElementById('bulk-delete-form');
+    const bulkDestroyUrl = '{{ route('admin.stores.bulk-destroy') }}';
 
     function updateBulkUI() {
         const checked = document.querySelectorAll('.store-checkbox:checked');
@@ -357,7 +358,21 @@ document.addEventListener('DOMContentLoaded', function () {
             const count = document.querySelectorAll('.store-checkbox:checked').length;
             if (count === 0) return;
             if (confirm(`Are you sure you want to permanently delete ${count} selected store(s)? This will also remove their associated logo images.`)) {
-                form.submit();
+                // form.submit();
+                // ajax request to the bulk-destroy route
+                // lỗi 404 ở đây, phải sửa lại
+                // thay thế bằng route('admin.stores.bulk-destroy')
+                fetch(bulkDestroyUrl, {
+                    method: 'POST',
+                    body: new FormData(form),
+                }).then(response => response.json())
+                .then(response => {
+                    if (response.ok) {
+                        window.location.reload();
+                    } else {
+                        console.error('Failed to delete stores');
+                    }
+                });
             }
         });
     }

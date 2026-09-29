@@ -22,7 +22,8 @@ final class StoreSlug
             ->where('slug', $slug)
             ->when($ignoreId, fn ($query) => $query->where('id', '!=', $ignoreId))
             ->exists()) {
-            $slug = $original.'-'.$suffix++;
+            // Keep underscores so duplicate imports become nike_1, nike_2 (not nike-1).
+            $slug = $original.'_'.$suffix++;
         }
 
         return $slug;

@@ -123,7 +123,7 @@ Route::middleware(['auth', 'admin', 'noindex'])->prefix('admin')->name('admin.')
     Route::put('stores/{store}/coupons/{coupon}', [AdminStoreController::class, 'updateCoupon'])->name('stores.coupons.update');
     Route::patch('stores/{store}/home-pin', [AdminStoreController::class, 'toggleHomePin'])->name('stores.toggle-home-pin');
     Route::patch('stores/{store}/ads-listed', [AdminStoreController::class, 'toggleAdsListed'])->name('stores.toggle-ads-listed');
-    Route::post('stores/bulk-destroy', [AdminStoreController::class, 'bulkDestroy'])->name('stores.bulk-destroy');
+    Route::patch('stores/bulk-destroy', [AdminStoreController::class, 'bulkDestroy'])->name('stores.bulk-destroy');
     Route::resource('stores', AdminStoreController::class)->except(['show']);
     Route::resource('categories', AdminCategoryController::class)->except(['show']);
     Route::patch('posts/{post}/home-pin', [AdminPostController::class, 'toggleHomePin'])->name('posts.toggle-home-pin');

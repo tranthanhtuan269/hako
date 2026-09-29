@@ -158,7 +158,7 @@ class StoreController extends Controller
         return redirect()->route('admin.stores.index')->with('success', 'Store updated successfully.');
     }
 
-        public function bulkDestroy(Request $request): RedirectResponse
+    public function bulkDestroy(Request $request): JsonResponse
     {
         $ids = $request->input('ids', []);
         if (is_string($ids)) {
@@ -170,6 +170,7 @@ class StoreController extends Controller
         }
 
         $stores = Store::whereIn('id', $ids)->get();
+        // dd($stores);
         $count = 0;
 
         foreach ($stores as $store) {
@@ -178,7 +179,11 @@ class StoreController extends Controller
             $count++;
         }
 
-        return redirect()->route('admin.stores.index')->with('success', "Successfully deleted {$count} store(s).");
+        // return json response
+        return response()->json([
+            'ok' => true,
+            'message' => "Successfully deleted {$count} store(s).",
+        ]);
     }
 
     public function destroy(Store $store): RedirectResponse

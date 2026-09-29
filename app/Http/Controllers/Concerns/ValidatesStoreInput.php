@@ -12,7 +12,7 @@ trait ValidatesStoreInput
     {
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'slug' => ['nullable', 'string', 'max:255', 'regex:/^[a-z0-9]+(?:-[a-z0-9]+)*$/'],
+            'slug' => ['nullable', 'string', 'max:255', 'regex:/^[a-z0-9]+(?:[-_][a-z0-9]+)*$/'],
             'logo' => ['nullable', 'string', 'max:500'],
             'logo_file' => ['nullable', 'image', 'max:2048'],
             'website' => ['nullable', 'url', 'max:500'],
@@ -24,7 +24,7 @@ trait ValidatesStoreInput
             'stores_list_sort_order' => ['nullable', 'integer', 'min:0', 'max:9999'],
             'is_active' => ['boolean'],
         ], [
-            'slug.regex' => 'Slug may only contain lowercase letters, numbers, and hyphens.',
+            'slug.regex' => 'Slug may only contain lowercase letters, numbers, hyphens, and underscores.',
         ]);
 
         $data['slug'] = StoreSlug::make($data['name'], $request->input('slug'), $store?->id);
