@@ -21,7 +21,7 @@
     </div>
     @include('partials.store-category-field', ['store' => $store, 'categories' => $categories])
     @include('partials.store-website-field', ['store' => $store])
-    @include('partials.store-description-editor', ['value' => $store->description, 'editorId' => 'store-description'])
+    @include('partials.ckeditor-editor', ['value' => $store->description, 'editorId' => 'store-description', 'fieldName' => 'description', 'label' => 'Description', 'hint' => 'Trình soạn thảo CKEditor — định dạng văn bản, liên kết, bảng, ảnh và video (YouTube, Vimeo, MP4).'])
     @include('partials.store-coupon-display-fields', ['store' => $store, 'storeCoupons' => $storeCoupons ?? collect()])
     <div class="form-check">
         <input type="checkbox" name="is_active" value="1" @checked(old('is_active', $store->is_active ?? true))>

@@ -165,10 +165,11 @@ class Store extends Model
             return '';
         }
 
+        $html = DynamicCouponContent::expand($html, $this, null, false);
+        $html = \App\Support\MediaEmbedParser::convert($html);
+
         return HtmlCleaner::wrapTablesForScroll(
-            HtmlCleaner::stripAffiliateNotices(
-                DynamicCouponContent::expand($html, $this, null, false)
-            )
+            HtmlCleaner::stripAffiliateNotices($html)
         );
     }
 

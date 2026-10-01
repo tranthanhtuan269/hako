@@ -22,7 +22,7 @@
     </div>
     @include('partials.store-category-field', ['store' => $store, 'categories' => $categories])
     @include('partials.store-website-field', ['store' => $store])
-    @include('partials.store-description-editor', ['value' => $store->description, 'editorId' => 'admin-store-description'])
+    @include('partials.ckeditor-editor', ['value' => $store->description, 'editorId' => 'admin-store-description', 'fieldName' => 'description', 'label' => 'Description', 'hint' => 'Trình soạn thảo CKEditor — định dạng văn bản, liên kết, bảng, ảnh và video (YouTube, Vimeo, MP4).'])
     @include('partials.store-coupon-display-fields', ['store' => $store, 'storeCoupons' => $storeCoupons ?? collect()])
     <div class="form-group"><label>Sort order</label><input type="number" name="sort_order" value="{{ old('sort_order', $store->sort_order ?? 0) }}"></div>
     <div class="form-check">
