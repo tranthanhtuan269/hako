@@ -1,5 +1,5 @@
 @php
-    $picks = $stores->take(5);
+    $picks = \App\Support\SiteEditorsPicks::forHome();
 @endphp
 @if($picks->isNotEmpty())
 <section class="bg-sand py-14 sm:py-[72px]">
@@ -18,12 +18,23 @@
         <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 sm:gap-6">
             @foreach($picks as $store)
                 <article class="flex flex-col items-center gap-3.5 text-center">
-                    <a aria-hidden="true" class="block aspect-square w-full overflow-hidden rounded-2xl bg-white border border-line p-4 transition-transform duration-300 hover:-translate-y-1 shadow-sm flex items-center justify-center" href="{{ route('stores.show', $store->slug) }}" tabindex="-1">
-                        @include('partials.store-logo', ['store' => $store, 'size' => 'lg', 'linked' => false])
+                    <a aria-hidden="true" class="group block aspect-square w-full overflow-hidden rounded-2xl bg-white border border-line p-5 sm:p-6 transition-all duration-300 hover:-translate-y-1 hover:shadow-md flex items-center justify-center" href="{{ route('stores.show', $store->slug) }}" tabindex="-1">
+                        @if($store->logoUrl())
+                            <img
+                                src="{{ $store->logoUrl() }}"
+                                alt="{{ $store->name }}"
+                                class="max-h-[75%] max-w-[85%] w-auto h-auto object-contain transition-transform duration-300 group-hover:scale-105"
+                                loading="lazy"
+                                onerror="this.style.display='none';this.nextElementSibling?.classList.remove('hidden');"
+                            >
+                            <span class="hidden font-display text-3xl sm:text-4xl font-black text-ink/70">{{ $store->initials() }}</span>
+                        @else
+                            <span class="font-display text-3xl sm:text-4xl font-black text-ink/70">{{ $store->initials() }}</span>
+                        @endif
                     </a>
                     <h3 class="line-clamp-2 px-1.5 text-[12px] font-bold uppercase leading-relaxed tracking-[0.1em] text-[#4A453C] sm:text-xs" title="{{ $store->name }}">
                         <a class="hover:text-rust transition-colors" href="{{ route('stores.show', $store->slug) }}">
-                            {{ $store->name }} ({{ $store->coupons_count }} Deals)
+                            {{ $store->name }} ({{ number_format((int) ($store->active_coupons_count ?? $store->activeCouponsCount())) }} Deals)
                         </a>
                     </h3>
                 </article>

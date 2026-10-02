@@ -11,6 +11,7 @@
         'admin.tracking.*',
         'admin.themes.*',
         'admin.hero-slider.*',
+        'admin.editors-picks.*',
     );
     $contentOpen = request()->routeIs(
         'admin.posts.*',
@@ -64,6 +65,8 @@
                     @class(['sidebar-nav-sublink', 'active' => request()->routeIs('admin.themes.*')])>Frontend Theme</a>
                 <a href="{{ route('admin.hero-slider.index') }}"
                     @class(['sidebar-nav-sublink', 'active' => request()->routeIs('admin.hero-slider.*')])>Homepage Slider</a>
+                <a href="{{ route('admin.editors-picks.index') }}"
+                    @class(['sidebar-nav-sublink', 'active' => request()->routeIs('admin.editors-picks.*')])>Editor’s Picks</a>
             @include('partials.dashboard-sidebar-collapsible-section-end')
         </div>
 
@@ -126,6 +129,8 @@
                         @class(['sidebar-nav-sublink', 'active' => request()->routeIs('admin.themes.*')])>Frontend Theme</a>
                     <a href="{{ route('admin.hero-slider.index') }}"
                         @class(['sidebar-nav-sublink', 'active' => request()->routeIs('admin.hero-slider.*')])>Homepage Slider</a>
+                    <a href="{{ route('admin.editors-picks.index') }}"
+                        @class(['sidebar-nav-sublink', 'active' => request()->routeIs('admin.editors-picks.*')])>Editor’s Picks</a>
                 @include('partials.dashboard-sidebar-collapsible-section-end')
             </div>
 

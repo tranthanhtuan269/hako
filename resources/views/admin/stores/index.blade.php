@@ -15,6 +15,7 @@
         </p>
     </div>
     <div style="display:flex;gap:.5rem;flex-wrap:wrap;">
+        <a href="{{ route('admin.editors-picks.index') }}" class="btn btn-outline">★ Editor’s Picks</a>
         <a href="{{ route('admin.stores.catalog-display') }}" class="btn btn-outline">Stores page display</a>
         <a href="{{ route('admin.stores.create') }}" class="btn btn-primary">+ Add Store</a>
     </div>
