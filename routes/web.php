@@ -62,6 +62,7 @@ Route::get('/cookie-policy', [PageController::class, 'cookies'])->name('pages.co
 Route::get('/disclaimer', [PageController::class, 'disclaimer'])->name('pages.disclaimer');
 
 Route::get('/blog', [BlogController::class, 'index'])->name('blog.index');
+Route::get('/all-review', [BlogController::class, 'index'])->name('blog.all-review');
 Route::get('/blog/{slug}', [BlogController::class, 'show'])->name('blog.show');
 Route::get('/authors', [AuthorController::class, 'index'])->name('authors.index');
 Route::get('/authors/{slug}', [AuthorController::class, 'show'])->name('authors.show');
