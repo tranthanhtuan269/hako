@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Coupon;
 use App\Models\SiteSetting;
+use App\Support\ThemeManager;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -17,13 +18,21 @@ class CouponController extends Controller
 
         $limit = max(1, (int) SiteSetting::get('coupons_page_limit', 16));
 
+        $q = trim((string) $request->get('q', ''));
+
         $coupons = Coupon::publicCatalogQuery()
             ->with(['store.category'])
             ->ofType($type)
+            ->when($q !== '', function ($query) use ($q) {
+                $query->where(function ($sub) use ($q) {
+                    $sub->where('title', 'like', "%{$q}%")
+                        ->orWhereHas('store', fn ($s) => $s->where('name', 'like', "%{$q}%"));
+                });
+            })
             ->paginate($limit)
             ->withQueryString();
 
-        return view('coupons.index', compact('coupons', 'type'));
+        return view(ThemeManager::view('coupons.index'), compact('coupons', 'type', 'q'));
     }
 
     public function show(string $slug): View

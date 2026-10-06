@@ -26,28 +26,45 @@ class HomeController extends Controller
         $themeView = 'themes.'.ThemeManager::current().'.home';
         $useThemeHome = view()->exists($themeView);
 
-        $storeQuery = Store::homeFeaturedQuery($useThemeHome ? 14 : 12);
-        if ($useThemeHome) {
-            $storeQuery->withCount([
-                'coupons as active_coupons_count' => fn ($q) => $q->valid(),
-            ]);
-        }
-        $stores = $storeQuery->get();
+        if (! $useThemeHome) {
+            $stores = Store::homeFeaturedQuery(12)->get();
 
-        $data = compact('categories', 'stores', 'latestPosts', 'stats');
-
-        if ($useThemeHome) {
-            $data['featuredCoupons'] = Coupon::with('store')
-                ->valid()
-                ->orderByDesc('is_featured')
-                ->latest()
-                ->take(12)
-                ->get();
-
-            return view($themeView, $data);
+            return view('home', compact('categories', 'stores', 'latestPosts', 'stats'));
         }
 
-        return view('home', $data);
+        $storeCoupons = fn ($q) => $q->valid()
+            ->where('show_on_store', true)
+            ->select(['id', 'store_id', 'title', 'type', 'discount_type', 'discount_value']);
+        $storeCounts = ['coupons as active_coupons_count' => fn ($q) => $q->valid()];
+
+        $stores = Store::homeFeaturedQuery(14)
+            ->with(['coupons' => $storeCoupons])
+            ->withCount($storeCounts)
+            ->get();
+
+        $storeGrid = Store::homeFeaturedQuery(12)
+            ->with(['coupons' => $storeCoupons])
+            ->withCount($storeCounts)
+            ->paginate(12, ['*'], 'sp')
+            ->withQueryString()
+            ->fragment('top-stores');
+
+        $featuredCoupons = Coupon::with('store')
+            ->valid()
+            ->orderByDesc('is_featured')
+            ->latest()
+            ->paginate(12, ['*'], 'cp')
+            ->withQueryString()
+            ->fragment('featured-coupons');
+
+        return view($themeView, compact(
+            'categories',
+            'stores',
+            'storeGrid',
+            'featuredCoupons',
+            'latestPosts',
+            'stats',
+        ));
     }
 
     public function search(Request $request): View

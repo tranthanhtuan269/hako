@@ -12,16 +12,23 @@ use Illuminate\View\View;
 
 class StoreController extends Controller
 {
-    public function index(): View
+    public function index(Request $request): View
     {
         $limit = max(1, (int) SiteSetting::get('stores_page_limit', 24));
+        $q = trim((string) $request->get('q', ''));
 
         $stores = Store::publicCatalogQuery()
-            ->with('category')
-            ->withCount(['coupons' => fn ($q) => $q->valid()])
-            ->paginate($limit);
+            ->with([
+                'category',
+                'coupons' => fn ($query) => $query->valid()->where('show_on_store', true)
+                    ->select(['id', 'store_id', 'title', 'type', 'discount_type', 'discount_value']),
+            ])
+            ->withCount(['coupons' => fn ($query) => $query->valid()])
+            ->when($q !== '', fn ($query) => $query->where('name', 'like', "%{$q}%"))
+            ->paginate($limit)
+            ->withQueryString();
 
-        return view('stores.index', compact('stores'));
+        return view(ThemeManager::view('stores.index'), compact('stores', 'q'));
     }
 
     public function show(Request $request, string $slug): View
@@ -59,13 +66,7 @@ class StoreController extends Controller
 
         $scrollPopup = ScrollCouponPopup::forStore($store, openAffiliateOnCopy: true);
 
-        $viewName = 'stores.show';
-        $themeView = 'themes.'.ThemeManager::current().'.store-show';
-        if (view()->exists($themeView)) {
-            $viewName = $themeView;
-        }
-
-        return view($viewName, compact(
+        return view(ThemeManager::view('stores.show', 'store-show'), compact(
             'store',
             'coupons',
             'similarStores',

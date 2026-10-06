@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Post;
 use App\Support\ScrollCouponPopup;
+use App\Support\ThemeManager;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
@@ -12,7 +13,7 @@ class BlogController extends Controller
     public function index(Request $request): View
     {
         $posts = Post::published()
-            ->with('user')
+            ->with(['user', 'store.category'])
             ->when($request->get('q'), function ($query, $q) {
                 $query->where(function ($sub) use ($q) {
                     $sub->where('title', 'like', "%{$q}%")
@@ -24,7 +25,7 @@ class BlogController extends Controller
             ->paginate(12)
             ->withQueryString();
 
-        return view('blog.index', [
+        return view(ThemeManager::view('blog.index'), [
             'posts' => $posts,
             'q' => trim($request->get('q', '')),
         ]);
@@ -32,11 +33,11 @@ class BlogController extends Controller
 
     public function show(string $slug): View
     {
-        $post = Post::published()->with(['user', 'store'])->where('slug', $slug)->firstOrFail();
+        $post = Post::published()->with(['user', 'store.category'])->where('slug', $slug)->firstOrFail();
         $post->incrementViews();
 
         $related = Post::published()
-            ->with('user')
+            ->with(['user', 'store.category'])
             ->where('id', '!=', $post->id)
             ->orderByDesc('published_at')
             ->take(3)
@@ -44,6 +45,6 @@ class BlogController extends Controller
 
         $scrollPopup = ScrollCouponPopup::forStore($post->resolveStore());
 
-        return view('blog.show', compact('post', 'related', 'scrollPopup'));
+        return view(ThemeManager::view('blog.show'), compact('post', 'related', 'scrollPopup'));
     }
 }

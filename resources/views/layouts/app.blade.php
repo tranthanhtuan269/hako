@@ -16,6 +16,9 @@
     @stack('structured_data')
 </head>
 <body class="theme-{{ $activeTheme }}">
+    @if(view()->exists('themes.'.$activeTheme.'.header'))
+    @include('themes.'.$activeTheme.'.header')
+    @else
     <header class="site-header">
         <div class="container header-inner{{ ($headerSearchVisible ?? true) ? '' : ' header-inner--no-search' }}">
             @include('partials.site-brand')
@@ -47,6 +50,7 @@
             </nav>
         </div>
     </header>
+    @endif
 
     @if(session('success'))
         <div class="alert alert-success container">{{ session('success') }}</div>
@@ -59,6 +63,9 @@
         @yield('content')
     </main>
 
+    @if(view()->exists('themes.'.$activeTheme.'.footer'))
+    @include('themes.'.$activeTheme.'.footer')
+    @else
     <footer class="site-footer">
         <div class="container footer-grid">
             <div>
@@ -96,14 +103,16 @@
             &copy; {{ date('Y') }} {{ config('site.domain') }}. All rights reserved.
         </div>
     </footer>
+    @endif
 
     <script>
         window.__couponRedirectFlow = @json(\App\Support\SiteCouponRedirect::flow());
     </script>
     <script src="{{ asset('js/app.js') }}?v={{ filemtime(public_path('js/app.js')) }}"></script>
     @include('themes.savingspro.coupon-modal')
-    @if($activeTheme === 'savingspro' && file_exists(public_path('js/themes/savingspro.js')))
-        <script src="{{ asset('js/themes/savingspro.js') }}?v={{ filemtime(public_path('js/themes/savingspro.js')) }}"></script>
+    @php($themeJs = config('themes.themes.'.$activeTheme.'.js'))
+    @if($themeJs && file_exists(public_path($themeJs)))
+        <script src="{{ asset($themeJs) }}?v={{ filemtime(public_path($themeJs)) }}"></script>
     @endif
     @stack('scripts')
 </body>

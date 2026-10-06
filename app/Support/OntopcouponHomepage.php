@@ -75,14 +75,14 @@ final class OntopcouponHomepage
             ],
             'cta_shoppers' => [
                 'kicker' => 'For shoppers',
-                'title' => 'Get Sales-Ready Deals Without The Wait',
+                'title' => "Get Sales-Ready Deals\nWithout The Wait",
                 'body' => '{coupons}+ coupons updated daily. Never pay full price again.',
                 'button' => 'Browse All Deals',
                 'stat_listed' => 'Listed',
             ],
             'cta_owners' => [
                 'kicker' => 'For store owners',
-                'title' => 'List Your Store & Reach More Shoppers',
+                'title' => "List Your Store &\nReach More Shoppers",
                 'body' => 'Get your coupons in front of deal-hunters every day.',
                 'button' => 'Submit Your Store',
                 'checks' => [

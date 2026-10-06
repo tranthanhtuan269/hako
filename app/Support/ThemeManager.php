@@ -63,6 +63,17 @@ class ThemeManager
         return static::current() === $key;
     }
 
+    /**
+     * Theme override for a shared view: "coupons.index" resolves to
+     * "themes.{theme}.coupons-index" when the active theme ships one.
+     */
+    public static function view(string $default, ?string $themeName = null): string
+    {
+        $themed = 'themes.'.static::current().'.'.($themeName ?? str_replace('.', '-', $default));
+
+        return view()->exists($themed) ? $themed : $default;
+    }
+
     public static function set(string $key): void
     {
         if (! array_key_exists($key, static::all())) {
