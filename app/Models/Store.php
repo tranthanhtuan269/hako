@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Support\MediaEmbedParser;
+
 use App\Support\HtmlCleaner;
 use App\Support\PostAffiliateContent;
 use App\Support\PublicImage;
@@ -168,13 +170,15 @@ class Store extends Model
             return '';
         }
 
-        return HtmlCleaner::wrapTablesForScroll(
-            HtmlCleaner::stripAffiliateNotices(
-                DynamicCouponContent::expand(
-                    PostAffiliateContent::embed($html, $this),
-                    $this,
-                    null,
-                    false
+        return MediaEmbedParser::convert(
+            HtmlCleaner::wrapTablesForScroll(
+                HtmlCleaner::stripAffiliateNotices(
+                    DynamicCouponContent::expand(
+                        PostAffiliateContent::embed($html, $this),
+                        $this,
+                        null,
+                        false
+                    )
                 )
             )
         );

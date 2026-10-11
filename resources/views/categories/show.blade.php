@@ -25,6 +25,14 @@
         </h1>
         @if($category->description)<p>{{ $category->description }}</p>@endif
     </div>
+    @if($stores->isNotEmpty())
+        <h2>{{ $category->name }} stores</h2>
+        <div class="store-grid" style="margin-bottom:1.5rem;">
+            @foreach($stores as $store)
+                <a href="{{ route('stores.show', $store->slug) }}">{{ $store->name }}</a>
+            @endforeach
+        </div>
+    @endif
     <div class="coupon-grid">
         @forelse($coupons as $coupon)
             @include('partials.coupon-card', ['coupon' => $coupon])

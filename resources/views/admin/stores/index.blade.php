@@ -55,9 +55,7 @@
     ]),
 ])
 
-<form id="bulk-delete-form" action="{{ route('admin.stores.bulk-destroy') }}" method="POST" style="margin:0;">
-    @csrf
-    <div class="coupon-sort-table-wrap">
+<div class="coupon-sort-table-wrap">
     <table class="admin-table coupon-sort-table">
         <thead>
             <tr>
@@ -159,7 +157,6 @@
         </tbody>
     </table>
     </div>
-</form>
 
 @include('partials.table-actions-assets')
 @include('partials.admin-store-coupons-modal')
@@ -326,7 +323,6 @@ document.addEventListener('DOMContentLoaded', function () {
     const storeBoxes = document.querySelectorAll('.store-checkbox');
     const btnBulk = document.getElementById('btn-bulk-delete');
     const countSpan = document.getElementById('bulk-selected-count');
-    const form = document.getElementById('bulk-delete-form');
     const bulkDestroyUrl = '{{ route('admin.stores.bulk-destroy') }}';
 
     function updateBulkUI() {
@@ -353,25 +349,34 @@ document.addEventListener('DOMContentLoaded', function () {
         cb.addEventListener('change', updateBulkUI);
     });
 
-    if (btnBulk && form) {
+    if (btnBulk) {
         btnBulk.addEventListener('click', function () {
-            const count = document.querySelectorAll('.store-checkbox:checked').length;
+            const checkedBoxes = Array.from(document.querySelectorAll('.store-checkbox:checked'));
+            const count = checkedBoxes.length;
             if (count === 0) return;
-            if (confirm(`Are you sure you want to permanently delete ${count} selected store(s)? This will also remove their associated logo images.`)) {
-                // form.submit();
-                // ajax request to the bulk-destroy route
-                // lỗi 404 ở đây, phải sửa lại
-                // thay thế bằng route('admin.stores.bulk-destroy')
+            if (confirm('Are you sure you want to permanently delete ' + count + ' selected store(s)? This will also remove their associated logo images.')) {
+                const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+                const formData = new FormData();
+                checkedBoxes.forEach(cb => formData.append('ids[]', cb.value));
+                if (csrfToken) formData.append('_token', csrfToken);
+
                 fetch(bulkDestroyUrl, {
                     method: 'POST',
-                    body: new FormData(form),
+                    headers: {
+                        'X-CSRF-TOKEN': csrfToken || '',
+                        'Accept': 'application/json',
+                    },
+                    body: formData,
                 }).then(response => response.json())
                 .then(response => {
                     if (response.ok) {
                         window.location.reload();
                     } else {
-                        console.error('Failed to delete stores');
+                        alert(response.message || 'Failed to delete stores');
                     }
+                }).catch(err => {
+                    console.error('Failed to delete stores', err);
+                    alert('An error occurred while deleting stores.');
                 });
             }
         });

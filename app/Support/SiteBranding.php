@@ -21,6 +21,8 @@ final class SiteBranding
 
     private const HERO_SUBTITLE_KEY = 'site_home_hero_subtitle';
 
+    private const HERO_BACKGROUND_KEY = 'site_home_hero_background';
+
     private const FOOTER_TAGLINE_KEY = 'site_footer_tagline';
 
     private const FOOTER_SUB_TAGLINE_KEY = 'site_footer_sub_tagline';
@@ -141,6 +143,24 @@ final class SiteBranding
         return $value !== '' ? $value : null;
     }
 
+    public static function heroBackgroundPath(): ?string
+    {
+        $path = trim((string) SiteSetting::get(self::HERO_BACKGROUND_KEY, ''));
+
+        return $path !== '' ? $path : null;
+    }
+
+    public static function heroBackgroundUrl(): ?string
+    {
+        $path = self::heroBackgroundPath();
+
+        if (! $path || ! PublicImage::isValidImage($path)) {
+            return null;
+        }
+
+        return PublicImage::url($path);
+    }
+
     public static function footerTagline(): ?string
     {
         $value = trim((string) SiteSetting::get(self::FOOTER_TAGLINE_KEY, ''));
@@ -182,11 +202,9 @@ final class SiteBranding
         return self::homeSubH1() ?? self::resolvedTagline();
     }
 
-    public static function resolvedHeroSubtitle(): string
+    public static function resolvedHeroSubtitle(): ?string
     {
-        return self::heroSubtitle()
-            ?? ('Deals for brands like Amazon, Walmart, Target, and other U.S. retailers. '
-                .self::resolvedName().' is not affiliated with these merchants.');
+        return self::heroSubtitle();
     }
 
     public static function resolvedFooterTagline(): string
@@ -251,6 +269,18 @@ final class SiteBranding
     public static function setHeroSubtitle(?string $value): void
     {
         SiteSetting::set(self::HERO_SUBTITLE_KEY, trim((string) $value));
+    }
+
+    public static function setHeroBackgroundFromUpload(UploadedFile $file): void
+    {
+        self::deleteStoredHeroBackground();
+        SiteSetting::set(self::HERO_BACKGROUND_KEY, PublicImage::store($file, 'site/branding'));
+    }
+
+    public static function removeHeroBackground(): void
+    {
+        self::deleteStoredHeroBackground();
+        SiteSetting::set(self::HERO_BACKGROUND_KEY, '');
     }
 
     public static function setFooterTagline(?string $value): void
@@ -381,6 +411,15 @@ final class SiteBranding
     private static function deleteStoredLogo(): void
     {
         $path = self::logoPath();
+
+        if ($path && PublicImage::isStored($path)) {
+            PublicImage::delete($path);
+        }
+    }
+
+    private static function deleteStoredHeroBackground(): void
+    {
+        $path = self::heroBackgroundPath();
 
         if ($path && PublicImage::isStored($path)) {
             PublicImage::delete($path);

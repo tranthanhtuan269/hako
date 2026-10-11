@@ -166,7 +166,10 @@ class StoreController extends Controller
         }
 
         if (empty($ids) || !is_array($ids)) {
-            return back()->with('error', 'Please select at least one store to delete.');
+            return response()->json([
+                'ok' => false,
+                'message' => 'Please select at least one store to delete.',
+            ], 422);
         }
 
         $stores = Store::whereIn('id', $ids)->get();

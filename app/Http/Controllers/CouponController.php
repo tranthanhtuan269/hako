@@ -14,7 +14,10 @@ class CouponController extends Controller
 {
     public function index(Request $request): View
     {
-        $type = $request->get('type');
+        $type = $request->get('type', 'coupon');
+        if ($type === 'all') {
+            $type = null;
+        }
 
         $limit = max(1, (int) SiteSetting::get('coupons_page_limit', 16));
 

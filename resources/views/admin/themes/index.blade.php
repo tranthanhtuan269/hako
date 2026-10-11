@@ -12,8 +12,9 @@
 
     <div class="theme-picker-grid">
         @foreach($themes as $key => $theme)
-            <label class="theme-picker-card @if($currentTheme === $key) is-active @endif">
-                <input type="radio" name="theme" value="{{ $key }}" @checked($currentTheme === $key)>
+            @continue($currentTheme !== $key)
+            <label class="theme-picker-card is-active">
+                <input type="radio" name="theme" value="{{ $key }}" checked>
                 <div class="theme-picker-preview">
                     @foreach($theme['preview'] as $color)
                         <span style="background:{{ $color }}"></span>
@@ -21,12 +22,31 @@
                 </div>
                 <strong>{{ $theme['name'] }}</strong>
                 <p>{{ $theme['description'] }}</p>
-                @if($currentTheme === $key)
-                    <span class="theme-picker-badge">Active</span>
-                @endif
+                <span class="theme-picker-badge">Active</span>
             </label>
         @endforeach
     </div>
+
+    @php($inactiveThemes = collect($themes)->except($currentTheme))
+    @if($inactiveThemes->isNotEmpty())
+        <details class="theme-picker-inactive">
+            <summary>Other themes</summary>
+            <div class="theme-picker-grid">
+                @foreach($inactiveThemes as $key => $theme)
+                    <label class="theme-picker-card">
+                        <input type="radio" name="theme" value="{{ $key }}">
+                        <div class="theme-picker-preview">
+                            @foreach($theme['preview'] as $color)
+                                <span style="background:{{ $color }}"></span>
+                            @endforeach
+                        </div>
+                        <strong>{{ $theme['name'] }}</strong>
+                        <p>{{ $theme['description'] }}</p>
+                    </label>
+                @endforeach
+            </div>
+        </details>
+    @endif
 
     @error('theme')
         <p class="field-error" style="margin-top:1rem;">{{ $message }}</p>
@@ -89,6 +109,15 @@
     color: var(--muted);
     line-height: 1.45;
     margin: 0;
+}
+.theme-picker-inactive {
+    margin-top: 1.5rem;
+}
+.theme-picker-inactive summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-weight: 600;
+    margin-bottom: 1rem;
 }
 .theme-picker-badge {
     display: inline-block;

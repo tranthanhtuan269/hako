@@ -59,7 +59,7 @@
                             <span class="ot-category-card-soon">Stores coming soon</span>
                         @endforelse
                     </div>
-                    <a href="{{ route('categories.show', $category->slug) }}" class="ot-category-card-btn">Explore {{ $category->name }} {!! Otc::icon('arrow-right', 15) !!}</a>
+                    <a href="{{ route('categories.show', $category->slug) }}" class="ot-category-card-btn">Explore {!! Otc::icon('arrow-right', 15) !!}</a>
                 </article>
             @endforeach
         </div>

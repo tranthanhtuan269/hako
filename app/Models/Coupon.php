@@ -190,6 +190,35 @@ class Coupon extends Model
         ];
     }
 
+    /**
+     * Calculate a comparative score to determine the store's highest/best deal or coupon.
+     */
+    public function discountScore(): float
+    {
+        $ticket = $this->ticketDisplay();
+        $score = 0.0;
+
+        if ($this->is_featured) {
+            $score += 10000.0;
+        }
+
+        if ($ticket['percent'] > 0) {
+            $score += (float) $ticket['percent'] * 10.0;
+        } elseif ($ticket['fixed'] > 0) {
+            $score += (float) $ticket['fixed'];
+        } elseif ($ticket['kind'] === 'free_shipping') {
+            $score += 5.0;
+        } else {
+            $score += 1.0;
+        }
+
+        if (! empty($this->code)) {
+            $score += 0.5;
+        }
+
+        return $score;
+    }
+
     public function discountLabel(): string
     {
         return match ($this->discount_type) {
@@ -218,7 +247,7 @@ class Coupon extends Model
             $percent = (float) $match[1];
         }
 
-        if ($fixed <= 0 && preg_match('/\$\s*(\d+(?:\.\d+)?)/', $title, $match)) {
+        if ($fixed <= 0 && preg_match('/[\$£€¥]\s*(\d+(?:\.\d+)?)/u', $title, $match)) {
             $kind = 'fixed';
             $fixed = (float) $match[1];
         }

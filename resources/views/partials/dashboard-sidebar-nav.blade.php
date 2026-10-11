@@ -1,7 +1,7 @@
 @php
     $panel = $panel ?? 'member';
     $isAdmin = auth()->user()->isAdmin();
-    $showGoogleAdsBuilder = (bool) config('site.google_ads_builder_enabled', false);
+    $showGoogleAdsBuilder = false;
 
     $siteConfigOpen = request()->routeIs(
         'admin.branding.*',
@@ -61,8 +61,10 @@
                     @class(['sidebar-nav-sublink', 'active' => request()->routeIs('admin.tracking.*')])>Tracking Scripts</a>
                 <a href="{{ route('admin.themes.index') }}"
                     @class(['sidebar-nav-sublink', 'active' => request()->routeIs('admin.themes.*')])>Frontend Theme</a>
-                <a href="{{ route('admin.ontopcoupon-homepage.edit') }}"
-                    @class(['sidebar-nav-sublink', 'active' => request()->routeIs('admin.ontopcoupon-homepage.*')])>OnTopCoupon Homepage</a>
+                @if(\App\Support\ThemeManager::current() === 'ontopcoupon')
+                    <a href="{{ route('admin.ontopcoupon-homepage.edit') }}"
+                        @class(['sidebar-nav-sublink', 'active' => request()->routeIs('admin.ontopcoupon-homepage.*')])>OnTopCoupon Homepage</a>
+                @endif
                 <a href="{{ route('admin.nav-links.index') }}"
                     @class(['sidebar-nav-sublink', 'active' => request()->routeIs('admin.nav-links.*')])>Top Menu</a>
             @include('partials.dashboard-sidebar-collapsible-section-end')
@@ -125,8 +127,10 @@
                         @class(['sidebar-nav-sublink', 'active' => request()->routeIs('admin.tracking.*')])>Tracking Scripts</a>
                     <a href="{{ route('admin.themes.index') }}"
                         @class(['sidebar-nav-sublink', 'active' => request()->routeIs('admin.themes.*')])>Frontend Theme</a>
-                    <a href="{{ route('admin.ontopcoupon-homepage.edit') }}"
-                        @class(['sidebar-nav-sublink', 'active' => request()->routeIs('admin.ontopcoupon-homepage.*')])>OnTopCoupon Homepage</a>
+                    @if(\App\Support\ThemeManager::current() === 'ontopcoupon')
+                        <a href="{{ route('admin.ontopcoupon-homepage.edit') }}"
+                            @class(['sidebar-nav-sublink', 'active' => request()->routeIs('admin.ontopcoupon-homepage.*')])>OnTopCoupon Homepage</a>
+                    @endif
                     <a href="{{ route('admin.nav-links.index') }}"
                         @class(['sidebar-nav-sublink', 'active' => request()->routeIs('admin.nav-links.*')])>Top Menu</a>
                 @include('partials.dashboard-sidebar-collapsible-section-end')

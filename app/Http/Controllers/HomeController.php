@@ -8,13 +8,14 @@ use App\Models\Post;
 use App\Models\Store;
 use App\Support\ThemeManager;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\View\View;
 
 class HomeController extends Controller
 {
     public function index(): View
     {
-        $categories = Category::active()->orderBy('sort_order')->take(18)->get();
+        $categories = Category::active()->withCount(['stores' => fn ($q) => $q->active()])->orderByDesc('stores_count')->orderBy('sort_order')->take(18)->get();
         $latestPosts = Post::homeFeaturedQuery(6)->get();
 
         $stats = [
@@ -49,13 +50,44 @@ class HomeController extends Controller
             ->withQueryString()
             ->fragment('top-stores');
 
-        $featuredCoupons = Coupon::with('store')
-            ->valid()
-            ->orderByDesc('is_featured')
-            ->latest()
-            ->paginate(12, ['*'], 'cp')
-            ->withQueryString()
-            ->fragment('featured-coupons');
+        // 1.2 Featured Coupons & Deals:
+        // Only pinned stores (is_pinned_home = true)
+        // Each store only displays its single highest deal or coupon
+        $pinnedStores = Store::query()
+            ->active()
+            ->pinnedHome()
+            ->orderByDesc('home_pin_sort_order')
+            ->orderBy('sort_order')
+            ->orderBy('name')
+            ->with(['coupons' => fn ($q) => $q->valid()->orderByDesc('is_featured')->latest()])
+            ->get();
+
+        $selectedCoupons = $pinnedStores->map(function (Store $store) {
+            return $store->coupons
+                ->sortByDesc(fn (Coupon $c) => $c->discountScore())
+                ->first();
+        })->filter()->sortByDesc(function (Coupon $c) {
+            return [
+                $c->store?->home_pin_sort_order ?? 0,
+                $c->discountScore(),
+            ];
+        })->values();
+
+        $page = LengthAwarePaginator::resolveCurrentPage('cp');
+        $perPage = 12;
+        $currentPageItems = $selectedCoupons->slice(($page - 1) * $perPage, $perPage)->values();
+
+        $featuredCoupons = new LengthAwarePaginator(
+            $currentPageItems,
+            $selectedCoupons->count(),
+            $perPage,
+            $page,
+            [
+                'path' => LengthAwarePaginator::resolveCurrentPath(),
+                'pageName' => 'cp',
+            ]
+        );
+        $featuredCoupons->withQueryString()->fragment('featured-coupons');
 
         return view($themeView, compact(
             'categories',

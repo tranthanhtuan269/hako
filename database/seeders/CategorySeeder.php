@@ -47,6 +47,7 @@ class CategorySeeder extends Seeder
             ['name' => 'Underwear', 'icon' => '🩱', 'sort_order' => 32],
             ['name' => 'Vehicle service', 'icon' => '🔧', 'sort_order' => 33],
             ['name' => 'Vehicles and accessories', 'icon' => '🚗', 'sort_order' => 34],
+            ['name' => 'AI Tool', 'icon' => '🤖', 'sort_order' => 35],
         ];
 
         DB::transaction(function () use ($categories) {

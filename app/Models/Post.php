@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Support\MediaEmbedParser;
+
 use App\Support\PublicImage;
 use App\Support\AuthorProfile;
 use App\Support\DynamicCouponContent;
@@ -97,8 +99,10 @@ class Post extends Model
         $html = PostAffiliateContent::embed($this->content, $this->resolveStore());
         $html = DynamicCouponContent::expand($html, $this->resolveStore());
 
-        return HtmlCleaner::wrapTablesForScroll(
-            HtmlCleaner::stripAffiliateNotices($html)
+        return MediaEmbedParser::convert(
+            HtmlCleaner::wrapTablesForScroll(
+                HtmlCleaner::stripAffiliateNotices($html)
+            )
         );
     }
 

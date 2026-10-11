@@ -31,7 +31,7 @@
 
 @include('themes.ontopcoupon.partials.page-hero', [
     'kicker' => 'BROWSE ALL',
-    'title' => Otc::accent('Coupons & Deals'),
+    'title' => Otc::accent($type === 'coupon' ? 'All Coupon Codes' : ($type === 'discount' ? 'Discount Deals & Sales' : 'Coupons & Deals')),
     'subtitle' => number_format($total).' active '.\Illuminate\Support\Str::plural('offer', $total).' available',
     'stats' => [
         [$stats['coupons'], 'Active Coupons'],
@@ -50,9 +50,9 @@
             </label>
             <label class="ot-filter-select">
                 <select name="type" aria-label="Offer type" data-ot-autosubmit-field>
-                    <option value="" @selected(!$type)>All Offers</option>
                     <option value="coupon" @selected($type === 'coupon')>Coupon Codes</option>
                     <option value="discount" @selected($type === 'discount')>Deals</option>
+                    <option value="all" @selected(!$type || $type === 'all')>All Offers</option>
                 </select>
                 {!! Otc::icon('chevron-down', 15) !!}
             </label>

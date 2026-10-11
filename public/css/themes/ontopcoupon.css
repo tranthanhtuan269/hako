@@ -49,7 +49,7 @@ body.theme-ontopcoupon h4 {
     color: var(--ink);
 }
 
-body.theme-ontopcoupon a { color: var(--ot-green-dark); }
+body.theme-ontopcoupon a { color: #ffffff; }
 body.theme-ontopcoupon a:hover { text-decoration: none; }
 body.theme-ontopcoupon main { overflow-x: clip; }
 
@@ -600,7 +600,18 @@ body.theme-ontopcoupon .ot-section-link:hover { color: var(--ot-green-deep); }
     text-align: center;
     background: var(--ot-navy);
     border-radius: clamp(16px, 2.5vw, 24px);
-    padding: clamp(44px, 7vw, 72px) clamp(16px, 4vw, 48px) clamp(36px, 5vw, 56px);
+    padding: clamp(44px, 7vw, 50px) clamp(16px, 4vw, 48px) clamp(36px, 5vw, 56px);
+}
+
+.ot-hero.has-hero-bg {
+    background-color: var(--ot-navy);
+    background-image: linear-gradient(rgba(15, 23, 42, .25), rgba(15, 23, 42, .60)), var(--ot-hero-image);
+    background-size: cover;
+    background-position: center;
+}
+
+.ot-hero.has-hero-bg .ot-hero-glow {
+    opacity: .35;
 }
 
 .ot-hero-glow {
@@ -616,11 +627,27 @@ body.theme-ontopcoupon .ot-section-link:hover { color: var(--ot-green-deep); }
 
 body.theme-ontopcoupon .ot-hero h1 {
     position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.28em;
     margin: 0 0 14px;
     color: #fff;
     font-weight: 800;
     font-size: clamp(28px, 5vw, 50px);
     line-height: 1.1;
+}
+
+.ot-hero-gift {
+    display: inline-flex;
+    flex: none;
+    color: #ff6ea8;
+    line-height: 0;
+}
+
+.ot-hero-gift .ot-icon {
+    width: 0.78em;
+    height: 0.78em;
 }
 
 .ot-hero h1 .ot-accent { color: var(--ot-lime); }
@@ -702,7 +729,7 @@ body.theme-ontopcoupon .ot-hero-chip:hover { border-color: var(--ot-lime); color
 
 .ot-hero-note {
     position: relative;
-    max-width: 640px;
+    /* max-width: 640px; */
     margin: 18px 0 0;
     color: rgba(255, 255, 255, .4);
     font-size: 12px;
@@ -710,14 +737,14 @@ body.theme-ontopcoupon .ot-hero-chip:hover { border-color: var(--ot-lime); color
 }
 
 /* ---------- Trusted marquee ---------- */
-.ot-trusted { padding: 40px 0; background: var(--surface); }
+.ot-trusted { padding: 10px 0; background: var(--surface); }
 
 .ot-trusted h2 {
     margin: 0 0 24px;
     padding: 0 16px;
     text-align: center;
     font-weight: 700;
-    font-size: clamp(20px, 2.6vw, 28px);
+    font-size: clamp(10px, 2.6vw, 28px);
 }
 
 .ot-trusted h2 .ot-accent { color: var(--ot-green); }
@@ -1109,6 +1136,7 @@ body.theme-ontopcoupon .ot-page.is-disabled { opacity: .4; }
     margin-bottom: 20px;
 }
 
+.ot-cat-panel-head h2,
 .ot-cat-panel-head h3 { margin: 0; font-weight: 700; font-size: 20px; }
 
 .ot-cat-empty {
@@ -1122,6 +1150,10 @@ body.theme-ontopcoupon .ot-page.is-disabled { opacity: .4; }
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
     gap: 12px;
+}
+
+.ot-cat-stores--page {
+    margin: 0 0 28px;
 }
 
 body.theme-ontopcoupon .ot-cat-store {

@@ -31,11 +31,13 @@
 @if($activeTheme === 'savingspro')
     @include('themes.savingspro.home-hero', compact('stats'))
 @else
-<section class="hero">
+<section @class(['hero', 'has-hero-bg' => filled($siteHeroBackgroundUrl ?? null)]) @if(filled($siteHeroBackgroundUrl ?? null)) style="--ot-hero-image: url({{ json_encode($siteHeroBackgroundUrl) }})" @endif>
     <div class="container">
         <h1>{{ $siteHomeH1 }}</h1>
         <p>{{ $siteHomeSubH1 }}.</p>
+        @if(filled($siteHeroSubtitle))
         <p class="hero-subtitle">{{ $siteHeroSubtitle }}</p>
+        @endif
         <form action="{{ route('search') }}" method="GET" class="search-form" style="max-width:480px;margin:0 auto;">
             <input type="search" name="q" placeholder="Search coupons, stores, articles...">
             <button type="submit">Search</button>

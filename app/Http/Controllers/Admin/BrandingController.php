@@ -20,6 +20,7 @@ class BrandingController extends Controller
             'homeH1' => SiteBranding::homeH1(),
             'homeSubH1' => SiteBranding::homeSubH1(),
             'heroSubtitle' => SiteBranding::heroSubtitle(),
+            'heroBackgroundUrl' => SiteBranding::heroBackgroundUrl(),
             'footerTagline' => SiteBranding::footerTagline(),
             'footerSubTagline' => SiteBranding::footerSubTagline(),
             'footerDescriptionTagline' => SiteBranding::footerDescriptionTagline(),
@@ -47,6 +48,8 @@ class BrandingController extends Controller
             'home_h1' => ['nullable', 'string', 'max:180'],
             'home_sub_h1' => ['nullable', 'string', 'max:200'],
             'hero_subtitle' => ['nullable', 'string', 'max:320'],
+            'hero_background_file' => ['nullable', 'image', 'max:5120'],
+            'remove_hero_background' => ['nullable', 'boolean'],
             'footer_tagline' => ['nullable', 'string', 'max:200'],
             'footer_sub_tagline' => ['nullable', 'string', 'max:200'],
             'footer_description_tagline' => ['nullable', 'string', 'max:200'],
@@ -80,6 +83,12 @@ class BrandingController extends Controller
         SiteBranding::setHomeH1($validated['home_h1'] ?? '');
         SiteBranding::setHomeSubH1($validated['home_sub_h1'] ?? '');
         SiteBranding::setHeroSubtitle($validated['hero_subtitle'] ?? '');
+
+        if ($request->boolean('remove_hero_background')) {
+            SiteBranding::removeHeroBackground();
+        } elseif ($request->hasFile('hero_background_file')) {
+            SiteBranding::setHeroBackgroundFromUpload($request->file('hero_background_file'));
+        }
         SiteBranding::setFooterTagline($validated['footer_tagline'] ?? '');
         SiteBranding::setFooterSubTagline($validated['footer_sub_tagline'] ?? '');
         SiteBranding::setFooterDescriptionTagline($validated['footer_description_tagline'] ?? '');

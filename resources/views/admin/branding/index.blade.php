@@ -265,6 +265,25 @@
         </div>
 
         <div class="form-group">
+            <label for="hero_background_file">Homepage hero background (1440x412)</label>
+            @if($heroBackgroundUrl)
+                <div class="branding-logo-preview">
+                    <img src="{{ $heroBackgroundUrl }}" alt="Homepage hero background" class="admin-preview-img branding-hero-bg-preview">
+                </div>
+            @endif
+            <input type="file" id="hero_background_file" name="hero_background_file" accept="image/*">
+            <p class="form-hint">Optional image behind the homepage hero. A dark overlay keeps the heading readable. Recommended: a wide photo, up to 5 MB.</p>
+            @error('hero_background_file')<p class="form-error">{{ $message }}</p>@enderror
+        </div>
+
+        @if($heroBackgroundUrl)
+            <label class="form-check branding-remove-logo">
+                <input type="checkbox" name="remove_hero_background" value="1" @checked(old('remove_hero_background'))>
+                Remove homepage hero background
+            </label>
+        @endif
+
+        <div class="form-group">
             <label for="footer_tagline">Footer tagline</label>
             <input
                 type="text"
@@ -498,6 +517,13 @@
 .branding-logo-preview {
     margin-bottom: 1rem;
 }
+.branding-hero-bg-preview {
+    width: min(100%, 420px);
+    height: 120px;
+    object-fit: cover;
+    border-radius: 10px;
+}
+
 .branding-logo-preview .admin-preview-img {
     max-width: 120px;
     max-height: 120px;

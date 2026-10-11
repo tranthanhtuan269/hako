@@ -40,9 +40,13 @@
 
 @if(!empty($sections['hero']))
 <div class="ot-hero-wrap">
-    <section class="ot-hero">
+    <section @class(['ot-hero', 'has-hero-bg' => filled($siteHeroBackgroundUrl ?? null)]) @if(filled($siteHeroBackgroundUrl ?? null)) style="--ot-hero-image: url({{ json_encode($siteHeroBackgroundUrl) }})" @endif>
         <div class="ot-hero-glow" aria-hidden="true"></div>
-        <h1>{{ Otc::accent($siteHomeH1, 2, true) }}</h1>
+        <h1>
+            <span class="ot-hero-gift" aria-hidden="true">{!! Otc::icon('gift', 40) !!}</span>
+            <span>{!! Otc::accent($siteHomeH1, 3) !!}</span>
+            <span class="ot-hero-gift" aria-hidden="true">{!! Otc::icon('gift', 40) !!}</span>
+        </h1>
         <p class="ot-hero-lead">{{ $siteHomeSubH1 }}</p>
         <form action="{{ route('search') }}" method="GET" class="ot-hero-search" role="search">
             {!! Otc::icon('search', 20, 'ot-hero-search-icon') !!}
@@ -50,7 +54,7 @@
         </form>
         @if($tickerCoupons->isNotEmpty())
             <div class="ot-hero-ticker">
-                <span class="ot-hero-ticker-label">🔥 TOP COUPONS:</span>
+                <span class="ot-hero-ticker-label" style="color:#B1F467;">🔥 TOP COUPONS:</span>
                 @foreach($tickerCoupons as $coupon)
                     <a href="{{ route('stores.show', $coupon->store->slug) }}" class="ot-hero-chip">
                         <strong>{{ $coupon->store->name }}</strong>: {{ Otc::chipLabel($coupon) }}
