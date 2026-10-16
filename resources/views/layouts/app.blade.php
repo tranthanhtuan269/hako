@@ -38,7 +38,6 @@
                     <a href="{{ route('pages.about') }}" @class(['is-active' => request()->routeIs('pages.about')])>About</a>
                     @guest
                         <a href="{{ route('login') }}">Sign In</a>
-                        <a href="{{ route('register') }}" class="nav-register">Sign Up</a>
                     @else
                         @if(auth()->user()->isAdmin())
                             <a href="{{ route('admin.dashboard') }}" class="nav-admin">Admin</a>

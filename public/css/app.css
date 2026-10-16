@@ -753,10 +753,21 @@ a:hover { text-decoration: underline; }
 .store-page-layout {
     display: grid;
     grid-template-columns: minmax(0, 7fr) minmax(0, 3fr);
+    grid-template-areas: "store coupons";
     gap: 2rem;
     align-items: start;
     margin-top: 1.25rem;
 }
+
+.store-page-column--store,
+.store-page-column--coupons {
+    min-width: 0;
+    max-width: 100%;
+    overflow-x: auto;
+}
+
+.store-page-column--store { grid-area: store; }
+.store-page-column--coupons { grid-area: coupons; }
 
 .store-page-column-title {
     font-size: 1.2rem;
@@ -784,9 +795,13 @@ a:hover { text-decoration: underline; }
     margin-top: 1.25rem;
 }
 
-@media (max-width: 960px) {
+@media (max-width: 992px) {
     .store-page-layout {
         grid-template-columns: 1fr;
+        grid-template-areas:
+            "coupons"
+            "store";
+        gap: 1.25rem;
     }
 }
 
@@ -1929,7 +1944,8 @@ div.pagination > nav.paginator-nav .pagination {
     margin-bottom: 1.5rem;
     color: #374151;
     line-height: 1.75;
-    max-width: 72ch;
+    max-width: min(72ch, 100%);
+    overflow-wrap: break-word;
 }
 .store-description-content h2,
 .store-description-content h3,
@@ -1953,6 +1969,7 @@ div.pagination > nav.paginator-nav .pagination {
 }
 .store-description-content table.comparison-table {
     width: 100%;
+    max-width: 100%;
     border-collapse: collapse;
     margin: 1rem 0 1.5rem;
     font-size: .95rem;

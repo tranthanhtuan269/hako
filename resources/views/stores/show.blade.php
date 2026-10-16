@@ -37,11 +37,14 @@
 <div class="container">
     <!-- chia 2 cột ở đây -->
     <div class="store-page-layout">
-        <div class="store-page-column store-page-column--posts">
-            @include('partials.store-logo', ['store' => $store, 'size' => 'xl', 'showVerified' => true, 'linked' => false])
-            <div>
-                <h1>{{ $store->name }}</h1>
-                <span class="store-page-verified">Coupons listed on {{ config('site.name') }}</span>
+        <!-- Trên desktop thì hiển thị cột bên trái, cột bên phải hiển thị coupon -->
+        <div class="store-page-column store-page-column--store">
+            <div class="store-page-header">
+                @include('partials.store-logo', ['store' => $store, 'size' => 'xl', 'showVerified' => true, 'linked' => false])
+                <div>
+                    <h1>{{ $store->name }}</h1>
+                    <span class="store-page-verified">Coupons listed on {{ config('site.name') }}</span>
+                </div>
             </div>
             @include('partials.social-share', [
                 'url' => route('stores.show', $store->slug),
@@ -56,6 +59,8 @@
                 <div class="store-description-content">{!! $store->renderedDescription() !!}</div>
             @endif
         </div>
+
+        <!-- Trên mobile thì hiển thị coupon ở cột bên trái, cột bên phải hiển thị nội dung của store -->
         <div class="store-page-column store-page-column--coupons">
             <h2 class="store-page-column-title">{{ $store->name }} Coupons &amp; Deals</h2>
             <div class="coupon-grid coupon-grid--stack">
