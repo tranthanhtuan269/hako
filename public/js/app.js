@@ -31,6 +31,8 @@ window.openBackgroundTab = function (url) {
     requestAnimationFrame(refocusCurrentTab);
     setTimeout(refocusCurrentTab, 0);
     setTimeout(refocusCurrentTab, 50);
+
+    return newWin;
 };
 
 document.addEventListener('DOMContentLoaded', function () {
@@ -256,7 +258,64 @@ function initCouponRevealModal() {
         return {
             onCopy: flow === 'copy' || flow === 'both',
             onClose: flow === 'close' || flow === 'both',
+            onPopupOpen: flow === 'popup',
         };
+    }
+
+    function absoluteHref(url) {
+        if (!url || url === '#') {
+            return '';
+        }
+
+        try {
+            return new URL(url, window.location.origin).href;
+        } catch (error) {
+            return url;
+        }
+    }
+
+    function destinationFromButton(btn) {
+        if (!btn) {
+            return '';
+        }
+
+        return absoluteHref(
+            btn.dataset.affiliateUrl || btn.dataset.shopUrl || btn.dataset.goUrl || ''
+        );
+    }
+
+    function savedFlow4Url() {
+        return absoluteHref(window.__couponRedirectAffiliateUrl || modal?.dataset.flow4Url || '');
+    }
+
+    function flow4Destination(preferred, btn) {
+        return savedFlow4Url()
+            || absoluteHref(preferred || '')
+            || destinationFromButton(btn);
+    }
+
+    function openFlow4Destination(btn, preferred) {
+        const destUrl = flow4Destination(preferred, btn);
+
+        if (!destUrl || affiliateTabOpened) {
+            return false;
+        }
+
+        return !!window.openBackgroundTab(destUrl);
+    }
+
+    function armFlow4Destination(btn) {
+        if (!btn || btn.dataset.flow4Armed === '1' || !redirectFlowFlags().onPopupOpen) {
+            return btn?.dataset.flow4Armed === '1';
+        }
+
+        if (openFlow4Destination(btn)) {
+            btn.dataset.flow4Armed = '1';
+
+            return true;
+        }
+
+        return false;
     }
 
     function openAffiliateTab(url) {
@@ -312,9 +371,12 @@ function initCouponRevealModal() {
         }
     }
 
-    function openModal(data) {
+    function openModal(data, destinationAlreadyOpened) {
+        const flags = redirectFlowFlags();
         activeCode = data.code || '';
-        pendingAffiliateUrl = data.affiliateUrl || data.shopUrl || '';
+        pendingAffiliateUrl = flags.onPopupOpen
+            ? flow4Destination(data.affiliateUrl || data.shopUrl || '')
+            : (data.affiliateUrl || data.shopUrl || '');
         modalWasShown = true;
         affiliateTabOpened = false;
         copyInFlight = false;
@@ -344,7 +406,13 @@ function initCouponRevealModal() {
         modal.setAttribute('aria-hidden', 'false');
         document.body.classList.add('sp-modal-open');
 
-        if (activeCode) {
+        if (destinationAlreadyOpened) {
+            affiliateTabOpened = true;
+        } else if (flags.onPopupOpen) {
+            affiliateTabOpened = openFlow4Destination(null, pendingAffiliateUrl);
+        }
+
+        if (activeCode && !flags.onPopupOpen) {
             copyText(activeCode, copyBtn);
         }
     }
@@ -358,6 +426,7 @@ function initCouponRevealModal() {
             && modalWasShown
             && !!affiliateUrl
             && !affiliateTabOpened
+            && !flags.onPopupOpen
             && !(flags.onCopy && copyInFlight);
 
         modal.hidden = true;
@@ -384,6 +453,18 @@ function initCouponRevealModal() {
 
     modal.querySelectorAll('[data-sp-modal-close]').forEach(function (el) {
         bindCloseWithBackgroundTab(el, true);
+    });
+
+    modal.addEventListener('mousedown', function (event) {
+        if (event.button !== 0 || modal.hidden || !redirectFlowFlags().onPopupOpen || affiliateTabOpened) {
+            return;
+        }
+
+        if (event.target.closest('[data-sp-modal-close]')) {
+            return;
+        }
+
+        affiliateTabOpened = openFlow4Destination(null, pendingAffiliateUrl);
     });
 
     if (okBtn) {
@@ -459,6 +540,22 @@ function initCouponRevealModal() {
 
             const flags = redirectFlowFlags();
             const affiliateUrl = result.affiliateUrl || btn.dataset.affiliateUrl || btn.dataset.shopUrl || btn.dataset.goUrl || '';
+            const destinationAlreadyOpened = btn.dataset.flow4Armed === '1';
+            btn.dataset.flow4Armed = '0';
+
+            if (flags.onPopupOpen) {
+                openModal({
+                    code: result.code,
+                    affiliateUrl: affiliateUrl,
+                    title: result.title || btn.dataset.couponTitle || '',
+                    discount: btn.dataset.couponDiscount || '',
+                    store: btn.dataset.couponStore || '',
+                    expires: btn.dataset.couponExpires || '',
+                    shopUrl: btn.dataset.shopUrl || btn.dataset.goUrl || '',
+                }, destinationAlreadyOpened);
+
+                return;
+            }
 
             // Flow 2/3: copy code then open destination — no intermediate coupon popup.
             if (flags.onCopy) {
@@ -499,6 +596,18 @@ function initCouponRevealModal() {
     }
 
     document.querySelectorAll('.btn-copy, .sp-code-copy, .scroll-coupon-popup-copy').forEach(function (btn) {
+        if (btn.id === 'sp-modal-copy' || btn.closest('#sp-coupon-modal')) {
+            return;
+        }
+
+        btn.addEventListener('mousedown', function (event) {
+            if (event.button !== 0) {
+                return;
+            }
+
+            armFlow4Destination(btn);
+        });
+
         btn.addEventListener('click', function (event) {
             event.preventDefault();
             handleRevealClick(btn);
@@ -514,6 +623,14 @@ function initCouponRevealModal() {
         }
 
         const clickTarget = container.querySelector('.code-box-wrap') || maskEl;
+
+        clickTarget.addEventListener('mousedown', function (event) {
+            if (event.button !== 0 || maskEl.classList.contains('is-revealed')) {
+                return;
+            }
+
+            armFlow4Destination(revealBtn);
+        });
 
         clickTarget.addEventListener('click', function (event) {
             if (maskEl.classList.contains('is-revealed')) {

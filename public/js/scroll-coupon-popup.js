@@ -17,6 +17,14 @@ document.addEventListener('DOMContentLoaded', function () {
         return flow === 'close' || flow === 'both';
     }
 
+    function redirectsOnPopupOpen() {
+        return (window.__couponRedirectFlow || 'close') === 'popup';
+    }
+
+    function flow4Url(preferred) {
+        return window.__couponRedirectAffiliateUrl || preferred || config.affiliateUrl || '';
+    }
+
     function getScrollPercent() {
         const doc = document.documentElement;
         const scrollTop = window.scrollY || doc.scrollTop;
@@ -44,14 +52,21 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function openAffiliateTab(url) {
-        const targetUrl = url || config.affiliateUrl;
+        const targetUrl = redirectsOnPopupOpen()
+            ? flow4Url(url)
+            : (url || config.affiliateUrl);
 
         if (!targetUrl || affiliateOpened) {
             return;
         }
 
-        affiliateOpened = true;
-        openBackgroundTab(targetUrl);
+        const opened = typeof window.openBackgroundTab === 'function'
+            ? window.openBackgroundTab(targetUrl)
+            : window.open(targetUrl, '_blank', 'noopener,noreferrer');
+
+        if (opened) {
+            affiliateOpened = true;
+        }
     }
 
     function showPopup() {
@@ -64,6 +79,10 @@ document.addEventListener('DOMContentLoaded', function () {
         modal.hidden = false;
         modal.setAttribute('aria-hidden', 'false');
         document.body.classList.add('scroll-coupon-popup-open');
+
+        if (redirectsOnPopupOpen()) {
+            openAffiliateTab();
+        }
     }
 
     function closePopup() {
@@ -107,6 +126,14 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     modal.querySelectorAll('[data-scroll-popup-close]').forEach(bindCloseWithBackgroundTab);
+
+    modal.addEventListener('mousedown', function (event) {
+        if (event.button !== 0 || modal.hidden || !redirectsOnPopupOpen()) {
+            return;
+        }
+
+        openAffiliateTab();
+    });
 
     document.addEventListener('keydown', function (event) {
         if (event.key === 'Escape' && !modal.hidden) {
