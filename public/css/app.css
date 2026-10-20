@@ -509,6 +509,11 @@ a:hover { text-decoration: underline; }
 
 .coupon-card--clickable { cursor: pointer; }
 
+.store-page-layout .coupon-card,
+.blog-article .coupon-card {
+    cursor: pointer;
+}
+
 .coupon-card-overlay {
     position: absolute;
     inset: 0;

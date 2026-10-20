@@ -8,4 +8,4 @@ Disallow: /dashboard
 Disallow: /coupons/*/reveal
 Disallow: /coupons/*/go
 
-Sitemap: https://thuoc360.com/sitemap.xml
+Sitemap: https://dealoda.com/sitemap.xml

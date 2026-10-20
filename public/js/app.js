@@ -769,6 +769,7 @@ function initCouponRevealModal() {
             }
 
             const affiliateUrl = result.affiliateUrl || btn.dataset.affiliateUrl || btn.dataset.shopUrl || btn.dataset.goUrl || '';
+            const skipPopup = redirectFlowFlags().onCopy && !window.isLikelyMobileViewport();
             let copied = false;
 
             if (copyPromise) {
@@ -781,6 +782,27 @@ function initCouponRevealModal() {
 
             markCopyButton(btn, copied);
 
+            // Flow 2/3 on desktop: the click already copied the code. Open the
+            // merchant in a new tab and skip the coupon popup. Phones keep the
+            // popup because the reveal request uses up the tap, so a later
+            // clipboard write fails.
+            if (skipPopup) {
+                if (affiliateUrl) {
+                    window.navigateBackgroundTab(activePrimedTab, affiliateUrl, {
+                        keepCurrentTab: true,
+                        fallbackNavigate: false,
+                    });
+                } else if (activePrimedTab && !activePrimedTab.closed) {
+                    try {
+                        activePrimedTab.close();
+                    } catch (error) {
+                        // Ignore.
+                    }
+                }
+
+                return;
+            }
+
             if (activePrimedTab && !activePrimedTab.closed) {
                 try {
                     activePrimedTab.close();
@@ -789,10 +811,6 @@ function initCouponRevealModal() {
                 }
             }
 
-            // Always show the popup with the plaintext code. Auto-opening the
-            // merchant first is why some desktops copy and others do not:
-            // browsers that allow popups steal focus, clipboard fails, and the
-            // shopper is left on the store with an empty clipboard.
             openModal(modalPayload(btn, result, affiliateUrl), {
                 skipAutoCopy: copied,
             });
@@ -848,11 +866,38 @@ function initCouponRevealModal() {
             );
         }
 
-        handleRevealClick(btn, null, revealPromise, copyPromise);
+        let primedTab = null;
+
+        // Open the blank tab in this click, after the clipboard write has
+        // started, so desktop browsers allow the merchant tab later.
+        if (redirectFlowFlags().onCopy && !window.isLikelyMobileViewport()) {
+            primedTab = window.primeBackgroundTab();
+        }
+
+        handleRevealClick(btn, primedTab, revealPromise, copyPromise);
+    }
+
+    function couponLogoCopyButton(logo) {
+        const card = logo.closest('.coupon-card, .sp-coupon-card, .sp-coupon-row, .otc-coupon-card');
+
+        if (!card) {
+            return null;
+        }
+
+        const btn = card.querySelector('.btn-copy[data-reveal-url], .sp-code-copy[data-reveal-url], .scroll-coupon-popup-copy[data-reveal-url]');
+
+        if (!btn || btn.id === 'sp-modal-copy' || btn.closest('#sp-coupon-modal')) {
+            return null;
+        }
+
+        return btn;
     }
 
     function prefetchRevealFromEvent(event) {
-        const btn = event.target.closest?.('.btn-copy, .sp-code-copy, .scroll-coupon-popup-copy, [data-reveal-url]');
+        const logo = event.target.closest?.('.store-page-layout .coupon-card a.store-logo');
+        const btn = logo
+            ? couponLogoCopyButton(logo)
+            : event.target.closest?.('.btn-copy, .sp-code-copy, .scroll-coupon-popup-copy, [data-reveal-url]');
 
         if (!btn || btn.id === 'sp-modal-copy' || btn.closest('#sp-coupon-modal')) {
             return;
@@ -896,8 +941,164 @@ function initCouponRevealModal() {
         });
     });
 
+    initOfferCardClicks();
+    openCodePopupFromQuery();
+
+    document.querySelectorAll('.store-page-layout .coupon-card a.store-logo').forEach(function (logo) {
+        const card = logo.closest('.coupon-card');
+        const copyBtn = couponLogoCopyButton(logo);
+        const shop = card?.querySelector('.coupon-actions a[href*="/go"]');
+        const destination = (copyBtn && (copyBtn.dataset.shopUrl || copyBtn.dataset.goUrl)) || shop?.href || '';
+
+        if (destination) {
+            logo.href = destination;
+            logo.target = '_blank';
+            logo.rel = 'noopener sponsored';
+        }
+
+        if (!copyBtn) {
+            return;
+        }
+
+        logo.addEventListener('click', function (event) {
+            if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
+                return;
+            }
+
+            event.preventDefault();
+            startRevealClick(copyBtn);
+        });
+    });
+
     window.openCouponRevealModal = openModal;
     window.closeCouponRevealModal = closeModal;
+
+    function offerSlugFromCard(card) {
+        if (card.dataset.offerSlug) {
+            return card.dataset.offerSlug;
+        }
+
+        const source = card.querySelector('[data-reveal-url]')?.dataset.revealUrl
+            || card.querySelector('a[href*="/coupons/"][href$="/go"]')?.href
+            || '';
+        const match = source.match(/\/coupons\/([^/?#]+)\/(?:reveal|go)/);
+
+        return match ? decodeURIComponent(match[1]) : '';
+    }
+
+    function offerDestination(card) {
+        if (card.dataset.offerDestination) {
+            return card.dataset.offerDestination;
+        }
+
+        const copyBtn = card.querySelector('[data-reveal-url]');
+
+        return copyBtn?.dataset.affiliateUrl
+            || copyBtn?.dataset.shopUrl
+            || card.querySelector('a[href*="/go"]')?.href
+            || '';
+    }
+
+    function initOfferCardClicks() {
+        document.querySelectorAll('.store-page-layout .coupon-card, .blog-article .coupon-card').forEach(function (card) {
+            card.addEventListener('click', function (event) {
+                if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
+                    return;
+                }
+
+                if (event.target.closest('#sp-coupon-modal, .scroll-coupon-popup')) {
+                    return;
+                }
+
+                const destination = offerDestination(card);
+
+                if (!destination) {
+                    return;
+                }
+
+                event.preventDefault();
+                event.stopPropagation();
+
+                const hasCode = !!card.querySelector('[data-reveal-url]');
+                const slug = offerSlugFromCard(card);
+
+                if (!hasCode || !slug) {
+                    window.location.assign(destination);
+                    return;
+                }
+
+                // Both calls stay in this tap. Mobile browsers only allow the
+                // extra tab when window.open runs before any await.
+                const popupUrl = new URL(window.location.href);
+                popupUrl.searchParams.set('code_popup', slug);
+                const popup = window.open(popupUrl.toString(), '_blank');
+
+                if (!popup) {
+                    const copyBtn = card.querySelector('[data-reveal-url]');
+
+                    if (copyBtn) {
+                        startRevealClick(copyBtn);
+                    }
+
+                    return;
+                }
+
+                window.location.assign(destination);
+            }, true);
+        });
+    }
+
+    function openCodePopupFromQuery() {
+        const slug = new URLSearchParams(window.location.search).get('code_popup');
+
+        if (!slug) {
+            return;
+        }
+
+        const card = document.querySelector('.coupon-card[data-offer-slug="' + (window.CSS && CSS.escape ? CSS.escape(slug) : slug) + '"]')
+            || Array.from(document.querySelectorAll('.coupon-card')).find(function (item) {
+                return offerSlugFromCard(item) === slug;
+            });
+        const btn = card?.querySelector('[data-reveal-url]');
+
+        if (!btn || !csrf) {
+            return;
+        }
+
+        const revealUrl = btn.dataset.revealUrl + (btn.dataset.revealUrl.indexOf('?') === -1 ? '?' : '&') + 'display=1';
+
+        fetch(revealUrl, {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: {
+                'X-CSRF-TOKEN': csrf,
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest',
+            },
+        }).then(function (res) {
+            return res.json();
+        }).then(function (data) {
+            if (!data?.code) {
+                return;
+            }
+
+            const result = {
+                code: data.code,
+                affiliateUrl: data.affiliate_url || btn.dataset.affiliateUrl || btn.dataset.shopUrl || '',
+                title: data.title || btn.dataset.couponTitle || '',
+            };
+
+            if (typeof window.revealCouponCode === 'function') {
+                window.revealCouponCode(btn, result.code);
+            }
+
+            openModal(modalPayload(btn, result, result.affiliateUrl), {
+                affiliateAlreadyOpen: true,
+            });
+        }).catch(function () {
+            // Leave the page usable if the code cannot be loaded.
+        });
+    }
 }
 
 function initStoreAutoplaySlider() {

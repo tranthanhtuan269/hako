@@ -349,11 +349,16 @@ PROMPT;
 - Title and excerpt must center on that product name, not a brand-wide comparison.
 FOCUS
             : <<<FOCUS
-- If 2+ products: comparison article with a store at-a-glance <table class="comparison-table"> plus a product comparison table (Feature | each product).
-- If 1 product: product spotlight/review style with an at-a-glance Feature | brand table and a product specs table when features/price exist.
-- If 0 products: store/brand review grounded in offers, meta_description, FAQs, and domain — still include an at-a-glance Feature | brand table.
+- If 2+ products: comparison article highlighting key features, differences, pros/cons, and pricing. Do NOT use HTML tables.
+- If 1 product: product spotlight/review style covering features, pros/cons, and pricing. Do NOT use HTML tables.
+- If 0 products: store/brand review grounded in offers, meta_description, FAQs, and domain. Do NOT use HTML tables.
 FOCUS;
         $antiAiRules = $this->antiGenericAiWritingRules($storeName);
+
+        $forcedTitle = SiteImportSettings::formatBlogTitle($storeName);
+        $forcedTitleRule = $forcedTitle !== null && $forcedTitle !== ''
+            ? ' CRITICAL: the title MUST be exactly \"'.$forcedTitle.'\" (and meta_title should match / be a short version of it).'
+            : '';
 
         return <<<PROMPT
 You are a senior deal editor at {$siteName} writing for U.S. shoppers. Write like a human researcher summarizing THIS merchant's public facts — not like a marketing brochure.
@@ -370,9 +375,8 @@ Article rules:
 - CRITICAL: Do NOT use specific calendar dates, months, or years in the title, excerpt, meta fields, headings, or body (e.g. ban "July 2026", "August 2025", "offers listed for July 2026", "this July guide"). Prefer evergreen phrasing like "current deals", "right now", or "featured offers".
 - Length: 1,000–1,600 words preferred. Prefer a shorter, specific article over padded filler. Never invent content just to hit a word count.
 {$productFocusRules}
-- Include sections: intro, Why Trust Us (EEAT), at-a-glance comparison table, product comparison or highlights, pros/cons, how to save with coupons, FAQ, final verdict.
-- REQUIRED: include at least one HTML <table class="comparison-table">. First table should be "{$storeName} at a glance" with columns Feature | {$storeName}. Example rows grounded in JSON only: Category, Wallet/Bags/Belt/Leather (Yes only if product names/descriptions support it), Featured products, Sample listed price, Offers tracked, Shipping, Returns. If shipping/returns are unknown, write "Confirm on merchant site" — never invent policies.
-- If 2+ products exist, also include a second product comparison table (Feature | Product A | Product B …) with listed price and best-for columns using only JSON facts.
+- Include sections: intro, Why Trust Us (EEAT), product comparison or highlights, pros/cons, how to save with coupons, FAQ, final verdict. Do NOT include any tables.
+- CRITICAL: Do NOT generate or include any HTML tables (no <table>, <thead>, <tbody>, <tr>, <th>, <td>). Present all comparisons, specs, and details using bullet lists (<ul>, <li>) or descriptive paragraphs instead.
 - Place a <h2>Why Trust Us</h2> section near the top (right after the intro). Example tone: "We researched {$storeName} products, customer reviews, pricing and verified coupon availability before publishing this guide." Cover product research and coupon verification only. Do not invent lab tests, awards, or fake reviewer credentials.
 - Do NOT write legal/affiliate disclaimer boilerplate anywhere (no "independent coupon and deals site", "not affiliated with, endorsed by, or sponsored by", "trademarks belong to their respective owners", "affiliate disclosure", or "offer listed for ... terms apply on their site"). Do not put that copy above the banner or at the start of the article.
 - If banner URL is provided, place it FIRST: <figure class="article-media article-media--banner"><img src="BANNER_URL" alt="{$storeName} official store banner" loading="lazy"><figcaption>{$storeName} store banner</figcaption></figure>
@@ -391,12 +395,12 @@ Article rules:
   - "How often does {$storeName} release coupon codes?"
   Plus practical coupon FAQs (promo code required?, code not working?). Do not invent materials, origin, shipping policy, or student discounts.
 - Do not paste a full list of current coupon codes in the article body. Mention offer themes/titles if useful, then tell readers live codes appear in the dynamic coupons block (we inject [store_coupons] automatically). Never invent codes.
-- HTML only in content: <h2>, <h3>, <p>, <ul>, <li>, <ol>, <table>, <strong>, <em>, <a>, <code>, <img>, <figure>, <figcaption>. No <h1>, no markdown.
+- HTML only in content: <h2>, <h3>, <p>, <ul>, <li>, <ol>, <strong>, <em>, <a>, <code>, <img>, <figure>, <figcaption>. No <h1>, no markdown, no <table>.
 - Do not claim star ratings or verified customer reviews unless explicitly in the JSON.
 
 Return valid JSON with exactly these keys:
 {
-  "title": "string, ONE line only, 45-72 characters, short SEO headline that fits in 2-3 lines on a blog card. No line breaks. No long product lists.",
+  "title": "string, ONE line only, 45-72 characters, short SEO headline that fits in 2-3 lines on a blog card. No line breaks. No long product lists.{$forcedTitleRule}",
   "excerpt": "string, 140-220 chars",
   "meta_title": "string, max 70 chars",
   "meta_description": "string, max 160 chars",
@@ -469,9 +473,8 @@ Description rules:
 - Audience: U.S. online shoppers researching this merchant before they buy.
 - CRITICAL: Do NOT use specific calendar dates, months, or years in headings or body (e.g. ban "July 2026", "offers listed for July 2026", "this July guide"). Prefer evergreen phrasing like "current deals", "right now", or "featured offers".
 - Length: 700–1,000 words preferred. Prefer specific, useful copy over padded filler. Never invent content just to hit a word count.
-{$focusNote}- Include sections: Why Trust Us (EEAT), at-a-glance comparison table, what this store sells (with product headings when products exist), current savings, shopping tips tied to the listed offers, FAQ, short summary.
-- REQUIRED: include at least one HTML <table class="comparison-table"> titled like "{$storeName} at a glance" with columns Feature | {$storeName}. Rows must be grounded in JSON (Category, product types such as Wallet/Bags/Belt only if supported by product names, Featured products, Sample listed price, Offers tracked, Shipping, Returns). Unknown shipping/returns => "Confirm on merchant site".
-- If 2+ products exist, also include a product comparison table (Feature | each product).
+{$focusNote}- Include sections: Why Trust Us (EEAT), what this store sells (with product headings when products exist), current savings, shopping tips tied to the listed offers, FAQ, short summary. Do NOT include any tables.
+- CRITICAL: Do NOT generate or include any HTML tables (no <table>, <thead>, <tbody>, <tr>, <th>, <td>). Present all store facts and product details using bullet lists (<ul>, <li>) or descriptive paragraphs instead.
 - Place a <h2>Why Trust Us</h2> section near the top (right after the intro). Example tone: "We researched {$storeName} products, customer reviews, pricing and verified coupon availability before publishing this guide." Cover product research and coupon verification only. Do not invent lab tests, awards, or fake reviewer credentials.
 - Do NOT write legal/affiliate disclaimer boilerplate anywhere (no "independent coupon and deals site", "not affiliated with, endorsed by, or sponsored by", "trademarks belong to their respective owners", "affiliate disclosure", or "offer listed for ... terms apply on their site"). Do not put that copy above the banner or at the start of the description.
 - If banner URL is provided, place it FIRST: <figure class="article-media article-media--banner"><img src="BANNER_URL" alt="{$storeName} official store banner" loading="lazy"><figcaption>{$storeName} store banner</figcaption></figure>
@@ -491,7 +494,7 @@ Description rules:
 - Mention {$siteName} naturally and link to store_url when pointing readers to browse coupons on our site.
 - When affiliate_url is provided, include at least 2 natural in-text links whose href is EXACTLY affiliate_url (rel="nofollow sponsored" target="_blank") when directing readers to shop at the merchant or open a product page. Never link to website/domain/product urls.
 - Do not paste a full list of current coupon codes in the description body. You may mention offer themes/titles; live codes are injected via [store_coupons]. Never invent codes.
-- HTML only: <h2>, <h3>, <p>, <ul>, <li>, <ol>, <table>, <thead>, <tbody>, <tr>, <th>, <td>, <strong>, <em>, <a>, <code>, <img>, <figure>, <figcaption>. No <h1>, no markdown.
+- HTML only: <h2>, <h3>, <p>, <ul>, <li>, <ol>, <strong>, <em>, <a>, <code>, <img>, <figure>, <figcaption>. No <h1>, no markdown, no <table>.
 - Do not claim star ratings or verified customer reviews unless explicitly in the JSON.
 
 Return valid JSON with exactly this key:

@@ -10,6 +10,39 @@ use Illuminate\Support\Str;
 
 final class AffiliateImportContentBuilder
 {
+    /**
+     * Remove all comparison/specs/at-a-glance tables and their introducing headings/paragraphs.
+     */
+    public static function stripTables(?string $content): string
+    {
+        if ($content === null || trim($content) === '') {
+            return '';
+        }
+
+        // 1. Remove table sections with headings (h2/h3) that introduce comparison/specs/at-a-glance tables
+        $content = preg_replace(
+            '/<h[23][^>]*>[^<]*(?:at a glance|comparison|snapshot|compare|specs)[^<]*<\/h[23]>(?:\s*<p>[^<]*<\/p>)?\s*(?:<div[^>]*table-scroll[^>]*>\s*)?(?:<figure[^>]*>\s*)?<table\b.*?<\/table>(?:\s*<\/figure>)?(?:\s*<\/div>)?/is',
+            '',
+            $content
+        ) ?? $content;
+
+        // 2. Remove any remaining wrapping divs/figures and table tags
+        $content = preg_replace(
+            '/(?:<div[^>]*class=[^>]*table-scroll[^>]*>\s*)?(?:<figure[^>]*class=[^>]*table[^>]*>\s*)?<table\b.*?<\/table>(?:\s*<\/figure>)?(?:\s*<\/div>)?/is',
+            '',
+            $content
+        ) ?? $content;
+
+        // 3. Remove any standalone <p> that mentions "Use this table" or "Quick facts from the merchant"
+        $content = preg_replace('/<p>[^<]*(?:Use this table|Quick facts from the merchant)[^<]*<\/p>/is', '', $content) ?? $content;
+
+        // 4. Clean up excessive empty lines / empty paragraphs
+        $content = preg_replace('/(?:<p>\s*(?:<br\s*\/?>)?\s*<\/p>\s*)+/is', "\n\n", $content) ?? $content;
+        $content = preg_replace('/\n{3,}/', "\n\n", $content) ?? $content;
+
+        return trim($content);
+    }
+
     private const STORE_DESCRIPTION_MIN_WORDS = 650;
 
     private const STORE_DESCRIPTION_MIN_AFFILIATE_LINKS = 2;
@@ -123,6 +156,7 @@ final class AffiliateImportContentBuilder
         $content = $this->ensureArticleImages($content, $merchant, $store->name);
         $content = HtmlCleaner::stripAffiliateNotices($content);
         $content = $this->ensureWhyTrustUs($content, $store->name, $merchant, $offers);
+        $content = self::stripTables($content);
         $content = $this->ensureComparisonTables(
             $content,
             $store->name,
@@ -261,6 +295,7 @@ final class AffiliateImportContentBuilder
         $content = $this->ensureArticleImages($content, $merchant, $storeName);
         $content = HtmlCleaner::stripAffiliateNotices($content);
         $content = $this->ensureWhyTrustUs($content, $storeName, $merchant, $offers);
+        $content = self::stripTables($content);
         $content = $this->ensureComparisonTables($content, $storeName, $merchant, $offers, $store?->category?->name);
         $content = $this->ensureSearchIntentFaqs($content, $storeName, $merchant, $offers, $store);
 
@@ -270,10 +305,21 @@ final class AffiliateImportContentBuilder
             $content = DynamicCouponContent::ensurePlaceholder($content, $store->name);
         }
 
+        $forcedTitle = SiteImportSettings::formatBlogTitle($storeName);
+        $title = $forcedTitle !== null && $forcedTitle !== ''
+            ? Post::normalizeTitle($forcedTitle)
+            : Post::normalizeTitle(trim((string) ($blog['title'] ?? '')));
+
         return [
-            'title' => Post::normalizeTitle(trim((string) ($blog['title'] ?? ''))),
+            'title' => $title,
             'excerpt' => Str::limit(trim((string) ($blog['excerpt'] ?? '')), 500, ''),
-            'meta_title' => Str::limit(trim((string) ($blog['meta_title'] ?? $blog['title'] ?? '')), 70, ''),
+            'meta_title' => Str::limit(
+                $forcedTitle !== null && $forcedTitle !== ''
+                    ? $title
+                    : trim((string) ($blog['meta_title'] ?? $blog['title'] ?? '')),
+                70,
+                ''
+            ),
             'meta_description' => Str::limit(trim((string) ($blog['meta_description'] ?? $blog['excerpt'] ?? '')), 320, ''),
             'content' => $content,
         ];
@@ -538,24 +584,7 @@ final class AffiliateImportContentBuilder
         ?string $metaDescription = null,
         array $merchant = [],
     ): string {
-        $rows = $this->buildStoreAtAGlanceRows($storeName, $category, $products, $offers, $faqs, $metaDescription, $merchant);
-
-        if ($rows === []) {
-            return '';
-        }
-
-        $parts = [];
-        $parts[] = '<h2>'.e($storeName).' at a glance</h2>';
-        $parts[] = '<p>Quick facts from the merchant listings and offers tracked on '.e((string) config('site.name')).':</p>';
-        $parts[] = '<table class="comparison-table"><thead><tr><th>Feature</th><th>'.e($storeName).'</th></tr></thead><tbody>';
-
-        foreach ($rows as $row) {
-            $parts[] = '<tr><td><strong>'.e($row[0]).'</strong></td><td>'.e($row[1]).'</td></tr>';
-        }
-
-        $parts[] = '</tbody></table>';
-
-        return implode("\n", $parts);
+        return '';
     }
 
     /**
@@ -714,37 +743,7 @@ final class AffiliateImportContentBuilder
      */
     private function sectionProductSpecTable(array $product, string $storeName): string
     {
-        $name = (string) ($product['name'] ?? 'Product');
-        $rows = [];
-
-        if (filled($product['price'] ?? null)) {
-            $rows[] = ['Listed price', (string) $product['price']];
-        }
-
-        $features = is_array($product['features'] ?? null) ? array_values(array_filter($product['features'])) : [];
-        foreach (array_slice($features, 0, 6) as $index => $feature) {
-            $rows[] = ['Detail '.($index + 1), Str::limit((string) $feature, 160)];
-        }
-
-        if (filled($product['url'] ?? null)) {
-            $rows[] = ['Product page', 'Official '.$storeName.' listing'];
-        }
-
-        if ($rows === []) {
-            return '';
-        }
-
-        $parts = [];
-        $parts[] = '<h2>'.e($name).' specs snapshot</h2>';
-        $parts[] = '<table class="comparison-table"><thead><tr><th>Feature</th><th>Details</th></tr></thead><tbody>';
-
-        foreach ($rows as $row) {
-            $parts[] = '<tr><td><strong>'.e($row[0]).'</strong></td><td>'.e($row[1]).'</td></tr>';
-        }
-
-        $parts[] = '</tbody></table>';
-
-        return implode("\n", $parts);
+        return '';
     }
 
     /**
@@ -760,59 +759,7 @@ final class AffiliateImportContentBuilder
         array $offers = [],
         ?string $category = null,
     ): string {
-        $content = trim($content);
-
-        if ($content === '') {
-            return $content;
-        }
-
-        $products = is_array($merchant['products'] ?? null) ? $merchant['products'] : [];
-        if (! empty($merchant['product_focus'])) {
-            $products = array_slice($products, 0, 1);
-        }
-
-        $faqs = is_array($merchant['faqs'] ?? null) ? $merchant['faqs'] : [];
-        $categoryName = $category ?: (string) ($merchant['category_name'] ?? 'online retail');
-
-        if (! preg_match('/<table\b[^>]*class=["\'][^"\']*comparison-table/i', $content)
-            && ! preg_match('/<h2[^>]*>[^<]*at a glance/i', $content)) {
-            $table = $this->sectionStoreAtAGlanceTable(
-                $storeName,
-                $categoryName,
-                $products,
-                $offers,
-                $faqs,
-                $merchant['meta_description'] ?? null,
-                $merchant
-            );
-
-            if ($table !== '') {
-                if (preg_match('/(<h2[^>]*>\s*Why\s+Trust\s+Us\s*<\/h2>.*?<\/ul>)/is', $content, $match, PREG_OFFSET_CAPTURE)) {
-                    $pos = $match[0][1] + strlen($match[0][0]);
-                    $content = trim(substr($content, 0, $pos)."\n\n".$table."\n\n".ltrim(substr($content, $pos)));
-                } elseif (preg_match('/<\/p>/i', $content, $match, PREG_OFFSET_CAPTURE)) {
-                    $pos = $match[0][1] + strlen($match[0][0]);
-                    $content = trim(substr($content, 0, $pos)."\n\n".$table."\n\n".ltrim(substr($content, $pos)));
-                } else {
-                    $content = $table."\n\n".$content;
-                }
-            }
-        }
-
-        if (count($products) >= 2
-            && ! preg_match('/<h2[^>]*>[^<]*(Quick Comparison|Product comparison|Compare)/i', $content)
-            && substr_count(Str::lower($content), '<table') < 2) {
-            $productTable = $this->sectionProductComparisonTable($storeName, $products, $categoryName);
-
-            if (preg_match('/(<h2[^>]*>[^<]*at a glance[^<]*<\/h2>.*?<\/table>)/is', $content, $match, PREG_OFFSET_CAPTURE)) {
-                $pos = $match[0][1] + strlen($match[0][0]);
-                $content = trim(substr($content, 0, $pos)."\n\n".$productTable."\n\n".ltrim(substr($content, $pos)));
-            } else {
-                $content .= "\n\n".$productTable;
-            }
-        }
-
-        return trim($content);
+        return self::stripTables($content);
     }
 
     /**
@@ -820,49 +767,7 @@ final class AffiliateImportContentBuilder
      */
     private function sectionProductComparisonTable(string $brandName, array $products, string $category): string
     {
-        $parts = [];
-        $parts[] = '<h2>Quick comparison: top '.e($brandName).' products</h2>';
-        $parts[] = '<p>Use this table to compare headline details before reading the full breakdown below.</p>';
-        $parts[] = '<table class="comparison-table"><thead><tr><th>Feature</th>';
-
-        foreach ($products as $product) {
-            $parts[] = '<th>'.e(Str::limit((string) $product['name'], 40)).'</th>';
-        }
-
-        $parts[] = '</tr></thead><tbody>';
-
-        $parts[] = '<tr><td><strong>Best for</strong></td>';
-        foreach ($products as $index => $product) {
-            $bestFor = match ($index) {
-                0 => 'Lead / flagship pick in '.strtolower($category),
-                1 => 'Balanced alternative',
-                default => 'Specialized / niche pick',
-            };
-            $parts[] = '<td>'.e($bestFor).'</td>';
-        }
-        $parts[] = '</tr>';
-
-        $parts[] = '<tr><td><strong>Listed price</strong></td>';
-        foreach ($products as $product) {
-            $parts[] = '<td>'.e($product['price'] ?? 'See merchant site').'</td>';
-        }
-        $parts[] = '</tr>';
-
-        $parts[] = '<tr><td><strong>Product page</strong></td>';
-        foreach ($products as $product) {
-            $parts[] = '<td>'.(filled($product['url'] ?? null) ? 'Official listing available' : 'See merchant catalog').'</td>';
-        }
-        $parts[] = '</tr>';
-
-        $parts[] = '<tr><td><strong>Photo in this guide</strong></td>';
-        foreach ($products as $product) {
-            $parts[] = '<td>'.(filled($product['image'] ?? null) ? 'Yes' : 'Not scraped').'</td>';
-        }
-        $parts[] = '</tr>';
-
-        $parts[] = '</tbody></table>';
-
-        return implode("\n", $parts);
+        return '';
     }
 
     /**

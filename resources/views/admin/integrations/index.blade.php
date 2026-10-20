@@ -87,6 +87,22 @@
             When enabled, importing the same merchant again updates the store, replaces offers, and refreshes the blog post.
             When disabled, the import button is blocked if that store already exists on your site.
         </p>
+        <div class="form-group" style="margin-top:1rem;">
+            <label for="import_blog_title_template">Blog title template</label>
+            <input
+                type="text"
+                id="import_blog_title_template"
+                name="import_blog_title_template"
+                value="{{ old('import_blog_title_template', $blogTitleTemplate) }}"
+                maxlength="120"
+                placeholder="{store_name} Deals"
+            >
+            <p class="form-hint">
+                Optional. When set, every imported blog title uses this pattern (example: <code>{store_name} Deals</code> → <em>Nike Deals</em>).
+                Leave blank to keep AI/template headlines. Placeholders: <code>{store_name}</code>, <code>{store}</code>, <code>{name}</code>.
+            </p>
+            @error('import_blog_title_template')<p class="form-error">{{ $message }}</p>@enderror
+        </div>
     </div>
 
     <div class="integrations-section">

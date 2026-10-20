@@ -43,10 +43,14 @@ class CouponController extends Controller
         return view('coupons.show', compact('coupon', 'related'));
     }
 
-    public function reveal(string $slug): JsonResponse
+    public function reveal(Request $request, string $slug): JsonResponse
     {
         $coupon = Coupon::where('slug', $slug)->active()->firstOrFail();
-        $coupon->incrementClicks();
+
+        // The popup tab only displays the code. The current tab's /go visit records the click.
+        if (! $request->boolean('display')) {
+            $coupon->incrementClicks();
+        }
 
         return response()->json([
             'code' => $coupon->code,

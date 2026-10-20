@@ -4,7 +4,7 @@
 @if(view()->exists($themeCard))
     @include($themeCard, get_defined_vars())
 @else
-<article class="coupon-card {{ $coupon->is_featured ? 'featured' : '' }}{{ ($linkCardToDetail ?? false) ? ' coupon-card--clickable' : '' }}" @if($coupon->code) data-code-reveal @endif>
+<article class="coupon-card {{ $coupon->is_featured ? 'featured' : '' }}{{ ($linkCardToDetail ?? false) ? ' coupon-card--clickable' : '' }}" @if($coupon->code) data-code-reveal @endif data-offer-slug="{{ $coupon->slug }}" data-offer-destination="{{ route('coupons.go', $coupon->slug) }}">
     @if($linkCardToDetail ?? false)
         <a href="{{ route('coupons.show', $coupon->slug) }}" class="coupon-card-overlay" aria-label="View {{ $coupon->title }}"></a>
     @endif

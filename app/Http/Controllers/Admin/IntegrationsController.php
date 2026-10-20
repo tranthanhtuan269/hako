@@ -36,6 +36,7 @@ class IntegrationsController extends Controller
             'aiProvider' => SiteIntegrations::aiProvider(),
             'aiProviders' => $providers,
             'allowReimportExistingStores' => SiteImportSettings::allowReimportExistingStores(),
+            'blogTitleTemplate' => SiteImportSettings::blogTitleTemplate(),
             'couponRedirectFlow' => SiteCouponRedirect::flow(),
             'couponRedirectOptions' => SiteCouponRedirect::options(),
         ]);
@@ -54,6 +55,7 @@ class IntegrationsController extends Controller
             'clear_ai_keys' => ['nullable', 'array'],
             'clear_ai_keys.*' => ['nullable', 'boolean'],
             'import_allow_reimport_existing_stores' => ['nullable', 'boolean'],
+            'import_blog_title_template' => ['nullable', 'string', 'max:120'],
             'coupon_redirect_flow' => ['required', 'in:close,copy,both'],
         ]);
 
@@ -74,6 +76,8 @@ class IntegrationsController extends Controller
         SiteImportSettings::setAllowReimportExistingStores(
             $request->boolean('import_allow_reimport_existing_stores')
         );
+
+        SiteImportSettings::setBlogTitleTemplate($validated['import_blog_title_template'] ?? '');
 
         SiteCouponRedirect::setFlow($validated['coupon_redirect_flow']);
 
