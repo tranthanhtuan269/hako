@@ -43,6 +43,7 @@
                 data-reveal-url="{{ route('coupons.reveal', $coupon->slug) }}"
                 data-affiliate-url="{{ $coupon->affiliateClickUrl() }}"
                 data-shop-url="{{ route('coupons.go', $coupon->slug) }}"
+                data-store-url="{{ $coupon->store ? route('stores.show', $coupon->store->slug) : '' }}"
                 data-coupon-title="{{ $coupon->title }}"
                 data-coupon-discount="{{ $coupon->discountLabel() }}"
                 data-coupon-store="{{ $coupon->store?->name }}"

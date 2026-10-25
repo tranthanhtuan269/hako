@@ -77,7 +77,7 @@
         <p class="form-hint" style="margin-bottom:.85rem;">
             Flow 1 keeps the coupon popup (destination opens when it closes).
             Flow 2/3 copy the code first, then open the merchant tab immediately — no coupon popup.
-            Flow 4 keeps the coupon popup and always opens the affiliate URL saved below as soon as the popup appears.
+            Flow 4 copies the code, opens the current store page in a new tab, then sends the tab that was clicked to the destination URL below.
         </p>
         <div class="form-group coupon-redirect-options">
             @foreach($couponRedirectOptions as $value => $label)

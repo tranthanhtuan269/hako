@@ -60,17 +60,22 @@ document.addEventListener('DOMContentLoaded', function () {
             return;
         }
 
-        const opened = typeof window.openBackgroundTab === 'function'
-            ? window.openBackgroundTab(targetUrl)
-            : window.open(targetUrl, '_blank', 'noopener,noreferrer');
-
-        if (opened) {
-            affiliateOpened = true;
+        if (typeof window.openBackgroundTab === 'function') {
+            window.openBackgroundTab(targetUrl);
+        } else {
+            window.open(targetUrl, '_blank', 'noopener,noreferrer');
         }
+
+        // window.open(..., 'noopener') often returns null even when the tab opened.
+        affiliateOpened = true;
     }
 
-    function showPopup() {
-        if (shown || sessionStorage.getItem(storageKey)) {
+    function requestedPopupOnLoad() {
+        return new URLSearchParams(window.location.search).get('coupon_popup') === '1';
+    }
+
+    function showPopup(force) {
+        if (!force && (shown || sessionStorage.getItem(storageKey))) {
             return;
         }
 
@@ -79,9 +84,31 @@ document.addEventListener('DOMContentLoaded', function () {
         modal.hidden = false;
         modal.setAttribute('aria-hidden', 'false');
         document.body.classList.add('scroll-coupon-popup-open');
+    }
 
-        if (redirectsOnPopupOpen()) {
-            openAffiliateTab();
+    function clearPopupRequest() {
+        const url = new URL(window.location.href);
+        if (!url.searchParams.has('coupon_popup')) {
+            return;
+        }
+
+        url.searchParams.delete('coupon_popup');
+        history.replaceState(history.state, '', url.pathname + url.search + url.hash);
+    }
+
+    function openDestinationNow(url) {
+        const targetUrl = redirectsOnPopupOpen()
+            ? flow4Url(url)
+            : (url || config.affiliateUrl);
+
+        if (!targetUrl) {
+            return;
+        }
+
+        if (typeof window.openBackgroundTab === 'function') {
+            window.openBackgroundTab(targetUrl);
+        } else {
+            window.open(targetUrl, '_blank', 'noopener,noreferrer');
         }
     }
 
@@ -127,14 +154,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
     modal.querySelectorAll('[data-scroll-popup-close]').forEach(bindCloseWithBackgroundTab);
 
-    modal.addEventListener('mousedown', function (event) {
-        if (event.button !== 0 || modal.hidden || !redirectsOnPopupOpen()) {
-            return;
-        }
-
-        openAffiliateTab();
-    });
-
     document.addEventListener('keydown', function (event) {
         if (event.key === 'Escape' && !modal.hidden) {
             closePopup();
@@ -144,10 +163,19 @@ document.addEventListener('DOMContentLoaded', function () {
     modal.querySelectorAll('[data-scroll-popup-deal]').forEach(function (element) {
         element.addEventListener('click', function (event) {
             event.preventDefault();
-            openAffiliateTab(element.dataset.openUrl || config.affiliateUrl);
-            closePopup();
+            openDestinationNow(element.dataset.openUrl || config.affiliateUrl);
+            if (!modal.hidden) {
+                modal.hidden = true;
+                modal.setAttribute('aria-hidden', 'true');
+                document.body.classList.remove('scroll-coupon-popup-open');
+            }
         });
     });
+
+    if (requestedPopupOnLoad()) {
+        showPopup(true);
+        clearPopupRequest();
+    }
 
     window.addEventListener('scroll', onScroll, { passive: true });
     onScroll();

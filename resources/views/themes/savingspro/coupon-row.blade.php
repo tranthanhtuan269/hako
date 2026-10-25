@@ -34,6 +34,7 @@
                 data-coupon-store="{{ $coupon->store?->name }}"
                 data-coupon-expires="{{ $coupon->expiresLabel() }}"
                 data-shop-url="{{ route('coupons.go', $coupon->slug) }}"
+                data-store-url="{{ $coupon->store ? route('stores.show', $coupon->store->slug) : '' }}"
                 aria-label="Copy promo code">
                 Copy Code
             </button>

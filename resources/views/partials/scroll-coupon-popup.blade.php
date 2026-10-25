@@ -51,6 +51,7 @@
                                     data-go-url="{{ $coupon['goUrl'] }}"
                                     data-shop-url="{{ $coupon['goUrl'] }}"
                                     data-affiliate-url="{{ $coupon['affiliateUrl'] ?? $scrollPopup['affiliateUrl'] }}"
+                                    data-store-url="{{ $scrollPopup['storeUrl'] ?? '' }}"
                                     data-coupon-title="{{ $coupon['title'] }}"
                                     data-coupon-discount="{{ $coupon['discount'] ?? '' }}"
                                     data-coupon-store="{{ $scrollPopup['storeName'] }}"

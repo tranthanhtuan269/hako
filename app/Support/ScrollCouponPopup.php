@@ -37,6 +37,7 @@ class ScrollCouponPopup
             'storeSlug' => $store->slug,
             'storeLogo' => $store->logoUrl(),
             'affiliateUrl' => $affiliateUrl,
+            'storeUrl' => route('stores.show', $store->slug),
             'openAffiliateOnCopy' => $openAffiliateOnCopy,
             'coupons' => $coupons->map(fn (Coupon $coupon) => [
                 'title' => self::titleWithStore($coupon->title, $store->name),
