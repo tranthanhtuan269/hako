@@ -46,8 +46,7 @@
     ];
 @endphp
 
-
-
+@include('themes.prime.home-hero', compact('stats'))
 
 @if(!empty($otc['sections']['trust']) && $stores->isNotEmpty())
 <section class="otc-trust">

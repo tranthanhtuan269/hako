@@ -27,6 +27,7 @@
 </script>
 @endpush
 
+
 @section('content')
 @if($activeTheme === 'savingspro')
     @include('themes.savingspro.home-hero', compact('stats'))

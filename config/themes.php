@@ -60,6 +60,7 @@ return [
             'description' => 'Dark teal header, lime accents, and ticket-style coupon cards inspired by OnTopCoupon.',
             'css' => 'themes/ontopcoupon.css',
             'font' => 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Inter+Tight:wght@600;700;800&display=swap',
+            'js' => 'js/themes/prime.js',
             'preview' => ['#072929', '#b1fa63', '#f4f2f0'],
         ],
     ],
