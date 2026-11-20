@@ -115,6 +115,11 @@ final class SiteBranding
         return $value !== '' ? $value : null;
     }
 
+    public static function customDescription(): ?string
+    {
+        return self::footerDescriptionTagline();
+    }
+
     public static function hasCustomBrandText(): bool
     {
         return self::customName() !== null || self::customTagline() !== null;

@@ -34,6 +34,7 @@ class AppServiceProvider extends ServiceProvider
             $siteTagline = SiteBranding::resolvedTagline();
             $siteDisplayName = SiteBranding::customName();
             $siteDisplayTagline = SiteBranding::customTagline();
+            $siteDisplayDescription = SiteBranding::customDescription();
             $siteHomeH1 = SiteBranding::resolvedHomeH1();
             $siteHomeSubH1 = SiteBranding::resolvedHomeSubH1();
             $siteHeroSubtitle = SiteBranding::resolvedHeroSubtitle();
@@ -51,6 +52,7 @@ class AppServiceProvider extends ServiceProvider
             $siteTagline = config('site.tagline');
             $siteDisplayName = null;
             $siteDisplayTagline = null;
+            $siteDisplayDescription = null;
             $siteHomeH1 = config('site.name');
             $siteHomeSubH1 = config('site.tagline');
             $siteHeroSubtitle = 'Deals for brands like Amazon, Walmart, Target, and other U.S. retailers. '
@@ -74,6 +76,7 @@ class AppServiceProvider extends ServiceProvider
             'siteBrandShowText' => $siteBrandShowText,
             'siteDisplayName' => $siteDisplayName,
             'siteDisplayTagline' => $siteDisplayTagline,
+            'siteDisplayDescription' => $siteDisplayDescription,
             'siteUrl' => rtrim(config('site.url'), '/'),
             'siteDomain' => config('site.domain'),
             'contactEmail' => $contactEmail,

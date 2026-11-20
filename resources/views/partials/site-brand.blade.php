@@ -15,7 +15,7 @@
     @if($showBrandText)
         <span class="site-brand-text">
             @if(filled($brandName))
-                <strong>{{ $brandName }}{{ $forceBrandText && ! str_ends_with($brandName, '.') ? '.' : '' }}</strong>
+                <strong>{{ $brandName }}</strong>
             @endif
             @if(!empty($siteDisplayTagline) && ! $forceBrandText)
                 <small>{{ $siteDisplayTagline }}</small>

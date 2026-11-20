@@ -1,11 +1,19 @@
+@php
+    $forceBrandText = ($activeTheme ?? '') === 'prime';
+    $brandName = !empty($siteDisplayName) ? $siteDisplayName : ($forceBrandText ? ($siteName ?? config('site.name')) : null);
+    $showBrandText = !empty($siteBrandShowText) || ($forceBrandText && filled($brandName));
+@endphp
 <footer class="site-footer pch-footer">
     <div class="container pch-footer-grid">
         <div class="pch-footer-brand">
             <a href="{{ route('home') }}" class="pch-footer-logo">
-                {{ $siteDisplayName ?: $siteName }}<span class="pch-footer-dot">.</span>
+                {{ $brandName }}
             </a>
             <p class="pch-footer-tagline">
-                Coupons, promotions and trusted store reviews. Updated regularly.
+                {{ $siteDisplayTagline ?: 'Coupons, promotions and trusted store reviews. Updated regularly.' }}
+            </p>
+            <p class="pch-footer-description">
+                {{ $siteDisplayDescription ?: 'We may earn a commission when you use our links, at no extra cost to you. See our Affiliate Disclosure and Privacy Policy.' }}
             </p>
         </div>
 

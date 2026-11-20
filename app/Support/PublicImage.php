@@ -419,13 +419,25 @@ final class PublicImage
         return $client;
     }
 
+
+    private static function looksLikeSvgDocument(string $trim): bool
+    {
+        if (str_starts_with($trim, '<svg')) {
+            return true;
+        }
+
+        $head = substr($trim, 0, 1024);
+
+        if (str_starts_with($trim, '<?xml') || str_starts_with($trim, '<!DOCTYPE svg') || str_starts_with($trim, '<!--')) {
+            return str_contains($head, '<svg');
+        }
+
+        return false;
+    }
+
     private static function detectFormat(string $binary): ?string
     {
         $trim = ltrim($binary);
-
-        if (str_starts_with($trim, '<svg') || str_contains($trim, '<svg')) {
-            return 'svg';
-        }
 
         if (str_starts_with($binary, "\x89PNG\r\n\x1a\n")) {
             return 'png';
@@ -441,6 +453,10 @@ final class PublicImage
 
         if (str_starts_with($trim, 'RIFF') && str_contains(substr($binary, 0, 16), 'WEBP')) {
             return 'webp';
+        }
+
+        if (self::looksLikeSvgDocument($trim)) {
+            return 'svg';
         }
 
         if (function_exists('finfo_open')) {

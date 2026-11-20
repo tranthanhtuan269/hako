@@ -41,9 +41,13 @@ class SiteSetting extends Model
         static::query()->updateOrCreate(['key' => $key], ['value' => $value]);
 
         try {
-            Cache::forget('site_setting.'.$key);
+            Cache::put('site_setting.'.$key, $value);
         } catch (\Throwable) {
-            // Ignore cache clear failures; value is already persisted.
+            try {
+                Cache::forget('site_setting.'.$key);
+            } catch (\Throwable) {
+                // Ignore cache clear failures; value is already persisted.
+            }
         }
     }
 }

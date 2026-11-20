@@ -37,7 +37,6 @@
                 </form>
             @else
                 <a href="{{ route('login') }}">Sign In</a>
-                <a href="{{ route('register') }}" class="nav-register">Sign Up</a>
             @endauth
         </nav>
     </div>
