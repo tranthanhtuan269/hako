@@ -42,7 +42,7 @@ Edit `config/site.php` or `.env` for `SITE_DOMAIN`, `SITE_URL`, etc.
 
 Contact emails and Twitter handle default from `SITE_DOMAIN` (e.g. `contact@yourdomain.com`).
 
-Scan API settings: **Admin → Integrations** (stored in database, not `.env`).
+Scan API and AI writing models: **Admin → Integrations** (stored in the database, not `.env`).
 
 ## License
 

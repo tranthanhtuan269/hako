@@ -24,7 +24,7 @@
             id="store-slug"
             name="slug"
             value="{{ $slugValue }}"
-            pattern="[a-z0-9]+(-[a-z0-9]+)*"
+            pattern="[a-z0-9]+([-_][a-z0-9]+)*"
             maxlength="255"
             placeholder="auto-from-name"
             data-store-slug-input
@@ -66,9 +66,10 @@
                         .toLowerCase()
                         .normalize('NFD')
                         .replace(/[\u0300-\u036f]/g, '')
-                        .replace(/[^a-z0-9]+/g, '-')
-                        .replace(/^-+|-+$/g, '')
-                        .replace(/-{2,}/g, '-');
+                        .replace(/[^a-z0-9_]+/g, '-')
+                        .replace(/^[-_]+|[-_]+$/g, '')
+                        .replace(/-{2,}/g, '-')
+                        .replace(/_{2,}/g, '_');
                 }
 
                 var slugManual = false;

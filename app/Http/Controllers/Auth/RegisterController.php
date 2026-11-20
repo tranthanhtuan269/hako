@@ -14,9 +14,9 @@ use Illuminate\View\View;
 
 class RegisterController extends Controller
 {
-    public function showRegistrationForm(): View
+    public function showRegistrationForm(): RedirectResponse
     {
-        return view('auth.register');
+        return redirect()->route('login');
     }
 
     public function register(Request $request, AffiliateService $affiliate): RedirectResponse

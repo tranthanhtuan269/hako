@@ -32,6 +32,7 @@ class Store extends Model
         'store_coupon_limit',
         'is_active',
         'is_pinned_home',
+        'is_listed_ads',
         'home_pin_sort_order',
         'view_count',
     ];
@@ -39,6 +40,7 @@ class Store extends Model
     protected $casts = [
         'is_active' => 'boolean',
         'is_pinned_home' => 'boolean',
+        'is_listed_ads' => 'boolean',
         'show_on_stores' => 'boolean',
         'store_coupon_limit' => 'integer',
         'stores_list_sort_order' => 'integer',
@@ -179,6 +181,42 @@ class Store extends Model
     public function visibleStoreCouponsCount(): int
     {
         return $this->publicStoreCouponsQuery()->count();
+    }
+
+    public function bestOfferLabel(): ?string
+    {
+        $coupons = $this->relationLoaded('coupons')
+            ? $this->coupons
+            : $this->publicStoreCouponsQuery()->get(['title', 'type', 'discount_type', 'discount_value']);
+
+        $maxPercent = 0.0;
+        $maxFixed = 0.0;
+        $hasFreeShip = false;
+
+        foreach ($coupons as $coupon) {
+            $ticket = $coupon->ticketDisplay();
+
+            $maxPercent = max($maxPercent, $ticket['percent']);
+            $maxFixed = max($maxFixed, $ticket['fixed']);
+
+            if ($ticket['kind'] === 'free_shipping') {
+                $hasFreeShip = true;
+            }
+        }
+
+        if ($maxPercent > 0) {
+            return 'Up to '.(int) $maxPercent.'% off';
+        }
+
+        if ($maxFixed > 0) {
+            return 'Up to $'.number_format($maxFixed, 0, '.', ',').' off';
+        }
+
+        if ($hasFreeShip) {
+            return 'Free shipping';
+        }
+
+        return null;
     }
 
     public function domain(): ?string

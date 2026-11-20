@@ -176,8 +176,10 @@ class ImportAffiliateController extends Controller
             ? Post::query()->where('store_id', $existingStore->id)->orderByDesc('updated_at')->first()
             : null;
 
-        $allowReimport = SiteImportSettings::allowReimportExistingStores();
-        $importBlocked = $existingStore !== null && ! $allowReimport;
+        // Always allow creating another store + blog for the same affiliate URL.
+        // StoreSlug / Post::stableReviewPostSlug append _1, _2 on collision.
+        $allowReimport = true;
+        $importBlocked = false;
 
         return response()->json([
             'ok' => true,
@@ -191,6 +193,7 @@ class ImportAffiliateController extends Controller
             'pricing_offers_found' => count($pricingOffers),
             'allow_reimport_existing_stores' => $allowReimport,
             'import_blocked' => $importBlocked,
+            'create_new_copy' => $existingStore !== null,
             'existing_import' => $existingStore ? [
                 'store_id' => $existingStore->id,
                 'store_name' => $existingStore->name,
@@ -284,12 +287,9 @@ class ImportAffiliateController extends Controller
             $domain,
         );
 
-        if ($existingStore !== null && ! SiteImportSettings::allowReimportExistingStores()) {
-            return redirect()
-                ->route('member.import-affiliate.create')
-                ->withInput()
-                ->with('error', 'This store already exists. Re-importing existing stores is disabled in site settings.');
-        }
+        // Intentionally ignore existing merchant matches: each import creates a new
+        // store + review post. Duplicate slugs get _1 / _2 via StoreSlug / Post helpers.
+        unset($existingStore);
 
         $result = DB::transaction(function () use (
             $data,
@@ -302,10 +302,9 @@ class ImportAffiliateController extends Controller
             $contentBuilder,
             $logoUrl,
             $preGeneratedBlog,
-            $existingStore,
             $userId,
         ) {
-            $isUpdate = $existingStore !== null;
+            $storeSlug = StoreSlug::make($storeName);
             $storePayload = [
                 'name' => $storeName,
                 'logo' => $storedLogo,
@@ -315,7 +314,7 @@ class ImportAffiliateController extends Controller
                     PublicImage::localizeHtmlImages(
                         $contentBuilder->storeDescription(
                             $storeName,
-                            $isUpdate ? $existingStore->slug : StoreSlug::make($storeName),
+                            $storeSlug,
                             $data['affiliate_url'],
                             optional(Category::find($data['category_id']))?->name,
                             $offers,
@@ -328,20 +327,11 @@ class ImportAffiliateController extends Controller
                 'is_active' => $publish,
             ];
 
-            if ($isUpdate) {
-                $existingStore->update($storePayload);
-                $store = $existingStore->fresh();
-                Coupon::query()
-                    ->where('store_id', $store->id)
-                    ->where('user_id', $userId)
-                    ->delete();
-            } else {
-                $store = Store::create([
-                    'user_id' => $userId,
-                    'slug' => StoreSlug::make($storeName),
-                    ...$storePayload,
-                ]);
-            }
+            $store = Store::create([
+                'user_id' => $userId,
+                'slug' => $storeSlug,
+                ...$storePayload,
+            ]);
 
             if (! $storedLogo) {
                 $store->ensureLogoStored($logoUrl);
@@ -386,24 +376,12 @@ class ImportAffiliateController extends Controller
                 'is_published' => $publish,
             ];
 
-            $existingPost = Post::query()
-                ->where('store_id', $store->id)
-                ->orderByDesc('updated_at')
-                ->first();
+            $post = Post::create([
+                ...$postPayload,
+                'slug' => Post::stableReviewPostSlug($store),
+            ]);
 
-            if ($existingPost) {
-                Post::query()
-                    ->where('store_id', $store->id)
-                    ->where('id', '!=', $existingPost->id)
-                    ->delete();
-                $existingPost->update($postPayload);
-                $post = $existingPost->fresh();
-            } else {
-                $post = Post::create([
-                    ...$postPayload,
-                    'slug' => Post::stableReviewPostSlug($store),
-                ]);
-            }
+            $isUpdate = false;
 
             return compact('store', 'createdCoupons', 'post', 'isUpdate');
         });
@@ -539,7 +517,7 @@ class ImportAffiliateController extends Controller
         $i = 1;
 
         while (Coupon::where('slug', $slug)->exists()) {
-            $slug = $original . '-' . $i++;
+            $slug = $original . '_' . $i++;
         }
 
         return $slug;
@@ -552,7 +530,7 @@ class ImportAffiliateController extends Controller
         $i = 1;
 
         while (Post::where('slug', $slug)->exists()) {
-            $slug = $original . '-' . $i++;
+            $slug = $original . '_' . $i++;
         }
 
         return $slug;

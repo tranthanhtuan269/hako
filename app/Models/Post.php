@@ -97,7 +97,9 @@ class Post extends Model
         $html = PostAffiliateContent::embed($this->content, $this->resolveStore());
         $html = DynamicCouponContent::expand($html, $this->resolveStore());
 
-        return HtmlCleaner::wrapTablesForScroll($html);
+        return HtmlCleaner::wrapTablesForScroll(
+            HtmlCleaner::stripAffiliateNotices($html)
+        );
     }
 
     public function scopeOwnedBy(Builder $query, int $userId): Builder
@@ -145,7 +147,8 @@ class Post extends Model
                 })
                 ->exists()
         ) {
-            $slug = $original.'-'.$i++;
+            // Duplicate review posts for the same merchant: nike-review_1, nike-review_2.
+            $slug = $original.'_'.$i++;
         }
 
         return $slug;

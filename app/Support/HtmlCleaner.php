@@ -209,4 +209,33 @@ final class HtmlCleaner
             $html
         ) ?: $html;
     }
+
+    /**
+     * Drop legal/affiliate disclaimer boilerplate from article and store HTML.
+     */
+    public static function stripAffiliateNotices(string $html): string
+    {
+        if ($html === '') {
+            return $html;
+        }
+
+        $pattern = '/<(p|div)(\b[^>]*)?>\s*(?:<(?:svg|strong|em|span|a|br)(\b[^>]*)?>.*?<\/(?:svg|strong|em|span|a)>|<br\s*\/?>|\s)*'
+            .'(?:[^<]{0,500}?)(?:'
+            .'independent coupon and deals site'
+            .'|not affiliated with,\s*endorsed by,\s*or sponsored by'
+            .'|Not affiliated with the merchant'
+            .'|Trademarks belong to their respective owners'
+            .'|is not affiliated with these merchants'
+            .'|Terms apply on their site'
+            .'|là một trang web cung cấp mã giảm giá'
+            .'|Chúng tôi không liên kết'
+            .'|Thương hiệu thuộc sở hữu của chủ sở hữu tương ứng'
+            .'|Thông báo về chương trình liên kết'
+            .')(?:.*?)<\/\1>/isu';
+
+        $cleaned = preg_replace($pattern, '', $html) ?? $html;
+        $cleaned = preg_replace('/<(p|div)(\b[^>]*)?>\s*(?:<a[^>]*>\s*)?Affiliate disclosure(?:\s*<\/a>)?\s*<\/\1>/iu', '', $cleaned) ?? $cleaned;
+
+        return trim(preg_replace("/\n{3,}/", "\n\n", $cleaned) ?? $cleaned);
+    }
 }

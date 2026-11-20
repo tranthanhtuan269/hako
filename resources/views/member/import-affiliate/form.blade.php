@@ -5,7 +5,7 @@
 @section('content')
 <h1 style="margin-bottom:.5rem;">Import from Affiliate Link</h1>
 <p style="color:var(--muted);margin-bottom:1.5rem;">
-    Paste your affiliate URL and add the offers you want to feature. We detect the store, crawl products, and use AI (Gemini) to write a long-form SEO article during detection — so import is faster.
+    Paste your affiliate URL and add the offers you want to feature. We detect the store, crawl products, and use AI to write a long-form SEO article during detection — so import is faster.
 </p>
 
 @if(session('import_links'))
@@ -455,41 +455,11 @@
         const previewExistingImport = document.getElementById('preview-existing-import');
         const previewExistingImportText = document.getElementById('preview-existing-import-text');
 
-        if (!existing) {
-            previewExistingImport.hidden = true;
-            previewExistingImport.classList.remove('is-blocked');
-            previewExistingImportText.textContent = '';
-            setImportSubmitEnabled(true);
-            return;
-        }
-
-        const postLabel = existing.post_title
-            ? `post “${existing.post_title}”`
-            : 'an existing post';
-
-        if (importBlocked) {
-            let message =
-                `This merchant is already imported as “${existing.store_name}”. `
-                + 'Re-importing existing stores is disabled, so import is blocked.';
-
-            if (integrationsUrl) {
-                message += ` Enable “Allow re-importing existing stores” in Integrations settings to update that store.`;
-            } else {
-                message += ' Ask your site admin to enable re-importing in Integrations settings.';
-            }
-
-            previewExistingImportText.textContent = message;
-            previewExistingImport.classList.add('is-blocked');
-            setImportSubmitEnabled(false);
-        } else {
-            previewExistingImportText.textContent =
-                `This merchant is already imported as “${existing.store_name}”. `
-                + `Submitting will update that store, replace its offers, and refresh ${postLabel} instead of creating duplicates.`;
-            previewExistingImport.classList.remove('is-blocked');
-            setImportSubmitEnabled(true);
-        }
-
-        previewExistingImport.hidden = false;
+        // Always create a new store/post copy — no existing-import warning.
+        previewExistingImport.hidden = true;
+        previewExistingImport.classList.remove('is-blocked');
+        previewExistingImportText.textContent = '';
+        setImportSubmitEnabled(true);
     }
 
     document.getElementById('add-offer-btn').addEventListener('click', () => {
@@ -796,8 +766,8 @@
                 generatedBlogInput.value = JSON.stringify(data.generated_blog);
                 previewBlogTitle.textContent = data.generated_blog.title;
                 previewBlogExcerpt.textContent = data.generated_blog.excerpt || '';
-                previewBlogSource.textContent = data.generated_blog.source === 'gemini'
-                    ? 'Written by Gemini AI during detect — will be saved on import without regenerating.'
+                previewBlogSource.textContent = data.generated_blog.source && data.generated_blog.source !== 'template'
+                    ? 'Written by AI during detect — will be saved on import without regenerating.'
                     : 'Template fallback used (AI unavailable). You can still import.';
                 previewBlog.hidden = false;
             } else {
@@ -822,7 +792,7 @@
                 statusMessage += ` No matching coupons found for ${data.store_query}.`;
             }
 
-            if (data.generated_blog?.source === 'gemini') {
+            if (data.generated_blog?.source && data.generated_blog.source !== 'template') {
                 statusMessage += ' AI article ready.';
             } else if (data.generated_blog?.source === 'template') {
                 statusMessage += ' Blog draft prepared (template fallback).';
@@ -836,15 +806,7 @@
                 statusMessage += ' No catalog products found — using brand/offers content.';
             }
 
-            if (data.import_blocked) {
-                statusMessage += ' Import blocked — this store already exists.';
-                status.className = 'form-hint detect-status is-error';
-            } else if (data.existing_import) {
-                statusMessage += ' Existing store will be updated on import.';
-                status.className = 'form-hint detect-status is-success';
-            } else {
-                status.className = 'form-hint detect-status is-success';
-            }
+            status.className = 'form-hint detect-status is-success';
 
             status.textContent = statusMessage;
         } catch (error) {

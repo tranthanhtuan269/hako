@@ -16,6 +16,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class StoreController extends Controller
 {
@@ -43,6 +44,42 @@ class StoreController extends Controller
         $statsDate = $period->day;
 
         return view('admin.stores.index', compact('stores', 'sort', 'dir', 'q', 'statsDate', 'period'));
+    }
+
+    public function export(Request $request): StreamedResponse
+    {
+        $q = trim((string) $request->query('q', ''));
+
+        $query = Store::with('category');
+
+        if ($q !== '') {
+            $query->where('name', 'like', '%'.$q.'%');
+        }
+
+        $stores = StoreQuerySort::apply($query, $request)['query']->get();
+        $filename = 'store-links-'.now()->format('Y-m-d').'.csv';
+
+        return response()->streamDownload(static function () use ($stores): void {
+            $out = fopen('php://output', 'w');
+            fwrite($out, "\xEF\xBB\xBF");
+            fputcsv($out, ['Name', 'Store URL', 'Website', 'Affiliate URL', 'Category', 'Status', 'Ads']);
+
+            foreach ($stores as $store) {
+                fputcsv($out, [
+                    $store->name,
+                    route('stores.show', $store->slug),
+                    (string) ($store->website ?? ''),
+                    (string) ($store->affiliate_url ?? ''),
+                    $store->category?->name ?? '',
+                    $store->is_active ? 'Active' : 'Inactive',
+                    $store->is_listed_ads ? 'Listed' : 'Not listed',
+                ]);
+            }
+
+            fclose($out);
+        }, $filename, [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+        ]);
     }
 
     public function catalogDisplay(): View
@@ -121,6 +158,34 @@ class StoreController extends Controller
         return redirect()->route('admin.stores.index')->with('success', 'Store updated successfully.');
     }
 
+    public function bulkDestroy(Request $request): JsonResponse
+    {
+        $ids = $request->input('ids', []);
+        if (is_string($ids)) {
+            $ids = array_filter(array_map('trim', explode(',', $ids)));
+        }
+
+        if (empty($ids) || !is_array($ids)) {
+            return back()->with('error', 'Please select at least one store to delete.');
+        }
+
+        $stores = Store::whereIn('id', $ids)->get();
+        // dd($stores);
+        $count = 0;
+
+        foreach ($stores as $store) {
+            PublicImage::delete($store->logo);
+            $store->delete();
+            $count++;
+        }
+
+        // return json response
+        return response()->json([
+            'ok' => true,
+            'message' => "Successfully deleted {$count} store(s).",
+        ]);
+    }
+
     public function destroy(Store $store): RedirectResponse
     {
         PublicImage::delete($store->logo);
@@ -148,6 +213,27 @@ class StoreController extends Controller
         ]);
 
         return back()->with('success', "{$store->name} pinned to homepage.");
+    }
+
+    public function toggleAdsListed(Request $request, Store $store): JsonResponse|RedirectResponse
+    {
+        $store->update([
+            'is_listed_ads' => ! $store->is_listed_ads,
+        ]);
+
+        $listed = (bool) $store->is_listed_ads;
+        $message = $listed
+            ? "{$store->name} marked as listed on ads."
+            : "{$store->name} marked as not listed on ads.";
+
+        if ($request->wantsJson()) {
+            return response()->json([
+                'is_listed_ads' => $listed,
+                'message' => $message,
+            ]);
+        }
+
+        return back()->with('success', $message);
     }
 
     public function coupons(Store $store): JsonResponse

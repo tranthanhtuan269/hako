@@ -27,5 +27,6 @@
         </div>
         <button type="submit" class="btn btn-primary" style="width:100%;margin-top:1rem;padding:.75rem;">Sign In</button>
     </form>
+
 </div>
 @endsection

@@ -23,7 +23,9 @@ use App\Http\Controllers\Admin\CouponController as AdminCouponController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\PostController as AdminPostController;
 use App\Http\Controllers\Admin\StoreController as AdminStoreController;
+use App\Http\Controllers\Admin\NavLinkController;
 use App\Http\Controllers\Admin\ThemeController;
+use App\Http\Controllers\Admin\OntopcouponHomepageController;
 use App\Http\Controllers\Admin\TrackingController;
 use App\Http\Controllers\Admin\BrandingController;
 use App\Http\Controllers\Admin\DomainChangeController;
@@ -69,8 +71,8 @@ Route::get('/sitemap.xml', [SitemapController::class, 'index'])->name('sitemap')
 Route::middleware(['guest', 'noindex'])->group(function () {
     Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
     Route::post('/login', [LoginController::class, 'login']);
-    Route::get('/register', [RegisterController::class, 'showRegistrationForm'])->name('register');
-    Route::post('/register', [RegisterController::class, 'register']);
+    Route::get('/register', fn () => redirect()->route('login'))->name('register');
+    Route::post('/register', fn () => abort(404));
 });
 
 Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
@@ -115,16 +117,24 @@ Route::middleware(['auth', 'admin', 'noindex'])->prefix('admin')->name('admin.')
     Route::get('stores/catalog-display', [AdminStoreController::class, 'catalogDisplay'])->name('stores.catalog-display');
     Route::put('stores/catalog-display', [AdminStoreController::class, 'updateCatalogDisplay'])->name('stores.catalog-display.update');
     Route::put('stores/sort-order', [AdminStoreController::class, 'updateSortOrder'])->name('stores.sort-order');
+    Route::get('stores/export', [AdminStoreController::class, 'export'])->name('stores.export');
     Route::get('stores/{store}/coupons', [AdminStoreController::class, 'coupons'])->name('stores.coupons');
     Route::put('stores/{store}/coupons/sort-order', [AdminStoreController::class, 'updateCouponsSortOrder'])->name('stores.coupons.sort-order');
     Route::put('stores/{store}/coupons/{coupon}', [AdminStoreController::class, 'updateCoupon'])->name('stores.coupons.update');
     Route::patch('stores/{store}/home-pin', [AdminStoreController::class, 'toggleHomePin'])->name('stores.toggle-home-pin');
+    Route::patch('stores/{store}/ads-listed', [AdminStoreController::class, 'toggleAdsListed'])->name('stores.toggle-ads-listed');
+    Route::patch('stores/bulk-destroy', [AdminStoreController::class, 'bulkDestroy'])->name('stores.bulk-destroy');
     Route::resource('stores', AdminStoreController::class)->except(['show']);
     Route::resource('categories', AdminCategoryController::class)->except(['show']);
     Route::patch('posts/{post}/home-pin', [AdminPostController::class, 'toggleHomePin'])->name('posts.toggle-home-pin');
     Route::resource('posts', AdminPostController::class)->except(['show']);
+    Route::patch('nav-links/toggle-search', [NavLinkController::class, 'toggleSearch'])->name('nav-links.toggle-search');
+    Route::patch('nav-links/{nav_link}/toggle-active', [NavLinkController::class, 'toggleActive'])->name('nav-links.toggle-active');
+    Route::resource('nav-links', NavLinkController::class)->except(['show']);
     Route::get('themes', [ThemeController::class, 'index'])->name('themes.index');
     Route::put('themes', [ThemeController::class, 'update'])->name('themes.update');
+    Route::get('ontopcoupon-homepage', [OntopcouponHomepageController::class, 'edit'])->name('ontopcoupon-homepage.edit');
+    Route::put('ontopcoupon-homepage', [OntopcouponHomepageController::class, 'update'])->name('ontopcoupon-homepage.update');
     Route::get('tracking', [TrackingController::class, 'index'])->name('tracking.index');
     Route::put('tracking', [TrackingController::class, 'update'])->name('tracking.update');
     Route::get('branding', [BrandingController::class, 'index'])->name('branding.index');

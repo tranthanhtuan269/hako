@@ -6,6 +6,7 @@ use App\Models\Category;
 use App\Models\Coupon;
 use App\Models\Post;
 use App\Models\Store;
+use App\Support\ThemeManager;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 

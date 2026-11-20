@@ -75,10 +75,6 @@
         <a href="{{ route('coupons.go', $coupon->slug) }}" class="btn btn-primary" style="width:100%;padding:.75rem;" target="_blank" rel="noopener">
             Shop Now at {{ $coupon->store->name }}
         </a>
-        <p class="coupon-trust-note">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z"/></svg>
-            Offer listed for {{ $coupon->store->name }} on {{ config('site.name') }}. Not affiliated with the merchant. Terms apply on their site.
-        </p>
     </article>
 
     @if($related->isNotEmpty())

@@ -200,6 +200,69 @@ class Coupon extends Model
         };
     }
 
+    /**
+     * Visual ticket fields for OnTopCoupon store rows, including title fallbacks
+     * when discount_type / discount_value were never stored.
+     *
+     * @return array{kind: string, label: string, amount: string, watermark: string, percent: float, fixed: float}
+     */
+    public function ticketDisplay(): array
+    {
+        $kind = (string) $this->discount_type;
+        $percent = $kind === 'percent' ? (float) $this->discount_value : 0.0;
+        $fixed = $kind === 'fixed' ? (float) $this->discount_value : 0.0;
+        $title = (string) $this->title;
+
+        if ($percent <= 0 && preg_match('/(\d+(?:\.\d+)?)\s*%/', $title, $match)) {
+            $kind = 'percent';
+            $percent = (float) $match[1];
+        }
+
+        if ($fixed <= 0 && preg_match('/\$\s*(\d+(?:\.\d+)?)/', $title, $match)) {
+            $kind = 'fixed';
+            $fixed = (float) $match[1];
+        }
+
+        if ($kind === '' && preg_match('/free\s*ship/i', $title)) {
+            $kind = 'free_shipping';
+        }
+
+        return match ($kind) {
+            'percent' => [
+                'kind' => 'percent',
+                'label' => 'PERCENTAGE',
+                'amount' => (int) $percent.'% OFF',
+                'watermark' => (int) $percent.'%',
+                'percent' => $percent,
+                'fixed' => 0.0,
+            ],
+            'fixed' => [
+                'kind' => 'fixed',
+                'label' => 'FLAT',
+                'amount' => '$'.number_format($fixed, 0, '.', ',').' OFF',
+                'watermark' => (string) (int) $fixed,
+                'percent' => 0.0,
+                'fixed' => $fixed,
+            ],
+            'free_shipping' => [
+                'kind' => 'free_shipping',
+                'label' => 'FREE SHIP',
+                'amount' => 'FREE SHIP',
+                'watermark' => 'FREE',
+                'percent' => 0.0,
+                'fixed' => 0.0,
+            ],
+            default => [
+                'kind' => $this->type === 'coupon' ? 'code' : 'deal',
+                'label' => $this->type === 'coupon' ? 'CODE' : 'DEAL',
+                'amount' => $this->discountLabel(),
+                'watermark' => $this->type === 'coupon' ? 'CODE' : 'DEAL',
+                'percent' => 0.0,
+                'fixed' => 0.0,
+            ],
+        };
+    }
+
     public function discountLabelWithStore(): string
     {
         $label = $this->discountLabel();

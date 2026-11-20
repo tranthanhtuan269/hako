@@ -372,28 +372,13 @@ final class AffiliateExcelImportProcessor
 
         $existing = Store::findForMerchantImport($userId, $website, $affiliateUrl, $domain);
 
+        // Always create a new store + review post for each Excel row, even when the
+        // same affiliate/merchant already exists. Slugs get _1 / _2 automatically.
         if ($existing) {
-            $workspace['was_existing'] = true;
+            $workspace['was_existing'] = false;
             $workspace['existing_store_id'] = $existing->id;
-            $workspace['store_id'] = $existing->id;
-            $workspace['steps'] = $this->existingStoreSteps($workspace['steps']);
 
-            // Optionally reuse Scan coupons when appending to an existing local store.
-            if ($fromScan && $this->wantsDetectedCoupons($workspace)) {
-                $scanOffers = $this->normalizeScanOffers($scanBundle['offers'] ?? []);
-                $workspace['offers'] = $this->mergeOffers(
-                    is_array($workspace['excel_offers'] ?? $workspace['offers'] ?? null)
-                        ? ($workspace['excel_offers'] ?? $workspace['offers'])
-                        : [],
-                    $scanOffers
-                );
-
-                return 'Store already exists locally: '.$existing->name
-                    .' — will append Excel + '.count($scanOffers).' Scan coupon(s).';
-            }
-
-            return 'Store already exists: '.$existing->name
-                .' — will append Excel coupons only.';
+            return 'Merchant already on site as “'.$existing->name.'” — will create another store/post with a unique slug (_1, _2…).';
         }
 
         $workspace['was_existing'] = false;
@@ -926,10 +911,16 @@ final class AffiliateExcelImportProcessor
      */
     private function resolveMerchantLocally(string $affiliateUrl, ?string $website): array
     {
-        $finalUrl = $this->resolver->finalUrl($affiliateUrl);
-        $merchant = $this->resolver->resolve($affiliateUrl, false);
+        // When website is provided, use website as the primary target for detecting store info/products/logo/faqs,
+        // then preserve the affiliate_url so all generated outbound links use the affiliate link.
+        $detectTarget = (filled($website) && filter_var($website, FILTER_VALIDATE_URL))
+            ? $website
+            : $affiliateUrl;
 
-        if ($website) {
+        $finalUrl = $this->resolver->finalUrl($detectTarget);
+        $merchant = $this->resolver->resolve($detectTarget, false);
+
+        if ($website && $detectTarget !== $website) {
             $merchant = $this->resolver->enrichFromWebsite($merchant, $website, false);
         }
 
@@ -941,10 +932,11 @@ final class AffiliateExcelImportProcessor
 
         $merchant['product_focus'] = false;
         $merchant['affiliate_url'] = $affiliateUrl;
-        $merchant['final_url'] = $merchant['final_url'] ?? $finalUrl;
+        $merchant['final_url'] = $website ?: ($merchant['final_url'] ?? $finalUrl);
 
         if (! filled($merchant['domain'] ?? null)) {
-            $merchant['domain'] = $this->couponSpeak->hostFromUrl($finalUrl)
+            $merchant['domain'] = ($website ? $this->couponSpeak->hostFromUrl($website) : null)
+                ?? $this->couponSpeak->hostFromUrl($finalUrl)
                 ?? $this->couponSpeak->hostFromUrl($affiliateUrl);
         }
 

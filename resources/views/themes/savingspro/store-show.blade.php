@@ -58,8 +58,6 @@
             </div>
         </div>
 
-        @include('partials.site-affiliate-notice')
-
         <div class="sp-store-layout">
             <aside class="sp-store-sidebar">
                 @if($similarStores->isNotEmpty())
@@ -90,9 +88,6 @@
             </aside>
 
             <div class="sp-store-main">
-                @if($store->description)
-                    <div class="store-description-content" id="store-full-desc">{!! $store->renderedDescription() !!}</div>
-                @endif
                 <div class="sp-store-offers-head">
                     <h2>Active {{ $store->name }} Offers ({{ $coupons->total() }})</h2>
                 </div>
@@ -104,6 +99,9 @@
                     @endforelse
                 </div>
                 <div class="pagination">{{ $coupons->links() }}</div>
+                @if($store->description)
+                    <div class="store-description-content" id="store-full-desc">{!! $store->renderedDescription() !!}</div>
+                @endif
             </div>
         </div>
     </div>

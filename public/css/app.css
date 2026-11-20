@@ -53,6 +53,10 @@ a:hover { text-decoration: underline; }
     flex-wrap: wrap;
 }
 
+.header-inner--no-search {
+    justify-content: space-between;
+}
+
 .site-brand {
     display: flex;
     align-items: center;
@@ -243,6 +247,7 @@ a:hover { text-decoration: underline; }
 }
 
 .main-nav a:hover { color: var(--primary); text-decoration: none; }
+.main-nav a.is-current { color: var(--primary); }
 .nav-admin { color: var(--primary) !important; }
 .nav-register { font-weight: 600; color: var(--primary) !important; }
 .nav-logout-form { display: inline; margin: 0; }
@@ -768,6 +773,7 @@ a:hover { text-decoration: underline; }
 }
 
 .store-page-header {
+    grid-area: heading;
     display: flex;
     align-items: center;
     gap: 1.25rem;
@@ -807,10 +813,16 @@ a:hover { text-decoration: underline; }
 .store-page-layout {
     display: grid;
     grid-template-columns: minmax(0, 7fr) minmax(0, 3fr);
+    grid-template-areas:
+        "heading heading"
+        "posts coupons";
     gap: 2rem;
     align-items: start;
     margin-top: 1.25rem;
 }
+
+.store-page-column--posts { grid-area: posts; }
+.store-page-column--coupons { grid-area: coupons; }
 
 .store-page-column-title {
     font-size: 1.2rem;
@@ -841,6 +853,11 @@ a:hover { text-decoration: underline; }
 @media (max-width: 960px) {
     .store-page-layout {
         grid-template-columns: 1fr;
+        grid-template-areas:
+            "heading"
+            "coupons"
+            "posts";
+        gap: 1.25rem;
     }
 }
 
@@ -919,6 +936,9 @@ a:hover { text-decoration: underline; }
 .coupon-code-masked.is-revealed .coupon-code-blur {
     filter: none;
     opacity: 1;
+    user-select: all;
+    -webkit-user-select: all;
+    pointer-events: auto;
 }
 
 .coupon-code-split {
@@ -2146,6 +2166,14 @@ div.pagination > nav.paginator-nav .pagination {
         flex-wrap: unset;
     }
 
+    .header-inner--no-search {
+        grid-template-columns: auto auto;
+        grid-template-areas:
+            "brand toggle"
+            "nav nav nav";
+        justify-content: space-between;
+    }
+
     .site-brand {
         grid-area: brand;
         min-width: 0;
@@ -2244,7 +2272,22 @@ div.pagination > nav.paginator-nav .pagination {
 }
 .store-description-content p { margin-bottom: 1rem; }
 .store-description-content ul,
-.store-description-content ol { margin: 0 0 1rem 1.25rem; }
+.store-description-content ol {
+    margin: 0 0 1rem;
+    padding-left: 1.75rem;
+    list-style-position: outside;
+}
+.store-description-content li {
+    margin-bottom: .4rem;
+    padding-left: .15rem;
+}
+.store-description-content ul ul,
+.store-description-content ol ol,
+.store-description-content ul ol,
+.store-description-content ol ul {
+    margin: .35rem 0 .5rem;
+    padding-left: 1.35rem;
+}
 .store-description-content a { color: var(--primary); }
 .store-description-content img { max-width: 100%; height: auto; border-radius: 8px; }
 .store-description-content .article-media { margin: 1rem 0 1.25rem; }
@@ -2771,6 +2814,9 @@ body.sp-modal-open {
     align-items: center;
     min-width: 0;
     overflow: hidden;
+    user-select: all;
+    -webkit-user-select: all;
+    -webkit-touch-callout: default;
 }
 
 .sp-code-copy {
