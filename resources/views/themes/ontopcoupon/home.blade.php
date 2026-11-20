@@ -46,22 +46,8 @@
     ];
 @endphp
 
-@if(!empty($otc['sections']['hero']))
-<section class="otc-hero">
-    <div class="container otc-hero-inner">
-        <h1>{{ $siteHomeH1 }}</h1>
-        <p class="otc-hero-lead">{{ $siteHomeSubH1 }}</p>
-        <p class="otc-hero-sub">{{ $siteHeroSubtitle }}</p>
-    </div>
-</section>
 
-<div class="otc-hero-search-wrap">
-    <form action="{{ route('search') }}" method="GET" class="otc-hero-search">
-        <svg class="otc-hero-search-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.34-4.34"/></svg>
-        <input type="search" name="q" placeholder="{{ $otc['search_placeholder'] }}" aria-label="Search">
-    </form>
-</div>
-@endif
+
 
 @if(!empty($otc['sections']['trust']) && $stores->isNotEmpty())
 <section class="otc-trust">

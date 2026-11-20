@@ -1150,6 +1150,7 @@ body.theme-ontopcoupon .otc-store-sidebar {
     flex-direction: column;
     gap: 1rem;
     position: sticky;
+    top: 5.5rem;
 }
 
 body.theme-ontopcoupon .otc-store-card {

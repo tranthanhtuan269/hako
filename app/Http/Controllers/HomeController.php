@@ -14,16 +14,38 @@ class HomeController extends Controller
 {
     public function index(): View
     {
-        $categories = Category::active()->orderBy('sort_order')->take(36)->get();
-        $stores = Store::homeFeaturedQuery(12)->get();
-
-        $latestPosts = Post::homeFeaturedQuery(8)->get();
+        $categories = Category::active()->orderBy('sort_order')->take(18)->get();
+        $latestPosts = Post::homeFeaturedQuery(6)->get();
 
         $stats = [
             'coupons' => Coupon::valid()->count(),
             'stores' => Store::active()->count(),
             'categories' => Category::active()->count(),
         ];
+
+        $themeView = 'themes.'.ThemeManager::current().'.home';
+        $useThemeHome = view()->exists($themeView);
+
+        $storeQuery = Store::homeFeaturedQuery($useThemeHome ? 14 : 12);
+        if ($useThemeHome) {
+            $storeQuery->withCount([
+                'coupons as active_coupons_count' => fn ($q) => $q->valid(),
+            ]);
+        }
+        $stores = $storeQuery->get();
+
+        $data = compact('categories', 'stores', 'latestPosts', 'stats');
+
+        if ($useThemeHome) {
+            $data['featuredCoupons'] = Coupon::with('store')
+                ->valid()
+                ->orderByDesc('is_featured')
+                ->latest()
+                ->take(12)
+                ->get();
+
+            return view($themeView, $data);
+        }
 
         $hotCoupons = Coupon::with(['store.category'])
             ->valid()
@@ -32,13 +54,7 @@ class HomeController extends Controller
             ->take(9)
             ->get();
 
-        return view('home', compact(
-            'categories',
-            'stores',
-            'latestPosts',
-            'stats',
-            'hotCoupons'
-        ));
+        return view('home', array_merge($data, compact('hotCoupons')));
     }
 
     public function search(Request $request): View
