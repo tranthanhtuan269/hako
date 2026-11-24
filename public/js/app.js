@@ -1016,13 +1016,16 @@ function initCouponRevealModal() {
                     return;
                 }
 
+                const shopNowClick = !!event.target.closest('a.js-coupon-shop, .coupon-actions a.btn-outline');
+
                 event.preventDefault();
                 event.stopPropagation();
 
                 const hasCode = !!card.querySelector('[data-reveal-url]');
                 const slug = offerSlugFromCard(card);
 
-                if (!hasCode || !slug) {
+                // Shop Now only leaves this tab for the store. No code popup tab.
+                if (shopNowClick || !hasCode || !slug) {
                     window.location.assign(destination);
                     return;
                 }

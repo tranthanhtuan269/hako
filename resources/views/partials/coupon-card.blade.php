@@ -50,7 +50,7 @@
             >
                 Copy Code
             </button>
-            <a href="{{ route('coupons.go', $coupon->slug) }}" class="btn btn-outline" target="_blank" rel="noopener sponsored">Shop Now</a>
+            <a href="{{ route('coupons.go', $coupon->slug) }}" class="btn btn-outline js-coupon-shop" rel="sponsored">Shop Now</a>
         @else
             <a href="{{ route('coupons.go', $coupon->slug) }}" class="btn btn-outline" target="_blank" rel="noopener sponsored">Shop Now</a>
         @endif
