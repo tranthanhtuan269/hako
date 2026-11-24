@@ -10,7 +10,7 @@
 
 <p class="form-hint" style="margin-bottom:1.25rem;">
     Đây là menu trên header hiện tại: Coupons, Deals, Stores, Categories, Blog.
-    Sửa / thêm / đổi thứ tự ở đây sẽ đổi ngay trên header. Bấm Active / Hidden trên bảng để ẩn hiện. Sign In / Sign Up vẫn tự động.
+    Sửa / thêm / đổi thứ tự ở đây sẽ đổi ngay trên header. Bấm Active / Hidden trên bảng để ẩn hiện. Sign In bật/tắt riêng bên dưới.
     Dùng path kiểu <code>/coupons</code> hoặc URL đầy đủ <code>https://example.com</code>.
 </p>
 
@@ -25,6 +25,22 @@
             @method('PATCH')
             <button type="submit" class="badge {{ ($headerSearchVisible ?? true) ? 'badge-success' : 'badge-muted' }} badge-toggle" title="{{ ($headerSearchVisible ?? true) ? 'Click to hide header search' : 'Click to show header search' }}">
                 {{ ($headerSearchVisible ?? true) ? 'Active' : 'Hidden' }}
+            </button>
+        </form>
+    </div>
+</div>
+
+<div class="import-card" style="margin-bottom:1.25rem;">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap;">
+        <div>
+            <strong>Sign In</strong>
+            <p class="form-hint" style="margin:0.25rem 0 0;">Link Sign In trên header cho khách chưa đăng nhập. Bấm status để ẩn/hiện.</p>
+        </div>
+        <form action="{{ route('admin.nav-links.toggle-sign-in') }}" method="POST" style="display:inline;margin:0;">
+            @csrf
+            @method('PATCH')
+            <button type="submit" class="badge {{ ($headerSignInVisible ?? true) ? 'badge-success' : 'badge-muted' }} badge-toggle" title="{{ ($headerSignInVisible ?? true) ? 'Click to hide Sign In' : 'Click to show Sign In' }}">
+                {{ ($headerSignInVisible ?? true) ? 'Active' : 'Hidden' }}
             </button>
         </form>
     </div>

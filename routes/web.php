@@ -129,6 +129,7 @@ Route::middleware(['auth', 'admin', 'noindex'])->prefix('admin')->name('admin.')
     Route::patch('posts/{post}/home-pin', [AdminPostController::class, 'toggleHomePin'])->name('posts.toggle-home-pin');
     Route::resource('posts', AdminPostController::class)->except(['show']);
     Route::patch('nav-links/toggle-search', [NavLinkController::class, 'toggleSearch'])->name('nav-links.toggle-search');
+    Route::patch('nav-links/toggle-sign-in', [NavLinkController::class, 'toggleSignIn'])->name('nav-links.toggle-sign-in');
     Route::patch('nav-links/{nav_link}/toggle-active', [NavLinkController::class, 'toggleActive'])->name('nav-links.toggle-active');
     Route::resource('nav-links', NavLinkController::class)->except(['show']);
     Route::get('themes', [ThemeController::class, 'index'])->name('themes.index');

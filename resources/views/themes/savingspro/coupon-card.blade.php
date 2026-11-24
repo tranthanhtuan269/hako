@@ -34,6 +34,7 @@
             <button type="button"
                 class="sp-code-copy sp-code-copy--solo"
                 data-reveal-url="{{ route('coupons.reveal', $coupon->slug) }}"
+                data-code="{{ $coupon->code }}"
                 data-affiliate-url="{{ $coupon->affiliateClickUrl() }}"
                 data-coupon-title="{{ $coupon->title }}"
                 data-coupon-discount="{{ $coupon->discountLabel() }}"

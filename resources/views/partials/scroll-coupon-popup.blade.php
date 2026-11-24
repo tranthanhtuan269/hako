@@ -48,6 +48,7 @@
                                 <button type="button"
                                     class="scroll-coupon-popup-copy"
                                     data-reveal-url="{{ $coupon['revealUrl'] }}"
+                                    data-code="{{ $coupon['code'] ?? '' }}"
                                     data-go-url="{{ $coupon['goUrl'] }}"
                                     data-shop-url="{{ $coupon['goUrl'] }}"
                                     data-affiliate-url="{{ $coupon['affiliateUrl'] ?? $scrollPopup['affiliateUrl'] }}"

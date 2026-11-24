@@ -42,6 +42,7 @@
                         type="button"
                         class="pch-code-copy"
                         data-reveal-url="{{ route('coupons.reveal', $coupon->slug) }}"
+                        data-code="{{ $coupon->code }}"
                         data-affiliate-url="{{ $coupon->affiliateClickUrl() }}"
                         data-shop-url="{{ route('coupons.go', $coupon->slug) }}"
                         data-coupon-title="{{ $coupon->title }}"

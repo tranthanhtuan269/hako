@@ -147,33 +147,41 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    async function loadCouponReveal(btn) {
-        if (btn.dataset.code) {
-            return {
-                code: btn.dataset.code,
-                affiliateUrl: btn.dataset.affiliateUrl || btn.dataset.shopUrl || btn.dataset.goUrl || '',
-                title: btn.dataset.couponTitle || '',
-            };
-        }
-
-        const revealUrl = btn.dataset.revealUrl;
-        if (!revealUrl || !csrf) {
+    function knownCouponReveal(btn) {
+        if (!btn?.dataset.code) {
             return null;
         }
 
-        try {
-            const res = await fetch(revealUrl, {
-                method: 'POST',
-                credentials: 'same-origin',
-                headers: {
-                    'X-CSRF-TOKEN': csrf,
-                    'Accept': 'application/json',
-                    'X-Requested-With': 'XMLHttpRequest',
-                },
-            });
-            const data = await res.json();
+        return {
+            code: btn.dataset.code,
+            affiliateUrl: btn.dataset.affiliateUrl || btn.dataset.shopUrl || btn.dataset.goUrl || '',
+            title: btn.dataset.couponTitle || '',
+        };
+    }
 
-            if (!data.code) {
+    function requestCouponReveal(btn) {
+        const revealUrl = btn?.dataset.revealUrl;
+
+        if (!revealUrl || !csrf) {
+            return Promise.resolve(null);
+        }
+
+        return fetch(revealUrl, {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: {
+                'X-CSRF-TOKEN': csrf,
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest',
+            },
+        }).then(function (res) {
+            if (!res.ok) {
+                return null;
+            }
+
+            return res.json();
+        }).then(function (data) {
+            if (!data?.code) {
                 return null;
             }
 
@@ -182,9 +190,21 @@ document.addEventListener('DOMContentLoaded', function () {
                 affiliateUrl: data.affiliate_url || btn.dataset.affiliateUrl || btn.dataset.shopUrl || btn.dataset.goUrl || '',
                 title: data.title || btn.dataset.couponTitle || '',
             };
-        } catch (e) {
+        }).catch(function () {
             return null;
+        });
+    }
+
+    async function loadCouponReveal(btn) {
+        const known = knownCouponReveal(btn);
+
+        if (known) {
+            requestCouponReveal(btn);
+
+            return known;
         }
+
+        return requestCouponReveal(btn);
     }
 
     function resolveCouponReveal(btn) {
@@ -851,10 +871,25 @@ function initCouponRevealModal() {
         handleRevealClick(btn, null, revealPromise, copyPromise);
     }
 
-        handleRevealClick(btn, primedTab);
+    function prefetchRevealFromEvent(event) {
+        const btn = event.target.closest?.('.btn-copy, .sp-code-copy, .pch-code-copy, .scroll-coupon-popup-copy, [data-reveal-url]');
+
+        if (!btn || btn.id === 'sp-modal-copy' || btn.closest('#sp-coupon-modal')) {
+            return;
+        }
+
+        if (typeof window.resolveCouponReveal === 'function') {
+            window.resolveCouponReveal(btn);
+        }
     }
 
+    document.addEventListener('pointerdown', prefetchRevealFromEvent, true);
+
     document.querySelectorAll('.btn-copy, .sp-code-copy, .pch-code-copy, .scroll-coupon-popup-copy').forEach(function (btn) {
+        if (btn.id === 'sp-modal-copy' || btn.closest('#sp-coupon-modal')) {
+            return;
+        }
+
         btn.addEventListener('click', function (event) {
             event.preventDefault();
             startRevealClick(btn);

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\NavLink;
 use App\Support\HeaderSearch;
+use App\Support\HeaderSignIn;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -81,6 +82,15 @@ class NavLinkController extends Controller
         return back()->with('success', $visible
             ? 'Header search is now visible.'
             : 'Header search is now hidden.');
+    }
+
+    public function toggleSignIn(): RedirectResponse
+    {
+        $visible = HeaderSignIn::toggle();
+
+        return back()->with('success', $visible
+            ? 'Sign In is now visible.'
+            : 'Sign In is now hidden.');
     }
 
     /**

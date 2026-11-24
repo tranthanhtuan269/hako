@@ -42,6 +42,7 @@ class ScrollCouponPopup
                 'title' => self::titleWithStore($coupon->title, $store->name),
                 'discount' => $coupon->discountLabel(),
                 'hasCode' => filled($coupon->code),
+                'code' => $coupon->code,
                 'codeMasked' => filled($coupon->code) ? $coupon->maskedCodeParts() : null,
                 'expires' => $coupon->expiresLabel(),
                 'goUrl' => route('coupons.go', $coupon->slug),

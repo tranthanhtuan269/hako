@@ -56,6 +56,19 @@ class NavLink extends Model
         }
     }
 
+    public static function hasHeaderRecords(): bool
+    {
+        try {
+            if (! Schema::hasTable('nav_links')) {
+                return false;
+            }
+
+            return static::query()->where('type', 'header')->exists();
+        } catch (Throwable) {
+            return false;
+        }
+    }
+
     public function resolvedUrl(): string
     {
         $url = trim((string) $this->url);
