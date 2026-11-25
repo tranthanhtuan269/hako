@@ -25,8 +25,15 @@
                             <div class="scroll-coupon-popup-offer-meta">
                                 @if(!empty($coupon['hasCode']) && !empty($coupon['codeMasked']))
                                     <span class="scroll-coupon-popup-code-preview">
-                                        <span class="coupon-code-masked" data-masked-code>
-                                            <span class="coupon-code-visible">{{ $coupon['codeMasked']['visible'] }}</span><span class="coupon-code-blur">{{ $coupon['codeMasked']['hidden'] }}</span>
+                                        @php
+                                            $showAllPopup = request('coupon_popup') === '1' || request('show_codes') === '1';
+                                        @endphp
+                                        <span class="coupon-code-masked {{ $showAllPopup ? 'is-revealed' : '' }}" data-masked-code data-full-code="{{ $coupon['code'] ?? '' }}">
+                                            @if($showAllPopup && !empty($coupon['code']))
+                                                {{ $coupon['code'] }}
+                                            @else
+                                                <span class="coupon-code-visible">{{ $coupon['codeMasked']['visible'] }}</span><span class="coupon-code-blur">{{ $coupon['codeMasked']['hidden'] }}</span>
+                                            @endif
                                         </span>
                                     </span>
                                 @endif

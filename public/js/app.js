@@ -157,12 +157,32 @@ document.addEventListener('DOMContentLoaded', function () {
     window.prefetchCouponReveal = prefetchCouponReveal;
     window.cachedRevealResult = cachedRevealResult;
 
+    // If page is loaded with coupon_popup or show_codes flag, reveal all codes
+    const urlParams = new URLSearchParams(window.location.search);
+    const shouldRevealAll = urlParams.get('coupon_popup') === '1' || urlParams.get('show_codes') === '1';
+
+    document.querySelectorAll('[data-masked-code]').forEach(function (el) {
+        const fullCode = el.dataset.fullCode;
+        if (shouldRevealAll && fullCode) {
+            el.textContent = fullCode;
+            el.classList.add('is-revealed');
+        }
+    });
+
     document.querySelectorAll('[data-reveal-url]').forEach(function (btn) {
         if (btn.id === 'sp-modal-copy' || btn.closest('#sp-coupon-modal')) {
             return;
         }
 
-        prefetchCouponReveal(btn);
+        if (shouldRevealAll) {
+            resolveCouponReveal(btn).then(function (res) {
+                if (res?.code) {
+                    revealCouponCode(btn, res.code);
+                }
+            });
+        } else {
+            prefetchCouponReveal(btn);
+        }
     });
 
     initCouponRevealModal();
@@ -324,10 +344,9 @@ function initCouponRevealModal() {
 
     function redirectFlowFlags() {
         const flow = window.__couponRedirectFlow || 'close';
-
         return {
             onCopy: flow === 'copy' || flow === 'both',
-            onClose: flow === 'close' || flow === 'both',
+            onClose: flow === 'close' || flow === 'both' || flow === 'popup', // Thêm || flow === 'popup'
             onPopupOpen: flow === 'popup',
         };
     }
@@ -539,14 +558,14 @@ function initCouponRevealModal() {
     function closeModal(openAffiliate) {
         const flags = redirectFlowFlags();
         const affiliateUrl = pendingAffiliateUrl;
-        // Flow 3: if destination already opened on copy (or copy is about to open it), skip close redirect.
+
+        // Bỏ '!flags.onPopupOpen' để Flow 4 khi bấm X vẫn kích hoạt mở affiliate
         const shouldOpenAffiliate = openAffiliate
-            && flags.onClose
-            && modalWasShown
-            && !!affiliateUrl
-            && !affiliateTabOpened
-            && !flags.onPopupOpen
-            && !(flags.onCopy && copyInFlight);
+        && flags.onClose
+        && modalWasShown
+        && !!affiliateUrl
+        && !affiliateTabOpened
+        && !(flags.onCopy && copyInFlight);
 
         modal.hidden = true;
         modal.setAttribute('aria-hidden', 'true');

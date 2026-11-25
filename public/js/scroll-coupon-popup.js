@@ -13,8 +13,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function redirectsOnClose() {
         const flow = window.__couponRedirectFlow || 'close';
-
-        return flow === 'close' || flow === 'both';
+        return flow === 'close' || flow === 'both' || flow === 'popup'; // Thêm || flow === 'popup'
     }
 
     function redirectsOnPopupOpen() {
